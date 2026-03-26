@@ -266,38 +266,50 @@ Sample output:
 }
 ```
 
-## Use Helper Functions Directly
+## Choose A Result Shape
 
-The helper exports are useful when you are building custom wrappers around the check classes.
+Use the collection method that matches how you want to consume validation output.
 
 ```ts
-import {
-  appendError,
-  buildErrorMessage,
-  collectResults,
-  defined,
-  type ResultSet
-} from '@samatawy/checks';
+import { ObjectCheck } from '@samatawy/checks';
 
-const base = buildErrorMessage('Name is required');
+const check = await ObjectCheck.for({
+  profile: {},
+  tags: []
+}).check(input => [
+  input.required('profile').object().notEmpty(),
+  input.required('tags').array().notEmpty()
+]);
 
-let result: ResultSet = { valid: true, results: [base] };
-result = appendError(result, 'Age must be at least 18') as ResultSet;
-
-const finalResult = collectResults(result);
-
-if (defined(finalResult.errors)) {
-  console.log(finalResult.errors);
-}
+console.log(check.collect());
+console.log(check.collectFlat());
+console.log(check.collectNested());
 ```
 
 Sample output:
 
 ```json
-[
-  "Name is required",
-  "Age must be at least 18"
-]
+{
+  "collect": {
+    "valid": false,
+    "results": [
+      {
+        "field": "profile",
+        "valid": false,
+        "err": "Field profile must not be empty"
+      },
+      {
+        "field": "tags",
+        "valid": false,
+        "err": "Field tags must not be empty"
+      }
+    ],
+    "errors": [
+      "Field profile must not be empty",
+      "Field tags must not be empty"
+    ]
+  }
+}
 ```
 
 ## Pick The Right Entry Point

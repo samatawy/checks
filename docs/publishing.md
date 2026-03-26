@@ -33,9 +33,6 @@ import {
 	StringCheck,
 	NumberCheck,
 	DateCheck,
-	appendError,
-	collectResults,
-	defined,
 	type ResultSet
 } from '@samatawy/checks';
 ```

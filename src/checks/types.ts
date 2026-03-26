@@ -13,6 +13,8 @@ export interface SingleResult {
 
 export interface ResultSet extends SingleResult {
 
+    input?: any;
+    
     results?: IResult[];
 
     hints?: string[];

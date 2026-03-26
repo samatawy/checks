@@ -17,10 +17,11 @@ Common methods:
 - `required(name)` starts a required field validation
 - `optional(name)` starts an optional field validation
 - `check(fn)` applies nested rules and aggregates results asynchronously
-- `rules(checks)` evaluates a prebuilt array of checks or promised checks asynchronously
 - `is_true(fn, options)` applies a custom object-level predicate and supports async predicates
 - `result()` returns nested results as collected so far
-- `collect()` flattens nested results into `hints`, `warnings`, and `errors`
+- `collect()` returns nested results with flattened `hints`, `warnings`, and `errors`
+- `collectFlat()` returns a flattened result structure only
+- `collectNested()` returns a nested result structure that mirrors the input shape
 
 Example:
 
@@ -74,10 +75,13 @@ Common methods:
 - `notEmpty()` rejects empty arrays
 - `minLength(length)`
 - `maxLength(length)`
-- `rules_each(checks)` evaluates prebuilt child checks asynchronously
 - `check_each(fn)` validates each item using `ArrayItemCheck` and supports promised checks
 - `is_true(fn, options)` applies a custom predicate to the array value and supports async predicates
 - `is_true_each(fn, options)` runs a custom predicate on every item and supports async predicates
+- `result()` returns nested results as collected so far
+- `collect()` returns nested results with flattened `hints`, `warnings`, and `errors`
+- `collectFlat()` returns a flattened result structure only
+- `collectNested()` returns a nested result structure that mirrors the input shape
 
 Example:
 
@@ -230,6 +234,8 @@ Common inherited methods:
 - `is_true(fn, options?)` supports sync and async predicates
 - `result()`
 
+`ValueCheck` is an implementation detail for shared fluent behavior. Most consumers should use the concrete check classes directly.
+
 ## Result types
 
 ### `SingleResult`
@@ -282,35 +288,3 @@ Adds case sensitivity control.
   case?: 'sensitive' | 'insensitive';
 }
 ```
-
-## Helpers
-
-### `defined(value)`
-
-Type guard that narrows away `null` and `undefined`.
-
-```ts
-import { defined } from '@samatawy/checks';
-
-const value: string | null | undefined = source.name;
-
-if (defined(value)) {
-  value.toUpperCase();
-}
-```
-
-### `buildErrorMessage(err, options)`
-
-Creates a `SingleResult` payload using the same rules as the check classes.
-
-### `appendError(result, err, options)`
-
-Appends error, hint, and warning information onto an existing result object.
-
-### `collectResults(resultSet)`
-
-Merges duplicate field entries and computes flattened `hints`, `warnings`, and `errors` arrays.
-
-### `isPromise(value)`
-
-Promise-like guard used internally when a check list contains a mix of synchronous checks and promised checks.

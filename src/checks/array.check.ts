@@ -1,5 +1,6 @@
 import { ArrayItemCheck } from './array.item.check';
-import { defined, buildErrorMessage, appendError, collectResults, isPromise } from './helper.functions';
+import { defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
+import { collectResults, collectResultsFlat, collectResultsNested } from './helper.functions';
 import type { Check, CheckOptions, IResult, ResultSet } from './types';
 
 export class ArrayCheck implements Check {
@@ -103,7 +104,6 @@ export class ArrayCheck implements Check {
                 valid: per_item.every(r => r.valid), 
                 results: per_item 
             });
-            console.debug('Per-item results added', this.out);
         }
         return this;
     }
@@ -172,6 +172,14 @@ export class ArrayCheck implements Check {
     }
 
     public collect(): ResultSet {
-        return collectResults(this.out);
+        return collectResults(this.data, this.out);
+    }
+
+    public collectFlat(): ResultSet {
+        return collectResultsFlat(this.out);
+    }
+
+    public collectNested(): ResultSet {
+        return collectResultsNested(this.data, this.out);
     }
 }

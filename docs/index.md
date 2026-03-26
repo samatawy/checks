@@ -16,8 +16,7 @@ The public API is exported from [src/index.ts](../src/index.ts) and includes:
 - validation classes such as `ObjectCheck`, `ArrayCheck`, and `FieldCheck`
 - async-capable binary validators such as `FileCheck` and `ImageCheck`
 - result and option types such as `ResultSet`, `SingleResult`, and `CheckOptions`
-- helpers such as `defined()`, `appendError()`, `collectResults()`, and `buildErrorMessage()`
-- the starter utility `createPackageSummary()`
+- collection methods on `ObjectCheck` and `ArrayCheck` including `collect()`, `collectFlat()`, and `collectNested()`
 
 ## Recommended reading order
 

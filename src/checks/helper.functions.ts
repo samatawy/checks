@@ -95,6 +95,60 @@ function appendString(data: any, key: string, value: string | string[]): any {
     }
 
     /**
+     * Extract values and results per field into an object structure
+     * where each field is a key, and its value is an object containing the combined results for that field.
+     * This allows for easier access to results by field and aggregation of messages.
+     * source is the original input data containing given values. Each field will have a value: field with the corresponding source value.
+     * Nested results will be handled recursively.
+     */
+    function nestFields(source: any, set: ResultSet): any {
+        let fieldMap: { [key: string]: any } = {};
+        let unnamedResults: IResult[] = [];
+
+        for (let child of set.results || []) {
+            if (!defined(child.field)) {
+                // If no field, just keep as is (or handle differently if needed)
+                unnamedResults.push({ ...child });
+                continue;
+            }
+
+            const fieldKey = String(child.field);
+            const existing = fieldMap[fieldKey] || { value: source[child.field] };
+
+            existing.valid = existing.valid !== false ? child.valid : false;
+
+            if (child.hint) {
+                existing.hint = existing.hint ? (Array.isArray(existing.hint) ? [...existing.hint, child.hint] : [existing.hint, child.hint]) : child.hint;
+            }
+
+            if (child.warn) {
+                existing.warn = existing.warn ? (Array.isArray(existing.warn) ? [...existing.warn, child.warn] : [existing.warn, child.warn]) : child.warn;
+            }
+
+            if (child.err) {
+                existing.err = existing.err ? (Array.isArray(existing.err) ? [...existing.err, child.err] : [existing.err, child.err]) : child.err;
+            }
+
+            const childResults = (child as ResultSet).results;
+            // Nest child results recursively using the relevant portion of the source data
+            // For nested fields, we can use the child.field to access the corresponding source value for that field
+            if (childResults) {
+                existing.results = nestFields(source[child.field], child as ResultSet);
+                console.debug('Nested results for field', child.field, ':', child);
+            }
+            console.debug('Mapping field', fieldKey, 'with result', existing);
+
+            fieldMap[fieldKey] = existing;
+        }
+
+        if (unnamedResults.length) {
+            fieldMap['*'] = unnamedResults;
+        }
+
+        return fieldMap;
+    }
+
+    /**
      * Find nested objects with the same value of 'field' and merge them,
      * merge hint, warn and err values into arrays if necessary, 
      * and ensure the 'valid' field is correctly set based on the presence of errors.
@@ -141,7 +195,6 @@ function appendString(data: any, key: string, value: string | string[]): any {
                 mergedSet.results = mergedResults;
             }
 
-            merged.valid = merged.valid && child.valid;
             fieldMap[fieldKey] = merged;
         }
 
@@ -152,10 +205,21 @@ function appendString(data: any, key: string, value: string | string[]): any {
         return result;
     }
 
-    export function collectResults(out: ResultSet): ResultSet {
+    export function collectResults(input: any, out: ResultSet): ResultSet {
         const merged = mergeFields(out);
         // const merged = out;
-        return {...merged, ...extract(merged)};
+        return {input: nestFields(input, merged), ...extract(merged), ...merged};
     }
 
+    export function collectResultsFlat(out: ResultSet): ResultSet {
+        const merged = mergeFields(out);
+        // const merged = out;
+        return extract(merged);
+    }
+
+    export function collectResultsNested(input: any, out: ResultSet): ResultSet {
+        const merged = mergeFields(out);
+        // const merged = out;
+        return nestFields(input, merged);
+    }
 

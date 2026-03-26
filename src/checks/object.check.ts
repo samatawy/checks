@@ -1,6 +1,7 @@
 import { ArrayCheck } from './array.check';
 import { FieldCheck } from './field.check';
-import { defined, buildErrorMessage, appendError, collectResults, isPromise } from './helper.functions';
+import { defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
+import { collectResults, collectResultsFlat, collectResultsNested } from './helper.functions';
 import type { Check, CheckOptions, IResult, ResultSet } from './types';
 
 export class ObjectCheck implements Check {
@@ -140,6 +141,14 @@ export class ObjectCheck implements Check {
     }
 
     public collect(): ResultSet {
-        return collectResults(this.out);
+        return collectResults(this.data, this.out);
+    }
+
+    public collectFlat(): ResultSet {
+        return collectResultsFlat(this.out);
+    }
+
+    public collectNested(): ResultSet {
+        return collectResultsNested(this.data, this.out);
     }
 }

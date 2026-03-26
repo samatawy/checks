@@ -88,15 +88,6 @@ Everything is exported from the package root in [src/index.ts](src/index.ts).
 - `ResultSet`
 - `IResult`
 
-### Helpers
-
-- `defined(value)` narrows away `null` and `undefined`
-- `buildErrorMessage(err, options)` builds a result payload compatible with the check classes
-- `appendError(result, err, options)` appends messages to an existing result
-- `collectResults(resultSet)` merges duplicate field results and flattens nested output
-- `isPromise(value)` detects promise-like values used by async checks
-- `createPackageSummary(input)` remains available as the original starter utility
-
 ## Validation model
 
 The API is designed around fluent checks that accumulate validation output.
@@ -108,7 +99,9 @@ The API is designed around fluent checks that accumulate validation output.
 - `is_true(...)` and `is_true_each(...)` let you add custom predicates
 - `file()` and `image()` create asynchronously initialized binary validators
 - `result()` returns the immediate result state
-- `collect()` flattens nested results into `hints`, `warnings`, and `errors`
+- `collect()` returns nested results with flattened `hints`, `warnings`, and `errors`
+- `collectFlat()` returns a flattened result structure only
+- `collectNested()` returns a nested result structure that mirrors the input shape
 
 Example with warnings and nested arrays:
 
@@ -210,17 +203,6 @@ When validating integration in this workspace, use the package build output from
 - [docs/how-to.md](docs/how-to.md)
 - [docs/development.md](docs/development.md)
 - [docs/publishing.md](docs/publishing.md)
-
-## Before publishing
-
-Review and update the package metadata in `package.json` before publishing:
-
-- `name`
-- `description`
-- `author`
-- `repository`
-- `bugs`
-- `homepage`
 
 ## License
 

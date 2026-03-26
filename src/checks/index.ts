@@ -18,10 +18,10 @@ export type {
     StringCheckOptions,
 } from './types';
 
-export {
-    buildErrorMessage,
-    appendError,
-    collectResults,
-    defined,
-    isPromise,
-} from './helper.functions';
+// export {
+    // buildErrorMessage,
+    // appendError,
+    // collectResults,
+    // defined,
+    // isPromise,
+// } from './helper.functions';
