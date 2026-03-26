@@ -1,0 +1,74 @@
+{
+    "name": "@samatawy/checks",
+    "version": "0.1.0",
+    "description": "Fluent TypeScript validation checks for objects, arrays, files, and images.",
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "sideEffects": false,
+    "publishConfig": {
+        "access": "public"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "scripts": {
+        "clean": "rimraf dist",
+        "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+        "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+        "lint": "tsc --noEmit -p tsconfig.json",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "prepublishOnly": "npm run lint && npm run test && npm run build"
+    },
+    "keywords": [
+        "typescript",
+        "npm",
+        "library",
+        "validation",
+        "checks"
+    ],
+    "author": "Sam Atawy",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/samatawy/checks.git"
+    },
+    "bugs": {
+        "url": "https://github.com/samatawy/checks/issues"
+    },
+    "homepage": "https://github.com/samatawy/checks#readme",
+    "devDependencies": {
+        "@types/node": "^24.3.1",
+        "@types/probe-image-size": "^7.2.5",
+        "rimraf": "^6.0.1",
+        "tsup": "^8.5.0",
+        "typescript": "^5.9.2",
+        "vitest": "^3.2.4"
+    },
+    "peerDependencies": {
+        "file-type": "^21.3.4",
+        "probe-image-size": "^7.2.3"
+    },
+    "peerDependenciesMeta": {
+        "file-type": {
+            "optional": true
+        },
+        "probe-image-size": {
+            "optional": true
+        }
+    }
+}
