@@ -1,3 +1,4 @@
+import type { CheckOptions } from './types';
 import { appendError } from './helper.functions';
 import { NumberCheck } from './number.check';
 import { StringCheck } from './string.check';
@@ -21,12 +22,20 @@ export class ArrayItemCheck extends ValueCheck {
         return new ObjectCheck(this.key, this.data).inherit(this.out);
     }
 
-    public required(name: string): FieldCheck {
-        return new FieldCheck(name, this.item).required();
+    public required(name: string, options?: CheckOptions): FieldCheck {
+        return new FieldCheck(name, this.item).required(options);
     }
 
     public optional(name: string): FieldCheck {
         return new FieldCheck(name, this.item);
+    }
+
+    public conditional(name: string, condition: (data: any) => boolean, options?: CheckOptions): FieldCheck {
+        if (condition(this.data)) {
+            return new FieldCheck(name, this.item).required(options);
+        } else {
+            return new FieldCheck(name, this.item);
+        }
     }
 
     public array(): ArrayCheck {

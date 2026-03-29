@@ -1,7 +1,10 @@
 import type { CheckOptions } from './types';
 import { appendError } from "./helper.functions";
+
 import { NumberCheck } from './number.check';
 import { StringCheck } from './string.check';
+import { EmailCheck } from './email.check';
+import { UrlCheck } from './url.check';
 import { ValueCheck } from './value.check';
 import { DateCheck } from './date.check';
 import { ObjectCheck } from './object.check';
@@ -15,11 +18,12 @@ export class FieldCheck extends ValueCheck {
         super(key, data);
     }
 
-    public required(): this {
+    public required(options?: CheckOptions): this {
         if (this.data === null || this.data === undefined ||
             this.key === null || this.key === undefined ||
             this.data[this.key] === null || this.data[this.key] === undefined) {
-            this.out = { ...this.out, ...{ valid: false, err: `Field ${this.key} is required` } };
+            // this.out = { ...this.out, ...{ valid: false, err: `Field ${this.key} is required` } };
+            this.out = appendError(this.out, `Field ${this.key} is required`, options);
         }
         return this;
     }
@@ -42,6 +46,14 @@ export class FieldCheck extends ValueCheck {
 
     public string(): StringCheck {
         return new StringCheck(this.key, this.data).inherit(this.out);
+    }
+
+    public email(): EmailCheck {
+        return new EmailCheck(this.key, this.data).inherit(this.out);
+    }
+
+    public url(): UrlCheck {
+        return new UrlCheck(this.key, this.data).inherit(this.out);
     }
 
     public number(): NumberCheck {

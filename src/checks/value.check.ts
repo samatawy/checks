@@ -1,4 +1,4 @@
-import { buildErrorMessage, appendError, isPromise } from './helper.functions';
+import { buildErrorMessage, appendError, defined, isPromise } from './helper.functions';
 import type { Check, CheckOptions, IResult } from './types';
 
 export abstract class ValueCheck implements Check {
@@ -31,6 +31,26 @@ export abstract class ValueCheck implements Check {
         }
         return this;
     }
+
+    // public required(options?: CheckOptions): this {
+    //     if (this.data === null || this.data === undefined ||
+    //         this.key === null || this.key === undefined ||
+    //         this.data[this.key] === null || this.data[this.key] === undefined) {
+    //         // this.out = { ...this.out, ...{ valid: false, err: `Field ${this.key} is required` } };
+    //         this.out = appendError(this.out, `Field ${this.key} is required`, options);
+    //     }
+    //     return this;
+    // }
+    //
+    // public requires(field: string, condition: (data: any) => boolean, options?: CheckOptions): this {
+    //     if (condition(this.data)) {
+    //         console.debug('Condition met for requires check on field', field);
+    //         if (!defined(this.data[field])) {
+    //             this.out = appendError(this.out, `Field ${this.key} requires a value for ${field}`, options);
+    //         }
+    //     }
+    //     return this;
+    // }
 
     public async is_true(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<this> {
         if (!this.has_value) return this;

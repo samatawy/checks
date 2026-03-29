@@ -38,45 +38,88 @@ export class ArrayCheck implements Check {
         }
     }
 
-    public notEmpty(): this {
+    public notEmpty(options?: CheckOptions): this {
         const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
 
-        if (this.data === null && this.data === undefined) {
-            this.errorMessage(prefix + ' is required');
+        if (this.data === null || this.data === undefined) {
+            this.errorMessage(prefix + ' is required', options);
+            return this;
         }
         if (this.data.length === 0) {
-            this.errorMessage(prefix + ' must not be empty');
+            this.errorMessage(prefix + ' must not be empty', options);
         }
         return this;
     }
 
-    public array(): this {
+    public array(options?: CheckOptions): this {
         const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
 
         if (!Array.isArray(this.data)) {
-            this.errorMessage(prefix + ' must be an array.');
+            this.errorMessage(prefix + ' must be an array.', options);
         }
         return this;
     }
 
-    public minLength(length: number): this {
+    public minLength(length: number, options?: CheckOptions): this {
         if (!this.is_array) return this;
 
         const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
 
         if (this.data.length < length) {
-            this.errorMessage(prefix + ` must have at least ${length} items.`);
+            this.errorMessage(prefix + ` must have at least ${length} items.`, options);
         }
         return this;
     }
 
-    public maxLength(length: number): this {
+    public maxLength(length: number, options?: CheckOptions): this {
         if (!this.is_array) return this;
         const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
 
         if (this.data.length > length) {
-            this.errorMessage(prefix + ` must have at most ${length} items.`);
+            this.errorMessage(prefix + ` must have at most ${length} items.`, options);
         }
+        return this;
+    }
+
+    public noDuplicates(key?: string, options?: CheckOptions): this {
+        if (!this.is_array) return this;
+        const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
+
+        const seen = new Set();
+        for (const item of this.data) {
+            const value = key ? item[key] : item;
+            if (seen.has(value)) {
+                this.errorMessage(prefix + ' must not contain duplicate items.', options);
+                break;
+            }
+            seen.add(value);
+        }
+        return this;
+    }
+
+    protected async rules(field_checks: (Check | Promise<Check>)[]): Promise<this> {
+        for (const field_check of field_checks) {
+            const check = isPromise(field_check) ? await field_check : field_check;
+            const found = check.result();
+
+            if (found.hint || found.warn || found.err) {
+                this.out.results = this.out.results || [];
+                this.out.results.push(found);
+            }
+            if ((found as ResultSet).results?.length) {
+                this.out.results = this.out.results || [];
+                this.out.results.push(found);
+            }
+            if (found.err) {
+                this.out.valid = false;
+            }
+        }
+        return this;
+    }
+
+    public async check(func: (checker: ArrayCheck) => (Check | Promise<Check>)[]): Promise<this> {
+        const field_checks = func(this);
+        await this.rules(field_checks);
         return this;
     }
 

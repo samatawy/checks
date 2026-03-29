@@ -73,6 +73,10 @@ function appendString(data: any, key: string, value: string | string[]): any {
         let warnings: string[] = [];
         let errors: string[] = [];
 
+        if (set.hint) Array.isArray(set.hint) ? hints.push(...set.hint) : hints.push(set.hint);
+        if (set.warn) Array.isArray(set.warn) ? warnings.push(...set.warn) : warnings.push(set.warn);
+        if (set.err) Array.isArray(set.err) ? errors.push(...set.err) : errors.push(set.err);
+
         for (let child of set.results || []) {
             if (child.hint) Array.isArray(child.hint) ? hints.push(...child.hint) : hints.push(child.hint);
             if (child.warn) Array.isArray(child.warn) ? warnings.push(...child.warn) : warnings.push(child.warn);
@@ -105,6 +109,21 @@ function appendString(data: any, key: string, value: string | string[]): any {
         let fieldMap: { [key: string]: any } = {};
         let unnamedResults: IResult[] = [];
 
+        const atRoot: any = {};
+        if (set.hint) {
+            atRoot.hint = set.hint;
+        }
+        if (set.warn) {
+            atRoot.warn = set.warn;
+        }
+        if (set.err) {
+            atRoot.valid = false;
+            atRoot.err = set.err;
+        }
+        if (Object.keys(atRoot).length) {
+            unnamedResults.push(atRoot);
+        }
+
         for (let child of set.results || []) {
             if (!defined(child.field)) {
                 // If no field, just keep as is (or handle differently if needed)
@@ -134,9 +153,9 @@ function appendString(data: any, key: string, value: string | string[]): any {
             // For nested fields, we can use the child.field to access the corresponding source value for that field
             if (childResults) {
                 existing.results = nestFields(source[child.field], child as ResultSet);
-                console.debug('Nested results for field', child.field, ':', child);
+                // console.debug('Nested results for field', child.field, ':', child);
             }
-            console.debug('Mapping field', fieldKey, 'with result', existing);
+            // console.debug('Mapping field', fieldKey, 'with result', existing);
 
             fieldMap[fieldKey] = existing;
         }
@@ -201,7 +220,10 @@ function appendString(data: any, key: string, value: string | string[]): any {
         let mergedResults: ResultSet[] = Object.values(fieldMap);
         mergedResults.push(...unnamedResults);
 
-        let result: ResultSet = { valid: set.valid, results: mergedResults };
+        let result: ResultSet = { ...set, ...{ valid: set.valid, results: mergedResults } };
+        // if (set.hint) result.hints = set.hints;
+        // if (set.warn) result.warnings = set.warnings;
+        // if (set.err) result.errors = set.errors;
         return result;
     }
 

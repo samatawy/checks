@@ -14,6 +14,10 @@ export class ObjectCheck implements Check {
 
     protected is_object: boolean;
 
+    protected check_extra_fields: boolean;
+
+    protected known_keys: Set<string>;
+
     protected out: ResultSet;
 
     static for(data: any): ObjectCheck {
@@ -34,43 +38,78 @@ export class ObjectCheck implements Check {
 
         this.has_value = this.data !== null && this.data !== undefined;
         this.is_object = typeof this.data === 'object' && !Array.isArray(this.data);
+        this.known_keys = new Set<string>();
+        this.check_extra_fields = false;
+
         if (this.has_value) {
             this.object();
         }
     }
 
-    public notEmpty(): this {
+    public notEmpty(options?: CheckOptions): this {
         const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
 
-        if (this.data === null && this.data === undefined) {
-            this.errorMessage(prefix + ' is required');
+        if (this.data === null || this.data === undefined) {
+            this.errorMessage(prefix + ' is required', options);
+            return this;
         }
         if (Object.keys(this.data).length === 0) {
-            this.errorMessage(prefix + ' must not be empty');
+            this.errorMessage(prefix + ' must not be empty', options);
         }
         return this;
     }
 
-    public object(): this {
+    public object(options?: CheckOptions): this {
         const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
 
         if (Array.isArray(this.data)) {
-            this.errorMessage(prefix + ' must not be an array.');
+            this.errorMessage(prefix + ' must not be an array.', options);
             return this;
         }
         if (typeof this.data !== 'object') {
-            this.errorMessage(prefix + ' must be an object.');
+            this.errorMessage(prefix + ' must be an object.', options);
             return this;
         }
         return this;
     }
 
-    public required(name: string): FieldCheck {
-        return new FieldCheck(name, this.data).required();
+    public required(name: string, options?: CheckOptions): FieldCheck {
+        this.known_keys.add(name);
+        return new FieldCheck(name, this.data).required(options);
     }
 
     public optional(name: string): FieldCheck {
+        this.known_keys.add(name);
         return new FieldCheck(name, this.data);
+    }
+
+    public conditional(name: string, condition: (data: any) => boolean, options?: CheckOptions): FieldCheck {
+        this.known_keys.add(name);
+        if (condition(this.data)) {
+            return new FieldCheck(name, this.data).required(options);
+        } else {
+            return new FieldCheck(name, this.data);
+        }
+    }
+
+    public noExtraFields(options?: CheckOptions): this {
+        this.check_extra_fields = true;
+        return this;
+    }
+
+    private checkExtraFields(options?: CheckOptions): this {
+        if (!this.is_object) return this;
+
+        const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
+        const unknown_keys = Object.keys(this.data).filter(k => !this.known_keys.has(k));
+
+        if (unknown_keys.length > 0) {
+            this.errorMessage(prefix + ` has extra fields: ${unknown_keys.join(', ')}`, options);
+        }
+        this.check_extra_fields = false;
+        // console.debug('Known keys:', this.known_keys);
+        // console.debug('Unknown keys:', unknown_keys);
+        return this;
     }
 
     protected async rules(field_checks: (Check | Promise<Check>)[]): Promise<this> {
@@ -141,14 +180,23 @@ export class ObjectCheck implements Check {
     }
 
     public collect(): ResultSet {
+        if (this.check_extra_fields) {
+            this.checkExtraFields();
+        }
         return collectResults(this.data, this.out);
     }
 
     public collectFlat(): ResultSet {
+        if (this.check_extra_fields) {
+            this.checkExtraFields();
+        }
         return collectResultsFlat(this.out);
     }
 
     public collectNested(): ResultSet {
+        if (this.check_extra_fields) {
+            this.checkExtraFields();
+        }
         return collectResultsNested(this.data, this.out);
     }
 }

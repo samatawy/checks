@@ -14,6 +14,7 @@ This package exposes a fluent validation API for working with objects, arrays, f
 The public API is exported from [src/index.ts](../src/index.ts) and includes:
 
 - validation classes such as `ObjectCheck`, `ArrayCheck`, and `FieldCheck`
+- specialized string validators such as `EmailCheck` and `UrlCheck`
 - async-capable binary validators such as `FileCheck` and `ImageCheck`
 - result and option types such as `ResultSet`, `SingleResult`, and `CheckOptions`
 - collection methods on `ObjectCheck` and `ArrayCheck` including `collect()`, `collectFlat()`, and `collectNested()`

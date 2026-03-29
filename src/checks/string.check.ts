@@ -1,95 +1,151 @@
 import type { CheckOptions, StringCheckOptions } from './types';
-import { ValueCheck } from './value.check';
+import { StringBaseCheck } from './string.base.check';
+import { EmailCheck } from './email.check';
+import { UrlCheck } from './url.check';
 
-export class StringCheck extends ValueCheck {
-
-    protected valid_type: boolean;
+export class StringCheck extends StringBaseCheck {
 
     constructor(key: string | number, data: any) {
         super(key, data);
-        if (this.has_value) {
-            this.valid_type = typeof this.data[this.key] === 'string';
-
-            if (!this.valid_type) {
-                this.out = { ...this.out, ...{ valid: false, err: `Field ${this.key} must be a string` } };
-            }
-        } else {
-            this.valid_type = false;
-        }
     }
 
-    public minLength(length: number, options?: CheckOptions): this {
-        if (!this.valid_type) return this;
-
-        if (this.data[this.key].length < length) {
-            this.errorMessage(`Field ${this.key} must be at least ${length} characters long`, options);
-        }
-        return this;
+    public email(options?: CheckOptions): EmailCheck {
+        return new EmailCheck(this.key!, this.data);
+    }
+    
+    public url(options?: CheckOptions): UrlCheck {
+        return new UrlCheck(this.key!, this.data);
     }
 
-    public maxLength(length: number, options?: CheckOptions): this {
+    public isBase64(options?: CheckOptions): this {
         if (!this.valid_type) return this;
 
-        if (this.data[this.key].length > length) {
-            this.errorMessage(`Field ${this.key} must be at most ${length} characters long`, options);
+        if (!/^[A-Za-z0-9+/]+={0,2}$/.test(this.data[this.key])) {
+            this.errorMessage(`Field ${this.key} must be a valid Base64 string`, options);
         }
         return this;
     }
 
-    public oneOf(values: string[], options?: StringCheckOptions): this {
+    public isSHA256(options?: CheckOptions): this {
         if (!this.valid_type) return this;
 
-        const this_str = options?.case === 'insensitive' ? this.data[this.key] : this.data[this.key].toLowerCase();
-        const values_str = options?.case === 'insensitive' ? values : values.map(v => v.toLowerCase());
-
-        if (!values_str.includes(this_str)) {
-            this.errorMessage(`Field ${this.key} must be one of the following values: ${values.join(', ')}`, options);
+        if (!/^[A-Fa-f0-9]{64}$/.test(this.data[this.key])) {
+            this.errorMessage(`Field ${this.key} must be a valid SHA-256 hash`, options);
         }
         return this;
     }
 
-    public startsWith(prefix: string, options?: StringCheckOptions): this {
+    public isMD5(options?: CheckOptions): this {
         if (!this.valid_type) return this;
 
-        const this_str = options?.case === 'insensitive' ? this.data[this.key] : this.data[this.key].toLowerCase();
-        const sub_str = options?.case === 'insensitive' ? prefix : prefix.toLowerCase();
-
-        if (!this_str.startsWith(sub_str)) {
-            this.errorMessage(`Field ${this.key} must start with ${prefix}`, options);
+        if (!/^[A-Fa-f0-9]{32}$/.test(this.data[this.key])) {
+            this.errorMessage(`Field ${this.key} must be a valid MD5 hash`, options);
         }
         return this;
     }
 
-    public endsWith(suffix: string, options?: StringCheckOptions): this {
+
+    public isHexadecimal(options?: CheckOptions): this {
         if (!this.valid_type) return this;
 
-        const this_str = options?.case === 'insensitive' ? this.data[this.key] : this.data[this.key].toLowerCase();
-        const sub_str = options?.case === 'insensitive' ? suffix : suffix.toLowerCase();
-
-        if (!this_str.endsWith(sub_str)) {
-            this.errorMessage(`Field ${this.key} must end with ${suffix}`, options);
+        if (!/^[A-Fa-f0-9]+$/.test(this.data[this.key])) {
+            this.errorMessage(`Field ${this.key} must be a valid hexadecimal string`, options);
         }
         return this;
     }
 
-    public contains(substring: string, options?: StringCheckOptions): this {
+    public isAlphanumeric(options?: CheckOptions): this {
         if (!this.valid_type) return this;
 
-        const this_str = options?.case === 'insensitive' ? this.data[this.key] : this.data[this.key].toLowerCase();
-        const sub_str = options?.case === 'insensitive' ? substring : substring.toLowerCase();
-
-        if (!this_str.includes(sub_str)) {
-            this.errorMessage(`Field ${this.key} must contain ${substring}`, options);
+        if (!/^[A-Za-z0-9]+$/.test(this.data[this.key])) {
+            this.errorMessage(`Field ${this.key} must be an alphanumeric string`, options);
         }
-
         return this;
     }
 
-    public pattern(regex: RegExp, options?: CheckOptions): this {
+    public isAscii(options?: CheckOptions): this {
         if (!this.valid_type) return this;
 
-        if (!regex.test(this.data[this.key])) {
-            this.errorMessage(`Field ${this.key} does not match the required pattern`, options);
+        if (!/^[\x00-\x7F]*$/.test(this.data[this.key])) {
+            this.errorMessage(`Field ${this.key} must contain only ASCII characters`, options);
+        }
+        return this;
+    }
+
+    public hasMultibyte(options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        if (/^[\x00-\x7F]*$/.test(this.data[this.key])) {
+            this.errorMessage(`Field ${this.key} must contain at least one multibyte character`, options);
+        }
+        return this;
+    }
+
+    public hasUpperCase(min_count: number = 1, options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        const matches = this.data[this.key].match(/[A-Z]/g) || [];
+        if (matches.length < min_count) {
+            this.errorMessage(`Field ${this.key} must contain at least ${min_count} uppercase letter(s)`, options);
+        }
+        return this;
+    }
+
+    public hasLowerCase(min_count: number = 1, options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        const matches = this.data[this.key].match(/[a-z]/g) || [];
+        if (matches.length < min_count) {
+            this.errorMessage(`Field ${this.key} must contain at least ${min_count} lowercase letter(s)`, options);
+        }
+        return this;
+    }
+
+    public hasDigit(min_count: number = 1, options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        const matches = this.data[this.key].match(/\d/g) || [];
+        if (matches.length < min_count) {
+            this.errorMessage(`Field ${this.key} must contain at least ${min_count} digit(s)`, options);
+        }
+        return this;
+    }
+
+    public hasSpecialCharacter(min_count: number = 1, options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        const matches = this.data[this.key].match(/[!@#$%^&*(),.?":{}|<>]/g) || [];
+        if (matches.length < min_count) {
+            this.errorMessage(`Field ${this.key} must contain at least ${min_count} special character(s)`, options);
+        }
+        return this;
+    }
+
+    public noSpecialCharacters(chars?: string, options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        const pattern = chars ? new RegExp(`[${chars}]`) : /[!@#$%^&*(),.?":{}|<>]/;
+        if (pattern.test(this.data[this.key])) {
+            this.errorMessage(`Field ${this.key} must not contain special characters`, options);
+        }
+        return this;
+    }
+
+    public noSpaces(options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        if (/\s/.test(this.data[this.key])) {
+            this.errorMessage(`Field ${this.key} must not contain spaces`, options);
+        }
+        return this;
+    }
+
+    public maxWords(count: number, options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        const wordCount = this.data[this.key].trim().split(/\s+/).length;
+        if (wordCount > count) {
+            this.errorMessage(`Field ${this.key} must be at most ${count} words`, options);
         }
         return this;
     }

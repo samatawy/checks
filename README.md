@@ -73,6 +73,8 @@ Everything is exported from the package root in [src/index.ts](src/index.ts).
 - `ArrayCheck`
 - `ArrayItemCheck`
 - `StringCheck`
+- `EmailCheck`
+- `UrlCheck`
 - `NumberCheck`
 - `DateCheck`
 - `FileCheck`
@@ -94,14 +96,25 @@ The API is designed around fluent checks that accumulate validation output.
 
 - `required(name)` asserts that a field exists
 - `optional(name)` starts a field check without requiring presence
+- `conditional(name, condition)` requires a field only when another condition is met
+- `noExtraFields()` rejects undeclared object keys when collecting results
 - `check(...)` applies nested object rules
+- `check(...)` on arrays applies array-level rules and nested synthetic results
 - `check_each(...)` applies nested array item rules
+- `noDuplicates()` rejects duplicate array values or duplicate keys when you provide a selector key
 - `is_true(...)` and `is_true_each(...)` let you add custom predicates
 - `file()` and `image()` create asynchronously initialized binary validators
+- `email()` and `url()` are available from both `FieldCheck` and `StringCheck` and branch into protocol-specific validators
+- `trim()`, `integer()`, `positive()`, `isBase64()`, and related helpers support common string and number validation tasks
 - `result()` returns the immediate result state
 - `collect()` returns nested results with flattened `hints`, `warnings`, and `errors`
 - `collectFlat()` returns a flattened result structure only
 - `collectNested()` returns a nested result structure that mirrors the input shape
+
+String-related inheritance:
+
+- `StringCheck`, `EmailCheck`, and `UrlCheck` share the common string comparison methods through an internal `StringBaseCheck`
+- those inherited methods are available on the exported concrete classes; `StringBaseCheck` itself is internal and is not required for consumers
 
 Example with warnings and nested arrays:
 

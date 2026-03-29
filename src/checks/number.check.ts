@@ -39,6 +39,69 @@ export class NumberCheck extends ValueCheck {
         return parsed;
     }
 
+    public integer(options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        if (!Number.isInteger(this.value)) {
+            this.errorMessage(`Field ${this.key} must be an integer`, options);
+        }
+        return this;
+    }
+
+    public float(options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        if (typeof this.value === 'number' && !Number.isInteger(this.value)) {
+            this.errorMessage(`Field ${this.key} must be a float`, options);
+        }
+        return this;
+    }
+
+    public minPrecision(decimalPlaces: number, options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        const valueStr = this.value!.toString();
+        const decimalPart = valueStr.split('.')[1];
+        const actualDecimalPlaces = decimalPart ? decimalPart.length : 0;
+
+        if (actualDecimalPlaces < decimalPlaces) {
+            this.errorMessage(`Field ${this.key} must have at least ${decimalPlaces} decimal places`, options);
+        }
+        return this;
+    }
+
+    public positive(options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        if (this.value! <= 0) {
+            this.errorMessage(`Field ${this.key} must be a positive number`, options);
+        }
+        return this;
+    }
+
+    public negative(options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        if (this.value! >= 0) {
+            this.errorMessage(`Field ${this.key} must be a negative number`, options);
+        }
+        return this;
+    }
+
+    public roundUp(options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        this.data[this.key] = Math.ceil(this.value!);
+        return this;
+    }
+
+    public roundDown(options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        this.data[this.key] = Math.floor(this.value!);
+        return this;
+    }
+
     public greaterThan(value: number | string, options?: CheckOptions): this {
         if (!this.valid_type) return this;
 
