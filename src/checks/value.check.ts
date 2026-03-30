@@ -52,7 +52,7 @@ export abstract class ValueCheck implements Check {
     //     return this;
     // }
 
-    public async is_true(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<this> {
+    public async isTrue(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<this> {
         if (!this.has_value) return this;
 
         const result = func(this.data);

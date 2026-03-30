@@ -22,7 +22,7 @@ Common methods:
 - `conditional(name, condition, options?)` requires a field only when the predicate returns `true`
 - `noExtraFields(options?)` flags undeclared keys in the final object result
 - `check(fn)` applies nested rules and aggregates results asynchronously
-- `is_true(fn, options?)` applies a custom object-level predicate and supports async predicates
+- `isTrue(fn, options?)` applies a custom object-level predicate and supports async predicates
 - `result(options?)` returns the current result or a formatted final result depending on the options you pass
 
 Example:
@@ -83,9 +83,9 @@ Common methods:
 - `maxLength(length, options?)`
 - `noDuplicates(key?, options?)` rejects duplicate primitive values, duplicate repeated object references, or duplicate object values by a selected object key
 - `check(fn)` applies array-level checks and synthetic child results asynchronously
-- `check_each(fn)` validates each item using `ArrayItemCheck` and supports promised checks
-- `is_true(fn, options?)` applies a custom predicate to the array value and supports async predicates
-- `is_true_each(fn, options?)` runs a custom predicate on every item and supports async predicates
+- `checkEach(fn)` validates each item using `ArrayItemCheck` and supports promised checks
+- `isTrue(fn, options?)` applies a custom predicate to the array value and supports async predicates
+- `isTrueEach(fn, options?)` runs a custom predicate on every item and supports async predicates
 - `result(options?)` returns the current result or a formatted final result depending on the options you pass
 
 Example:
@@ -96,7 +96,7 @@ import { ObjectCheck } from '@samatawy/checks';
 const check = await ObjectCheck.for(input)
   .check(person => [
     person.optional('children').array().maxLength(10)
-      .check_each(child => [
+      .checkEach(child => [
         child.object(),
         child.required('name').string(),
         child.optional('age').number().atLeast(0).atMost(17)
@@ -179,7 +179,7 @@ Selected methods:
 - `DateCheck.after(value, options?)`
 - `DateCheck.before(value, options?)`
 - `DateCheck.sameDay(value, options?)`
-- `ValueCheck.is_true(fn, options?)`
+- `ValueCheck.isTrue(fn, options?)`
 - `ValueCheck.result(options?)`
 
 ## Getting results

@@ -75,7 +75,7 @@ if (!result.valid) {
 }
 ```
 
-`check`, `is_true`, `check_each`, `is_true_each`, `file`, and `image` may all become async depending on the validators you use, so `await` at the outer rule boundary is the safe default.
+`check`, `isTrue`, `checkEach`, `isTrueEach`, `file`, and `image` may all become async depending on the validators you use, so `await` at the outer rule boundary is the safe default.
 
 ## Getting Results
 
@@ -153,9 +153,9 @@ The fluent API accumulates validation output while you compose rules.
 - `conditional(name, condition)` requires a field only when another condition is met
 - `noExtraFields()` rejects undeclared object keys in final object results
 - `check(...)` applies nested object or array rules
-- `check_each(...)` applies nested rules to each array item
+- `checkEach(...)` applies nested rules to each array item
 - `noDuplicates()` rejects duplicate array values or duplicate keys when you provide a selector key
-- `is_true(...)` and `is_true_each(...)` add custom predicates
+- `isTrue(...)` and `isTrueEach(...)` add custom predicates
 - `file()` and `image()` create asynchronously initialized binary validators
 - `email()` and `url()` branch into specialized string validators
 

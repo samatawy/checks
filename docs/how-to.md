@@ -61,7 +61,7 @@ console.log(result.errors);
 
 ## Validate Array Items
 
-Use `check_each(...)` when each array item needs its own rules.
+Use `checkEach(...)` when each array item needs its own rules.
 
 ```ts
 import { ObjectCheck } from '@samatawy/checks';
@@ -72,7 +72,7 @@ const check = await ObjectCheck.for({
     { age: 20 }
   ]
 }).check(person => [
-  person.required('children').array().check_each(child => [
+  person.required('children').array().checkEach(child => [
     child.object(),
     child.required('name').string(),
     child.optional('age').number().atMost(17)
@@ -87,7 +87,7 @@ console.log(result.errors);
 
 ## Add A Custom Predicate
 
-Use `is_true(...)` when built-in checks are not enough.
+Use `isTrue(...)` when built-in checks are not enough.
 
 ```ts
 import { ObjectCheck } from '@samatawy/checks';
@@ -96,7 +96,7 @@ const check = await ObjectCheck.for({
   child_count: 1,
   children: [{ name: 'A' }, { name: 'B' }]
 }).check(person => [
-  person.is_true(data => (data.child_count || 0) === (data.children?.length || 0), {
+  person.isTrue(data => (data.child_count || 0) === (data.children?.length || 0), {
     warn: 'child_count should equal the number of children'
   })
 ]);
@@ -107,7 +107,7 @@ console.log(result.warnings);
 
 ## Use An Async Predicate
 
-`is_true(...)` also accepts asynchronous predicates.
+`isTrue(...)` also accepts asynchronous predicates.
 
 ```ts
 import { ObjectCheck } from '@samatawy/checks';
@@ -115,7 +115,7 @@ import { ObjectCheck } from '@samatawy/checks';
 const check = await ObjectCheck.for({
   photo: 'data:image/png;base64,...'
 }).check(person => [
-  person.is_true(async data => {
+  person.isTrue(async data => {
     return typeof data.photo === 'string' && data.photo.startsWith('data:image/');
   }, { err: 'Photo must be an image data URL' })
 ]);
@@ -217,4 +217,4 @@ Use this quick rule of thumb:
 - `person.required('name').string()` for required fields
 - `person.optional('photo').file()` for binary inputs
 - `person.optional('photo').image()` for image-specific checks
-- `is_true(...)` when the rule is custom or computed
+- `isTrue(...)` when the rule is custom or computed

@@ -177,7 +177,7 @@ ResultCatalog.global.register('children.minor', {
 const check = await ObjectCheck.for({
   children: [{ age: 26 }]
 }).check(person => [
-  person.optional('children').array().is_true_each(child => {
+  person.optional('children').array().isTrueEach(child => {
     if (child.age !== undefined && child.age >= 18) {
       return false;
     }

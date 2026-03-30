@@ -120,7 +120,7 @@ export class ArrayCheck implements Check {
         return this;
     }
 
-    protected async rules_each(i: number, field_checks: (Check | Promise<Check>)[]): Promise<this> {
+    protected async rulesEach(i: number, field_checks: (Check | Promise<Check>)[]): Promise<this> {
         const per_item: IResult[] = [];
 
         for (const field_check of field_checks) {
@@ -148,18 +148,18 @@ export class ArrayCheck implements Check {
         return this;
     }
 
-    public async check_each(func: (checker: ArrayItemCheck) => (Check | Promise<Check>)[]): Promise<this> {
+    public async checkEach(func: (checker: ArrayItemCheck) => (Check | Promise<Check>)[]): Promise<this> {
         if (this.is_array) {
             for (let i = 0; i < this.data.length; i++) {
                 const item_check = new ArrayItemCheck(i, this.data);
                 const field_checks = func(item_check);
-                await this.rules_each(i, field_checks);
+                await this.rulesEach(i, field_checks);
             }
         }
         return this;
     }
 
-    public async is_true(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<this> {
+    public async isTrue(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<this> {
         if (!this.has_value) return this;
 
         const result = func(this.data);
@@ -170,7 +170,7 @@ export class ArrayCheck implements Check {
         return this;
     }
 
-    public async is_true_each(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<this> {
+    public async isTrueEach(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<this> {
         if (!this.is_array) return this;
 
         for (let i = 0; i < this.data.length; i++) {
@@ -184,7 +184,7 @@ export class ArrayCheck implements Check {
                 this.out.valid = false;
             }
         }
-        console.debug('Completed is_true_each checks for array', this.out);
+        console.debug('Completed isTrueEach checks for array', this.out);
         return this;
     }
 

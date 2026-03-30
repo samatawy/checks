@@ -111,7 +111,7 @@ export class NumberCheck extends ValueCheck {
         return this;
     }
 
-    public non_negative(options?: CheckOptions): this {
+    public nonNegative(options?: CheckOptions): this {
         if (!this.valid_type) return this;
 
         if (this.value! < 0) {

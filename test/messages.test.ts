@@ -66,7 +66,7 @@ describe('global check message catalog', () => {
     const check = await ObjectCheck.for({
       children: [{ age: 26 }]
     }).check(person => [
-      person.optional('children').array().is_true_each(child => {
+      person.optional('children').array().isTrueEach(child => {
         if (child.age !== undefined && child.age >= 18) {
           return false;
         }
@@ -170,13 +170,13 @@ describe('global check message catalog', () => {
       ]
     }).check(person => [
       person.optional('children').array()
-        .check_each(child => [
+        .checkEach(child => [
           child.object(),
           child.required('name').string(),
           child.optional('age').number()
         ]),
       person.optional('children').array()
-        .is_true_each(child => {
+        .isTrueEach(child => {
           if (child.age !== undefined && child.age >= 18) {
             return false;
           }
@@ -260,19 +260,19 @@ describe('global check message catalog', () => {
         address.optional('zip').string().pattern(/^\d{5}(-\d{4})?$/)
       ]),
       person.optional('children').array().maxLength(10)
-        .check_each(child => [
+        .checkEach(child => [
           child.object(),
           child.required('name').string(),
           child.optional('age').number().greaterThan(0).atMost(150)
         ]),
       person.optional('children').array()
-        .is_true_each(child => {
+        .isTrueEach(child => {
           if (child.age !== undefined && child.age >= 18) {
             return false;
           }
           return true;
         }, { err: 'All children must be minors' }),
-      person.is_true(data => {
+      person.isTrue(data => {
         if ((data.child_count || 0) != (data.children?.length || 0)) return false;
         return true;
       }, { err: 'Child count should equal the number of children' })
@@ -285,7 +285,7 @@ describe('global check message catalog', () => {
     expect(result.errors.filter((entry: string) => entry === 'All children must be minors')).toHaveLength(1);
   });
 
-  it('does not duplicate child errors when a later root is_true returns the same object', async () => {
+  it('does not duplicate child errors when a later root isTrue returns the same object', async () => {
     const input = {
       name: 'Samh',
       salary: 1200,
@@ -313,23 +313,23 @@ describe('global check message catalog', () => {
         address.required('city').string()
       ]),
       person.optional('children').array().maxLength(10)
-        .check_each(child => [
+        .checkEach(child => [
           child.object(),
           child.required('name').string(),
           child.optional('age').number().greaterThan(0).atMost(150)
         ]),
       person.optional('children').array()
-        .is_true_each(child => {
+        .isTrueEach(child => {
           if (child.age !== undefined && child.age >= 18) {
             return false;
           }
           return true;
         }),
-      person.is_true(data => {
+      person.isTrue(data => {
         if ((data.child_count || 0) != (data.children?.length || 0)) return false;
         return true;
       }, { err: 'Child count should equal the number of children' }),
-      person.is_true(async data => {
+      person.isTrue(async data => {
         if (!data.photo) return true;
         return false;
       }, { err: 'Photo must be at least 5KB' })

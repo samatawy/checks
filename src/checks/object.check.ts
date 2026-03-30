@@ -138,7 +138,7 @@ export class ObjectCheck implements Check {
         return this;
     }
 
-    public async is_true(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<ObjectCheck> {
+    public async isTrue(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<ObjectCheck> {
         if (!this.has_value) return this;
 
         const result = func(this.data);

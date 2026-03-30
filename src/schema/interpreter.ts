@@ -357,7 +357,7 @@ async function applyArraySchema(
 
   if (Array.isArray(currentValue) && (schema.items || schema.itemRules?.length)) {
     let index = 0;
-    await check.check_each(() => {
+    await check.checkEach(() => {
       const itemIndex = index++;
       const itemValue = currentValue[itemIndex];
       const itemChecks: Array<Check | Promise<Check>> = [];
@@ -652,11 +652,11 @@ async function appendCustomRules(
   }
 
   const target = check as Check & {
-    is_true?: (func: (data: unknown) => boolean | Promise<boolean>, options?: CheckOptions) => Promise<Check>;
+    isTrue?: (func: (data: unknown) => boolean | Promise<boolean>, options?: CheckOptions) => Promise<Check>;
   };
 
-  if (!target.is_true) {
-    throw new Error('Custom schema rules require a check instance that supports is_true().');
+  if (!target.isTrue) {
+    throw new Error('Custom schema rules require a check instance that supports isTrue().');
   }
 
   for (const rule of rules) {
@@ -666,7 +666,7 @@ async function appendCustomRules(
       throw new Error(`Schema rule "${rule.use}" was not found in the rule registry.`);
     }
 
-    await target.is_true(
+    await target.isTrue(
       async () => evaluator(context.value, {
         ...context,
         args: rule.args,

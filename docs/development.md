@@ -51,8 +51,8 @@ When adding new checks:
 
 The package now mixes synchronous validators with async entry points.
 
-- `ObjectCheck.check()` and `ArrayCheck.check_each()` can consume promised checks
-- `ValueCheck.is_true()`, `ObjectCheck.is_true()`, and `ArrayCheck.is_true_each()` support async predicates
+- `ObjectCheck.check()` and `ArrayCheck.checkEach()` can consume promised checks
+- `ValueCheck.isTrue()`, `ObjectCheck.isTrue()`, and `ArrayCheck.isTrueEach()` support async predicates
 - `FieldCheck.file()` and `FieldCheck.image()` return promises because binary data must be loaded before validation
 
 When updating docs or examples, prefer `await` at the outer rule boundary and use `result(...)` for the final output shape after the awaited check chain resolves.
