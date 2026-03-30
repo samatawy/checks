@@ -14,7 +14,7 @@ export interface SingleResult {
 export interface ResultSet extends SingleResult {
 
     input?: any;
-    
+
     results?: IResult[];
 
     hints?: string[];
@@ -35,12 +35,28 @@ export interface CheckOptions {
     err?: string;
 }
 
+export interface TolerantCheckOptions extends CheckOptions {
+
+    tolerant?: boolean;
+}
+
 export interface StringCheckOptions extends CheckOptions {
 
     case?: 'sensitive' | 'insensitive';
 }
 
+export interface ResultOptions {
+
+    language?: string;
+
+    raw?: boolean;
+
+    nested?: boolean;
+
+    flattened?: boolean;
+}
+
 export interface Check {
 
-    result(): IResult;
+    result(options?: ResultOptions): IResult;
 }

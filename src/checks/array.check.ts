@@ -1,7 +1,8 @@
+import type { Check, CheckOptions, IResult, ResultSet, ResultOptions } from './types';
 import { ArrayItemCheck } from './array.item.check';
 import { defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
-import { collectResults, collectResultsFlat, collectResultsNested } from './helper.functions';
-import type { Check, CheckOptions, IResult, ResultSet } from './types';
+import { collectResults } from './helper.functions';
+
 
 export class ArrayCheck implements Check {
 
@@ -204,25 +205,17 @@ export class ArrayCheck implements Check {
         return this;
     }
 
-    public result(): IResult {
+    public result(options?: ResultOptions): IResult {
+        // ensure overall validity is false if any part is invalid
         for (const part of this.out.results || []) {
             if (!part.valid) {
                 this.out.valid = false;
                 break;
             }
         }
-        return this.out;
+
+        // format output based on options
+        return collectResults(this.data, this.out, options);
     }
 
-    public collect(): ResultSet {
-        return collectResults(this.data, this.out);
-    }
-
-    public collectFlat(): ResultSet {
-        return collectResultsFlat(this.out);
-    }
-
-    public collectNested(): ResultSet {
-        return collectResultsNested(this.data, this.out);
-    }
 }

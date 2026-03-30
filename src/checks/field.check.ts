@@ -1,4 +1,4 @@
-import type { CheckOptions } from './types';
+import type { CheckOptions, TolerantCheckOptions } from './types';
 import { appendError } from "./helper.functions";
 
 import { NumberCheck } from './number.check';
@@ -56,20 +56,37 @@ export class FieldCheck extends ValueCheck {
         return new UrlCheck(this.key, this.data).inherit(this.out);
     }
 
-    public number(): NumberCheck {
-        return new NumberCheck(this.key, this.data).inherit(this.out);
+    public number(options?: TolerantCheckOptions): NumberCheck {
+        return new NumberCheck(this.key, this.data, options).inherit(this.out);
     }
 
     public date(): DateCheck {
         return new DateCheck(this.key, this.data).inherit(this.out);
     }
 
-    public boolean(): FieldCheck {
+    public boolean(options?: TolerantCheckOptions): FieldCheck {
         if (!this.has_value) return this;
 
-        if (typeof this.data[this.key] !== 'boolean') {
-            this.out = appendError(this.out, `Field ${this.key} must be a boolean`);
+        const tolerant = options?.tolerant ?? false;
+        if (typeof this.data[this.key] === 'boolean') {
+            return this;
         }
+        else if (tolerant && typeof this.data[this.key] === 'string') {
+            const value = this.data[this.key].toLowerCase();
+            if (value === 'true' || value === 'false') {
+                this.data[this.key] = value === 'true';
+                return this;
+            } else {
+                this.out = appendError(this.out, `Field ${this.key} must be a boolean string ('true' or 'false')`, options);
+            }
+        }
+        else {
+            this.out = appendError(this.out, `Field ${this.key} must be a boolean`, options);
+        }
+
+        // if (typeof this.data[this.key] !== 'boolean') {
+        //     this.out = appendError(this.out, `Field ${this.key} must be a boolean`, options);
+        // }
         return this;
     }
 }

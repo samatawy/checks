@@ -1,8 +1,8 @@
+import type { Check, CheckOptions, IResult, ResultSet, ResultOptions } from './types';
 import { ArrayCheck } from './array.check';
 import { FieldCheck } from './field.check';
 import { defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
-import { collectResults, collectResultsFlat, collectResultsNested } from './helper.functions';
-import type { Check, CheckOptions, IResult, ResultSet } from './types';
+import { collectResults } from './helper.functions';
 
 export class ObjectCheck implements Check {
 
@@ -107,8 +107,6 @@ export class ObjectCheck implements Check {
             this.errorMessage(prefix + ` has extra fields: ${unknown_keys.join(', ')}`, options);
         }
         this.check_extra_fields = false;
-        // console.debug('Known keys:', this.known_keys);
-        // console.debug('Unknown keys:', unknown_keys);
         return this;
     }
 
@@ -169,34 +167,21 @@ export class ObjectCheck implements Check {
         return this;
     }
 
-    public result(): IResult {
+    public result(options?: ResultOptions): IResult {
+        // ensure overall validity is false if any part is invalid
         for (const part of this.out.results || []) {
             if (!part.valid) {
                 this.out.valid = false;
                 break;
             }
         }
-        return this.out;
-    }
-
-    public collect(): ResultSet {
+        // Check for extra fields if that option is enabled
         if (this.check_extra_fields) {
             this.checkExtraFields();
         }
-        return collectResults(this.data, this.out);
+
+        // format output based on options
+        return collectResults(this.data, this.out, options);
     }
 
-    public collectFlat(): ResultSet {
-        if (this.check_extra_fields) {
-            this.checkExtraFields();
-        }
-        return collectResultsFlat(this.out);
-    }
-
-    public collectNested(): ResultSet {
-        if (this.check_extra_fields) {
-            this.checkExtraFields();
-        }
-        return collectResultsNested(this.data, this.out);
-    }
 }

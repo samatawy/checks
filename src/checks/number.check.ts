@@ -1,4 +1,4 @@
-import type { CheckOptions } from './types';
+import type { CheckOptions, TolerantCheckOptions } from './types';
 import { ValueCheck } from './value.check';
 
 export class NumberCheck extends ValueCheck {
@@ -7,17 +7,40 @@ export class NumberCheck extends ValueCheck {
 
     protected value?: number;
 
-    constructor(key: string | number, data: any) {
+    constructor(key: string | number, data: any, options?: TolerantCheckOptions) {
         super(key, data);
 
         if (this.has_value) {
-            this.valid_type = typeof this.data[this.key] === 'number';
-            if (this.valid_type) {
+            const tolerant = options?.tolerant ?? false;
+            if (typeof this.data[this.key] === 'number') {
+                // Valid number
+                this.valid_type = true;
                 this.value = this.data[this.key];
             }
-            else {
-                this.errorMessage(`Field ${this.key} must be a number`);
+            else if (tolerant && typeof this.data[this.key] === 'string') {
+                // Accept string that can be parsed as number
+                const parsed = parseFloat(this.data[this.key]);
+                if (isNaN(parsed)) {
+                    this.valid_type = false;
+                    this.errorMessage(`Field ${this.key} must be a number`, options);
+                } else {
+                    this.valid_type = true;
+                    this.value = parsed;
+                    this.data[this.key] = parsed; // Update the original data with the parsed number
+                }
+            } else {
+                // Only numbers and parseable string allowed
+                this.valid_type = false;
+                this.errorMessage(`Field ${this.key} must be a number`, options);
             }
+
+            // this.valid_type = typeof this.data[this.key] === 'number';
+            // if (this.valid_type) {
+            //     this.value = this.data[this.key];
+            // }
+            // else {
+            //     this.errorMessage(`Field ${this.key} must be a number`);
+            // }
         } else {
             this.valid_type = false;
         }
@@ -48,14 +71,14 @@ export class NumberCheck extends ValueCheck {
         return this;
     }
 
-    public float(options?: CheckOptions): this {
-        if (!this.valid_type) return this;
+    // public float(): this {
+    //     if (!this.valid_type) return this;
 
-        if (typeof this.value === 'number' && !Number.isInteger(this.value)) {
-            this.errorMessage(`Field ${this.key} must be a float`, options);
-        }
-        return this;
-    }
+    //     if (typeof this.value === 'number' && !Number.isInteger(this.value)) {
+    //         this.errorMessage(`Field ${this.key} must be a float`, options);
+    //     }
+    //     return this;
+    // }
 
     public minPrecision(decimalPlaces: number, options?: CheckOptions): this {
         if (!this.valid_type) return this;
