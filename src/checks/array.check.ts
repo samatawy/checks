@@ -103,11 +103,7 @@ export class ArrayCheck implements Check {
             const check = isPromise(field_check) ? await field_check : field_check;
             const found = check.result();
 
-            if (found.hint || found.warn || found.err) {
-                this.out.results = this.out.results || [];
-                this.out.results.push(found);
-            }
-            if ((found as ResultSet).results?.length) {
+            if (found.hint || found.warn || found.err || (found as ResultSet).results?.length) {
                 this.out.results = this.out.results || [];
                 this.out.results.push(found);
             }
@@ -188,6 +184,7 @@ export class ArrayCheck implements Check {
                 this.out.valid = false;
             }
         }
+        console.debug('Completed is_true_each checks for array', this.out);
         return this;
     }
 
@@ -212,6 +209,10 @@ export class ArrayCheck implements Check {
                 this.out.valid = false;
                 break;
             }
+        }
+
+        if (!options || Object.keys(options).length === 0) {
+            return this.out;
         }
 
         // format output based on options

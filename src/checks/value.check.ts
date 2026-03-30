@@ -1,5 +1,5 @@
-import { buildErrorMessage, appendError, defined, isPromise } from './helper.functions';
-import type { Check, CheckOptions, IResult } from './types';
+import { appendError, defined, finalizeResult, isPromise } from './helper.functions';
+import type { Check, CheckOptions, IResult, ResultOptions } from './types';
 
 export abstract class ValueCheck implements Check {
 
@@ -67,10 +67,13 @@ export abstract class ValueCheck implements Check {
         this.out = appendError(this.out, err, options);
     }
 
-    public result(): IResult {
+    public result(options?: ResultOptions): IResult {
         if (Object.keys(this.out).length === 0) {
             return { valid: true };
         }
-        return this.out;
+        if (!options || Object.keys(options).length === 0) {
+            return this.out;
+        }
+        return finalizeResult(this.out, options);
     }
 }

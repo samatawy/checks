@@ -1,4 +1,9 @@
+import { ResultCatalog } from '../i18n/result.catalog';
 import type { CheckOptions, SingleResult, ResultSet, IResult, ResultOptions } from './types';
+
+const baseTextKey = Symbol('baseText');
+
+type BaseTextSnapshot = Partial<Pick<SingleResult, 'hint' | 'warn' | 'err'>>;
 
 export function defined<T>(value: T | null | undefined): value is NonNullable<T> {
     return value !== null && value !== undefined;
@@ -11,61 +16,251 @@ export function isPromise(value: any): value is Promise<any> {
     && typeof value.catch === 'function';
 }
 
+function toArray(value?: string | string[]): string[] {
+    if (!defined(value)) {
+        return [];
+    }
+
+    return Array.isArray(value) ? [...value] : [value];
+}
+
+function appendValue(data: any, key: 'hint' | 'warn' | 'err', value: string | string[]): any {
+    const values = toArray(value);
+    if (values.length === 0) {
+        return data;
+    }
+
+    const found = data[key];
+    if (!found) {
+        data[key] = values.length === 1 ? values[0] : values;
+        return data;
+    }
+
+    const merged = toArray(found);
+    merged.push(...values);
+    data[key] = merged.length === 1 ? merged[0] : merged;
+    return data;
+}
+
+function setBaseText(target: IResult | SingleResult, base: BaseTextSnapshot): void {
+    const current = getBaseText(target);
+    (target as any)[baseTextKey] = { ...current, ...base };
+}
+
+function getBaseText(source: IResult | SingleResult): BaseTextSnapshot {
+    return ((source as any)[baseTextKey] ?? {}) as BaseTextSnapshot;
+}
+
+function clearBaseText<T extends IResult>(source: T): T {
+    delete (source as any)[baseTextKey];
+
+    if (Object.prototype.hasOwnProperty.call(source, 'results')) {
+        const set = source as ResultSet;
+        if (set.results?.length) {
+            set.results = set.results.map(child => clearBaseText(child));
+        }
+    }
+
+    return source;
+}
+
+function resolveCatalog(options?: CheckOptions | ResultOptions) {
+    return options?.catalog ?? ResultCatalog.global;
+}
+
+function resolveDefaultLevel(options?: CheckOptions): 'hint' | 'warn' | 'err' {
+    if (defined(options?.code)) {
+        const definition = resolveCatalog(options).getDefinition(options.code);
+
+        if (definition?.err) return 'err';
+        if (definition?.warn) return 'warn';
+        if (definition?.hint) return 'hint';
+    }
+
+    return 'err';
+}
+
+function resolveCodeResult(defaultText: string, options?: CheckOptions): SingleResult | undefined {
+    if (!defined(options?.code)) {
+        return undefined;
+    }
+
+    const definition = resolveCatalog(options).getDefinition(options.code);
+    if (!definition) {
+        return undefined;
+    }
+
+    const result: SingleResult = {
+        valid: !definition.err,
+        code: options.code,
+    };
+
+    if (definition.hint) {
+        result.hint = defaultText;
+    }
+    if (definition.warn) {
+        result.warn = defaultText;
+    }
+    if (definition.err) {
+        result.err = defaultText;
+    }
+
+    setBaseText(result, {
+        hint: result.hint,
+        warn: result.warn,
+        err: result.err,
+    });
+
+    return result;
+}
+
 export function buildErrorMessage(err: string, options?: CheckOptions): SingleResult {
-    let result: SingleResult = { valid: false };
+    let result: SingleResult = { valid: true };
 
-    if (!options) return { valid: false, err: err };
+    if (defined(options?.code)) {
+        result.code = options.code;
+    }
 
-    if (err && (options.hint || options.warn)) {
-        if (options.hint) appendString(result, 'hint', options.hint);
-        if (options.warn) appendString(result, 'warn', options.warn);
-        if (options.err) appendString(result, 'err', options.err);
-        result.valid = !options.err;
+    if (!options) {
+        result.err = err;
+        result.valid = false;
         return result;
     }
 
-    if (err) {
-        result.err = options.err || err;
-        result.valid = false;
+    if (options.hint) appendValue(result, 'hint', options.hint);
+    if (options.warn) appendValue(result, 'warn', options.warn);
+    if (options.err) appendValue(result, 'err', options.err);
+
+    if (result.hint || result.warn || result.err) {
+        setBaseText(result, {
+            hint: result.hint,
+            warn: result.warn,
+            err: result.err,
+        });
+        result.valid = !defined(result.err);
+        return result;
     }
+
+    const coded = resolveCodeResult(err, options);
+    if (coded) {
+        const merged = { ...result, ...coded } as SingleResult;
+        setBaseText(merged, getBaseText(coded));
+        return merged;
+    }
+
+    appendValue(result, resolveDefaultLevel(options), err);
+    setBaseText(result, {
+        hint: result.hint,
+        warn: result.warn,
+        err: result.err,
+    });
+    result.valid = resolveDefaultLevel(options) !== 'err';
     return result;
 }
 
 export function appendError(result: IResult, err: string, options?: CheckOptions): IResult {
     result = result || { valid: true };
 
-    if (!options) return { ...result, ...{ valid: false, err: err } };
+    if (defined(options?.code)) {
+        result.code = options.code;
+    }
 
-    if (err && (options.hint || options.warn)) {
-        if (options.hint) result = appendString(result, 'hint', options.hint);
-        if (options.warn) result = appendString(result, 'warn', options.warn);
-        if (options.err) result = appendString(result, 'err', options.err);
-        result.valid = !options.err;
+    if (!options) {
+        result = appendValue(result, 'err', err);
+        result.valid = false;
         return result;
     }
 
-    if (err) {
-        result = appendString(result, 'err', options?.err || err);
-        result.valid = false;
+    let appended = false;
+
+    if (options.hint) {
+        result = appendValue(result, 'hint', options.hint);
+        appended = true;
     }
+    if (options.warn) {
+        result = appendValue(result, 'warn', options.warn);
+        appended = true;
+    }
+    if (options.err) {
+        result = appendValue(result, 'err', options.err);
+        result.valid = false;
+        appended = true;
+    }
+
+    if (appended) {
+        setBaseText(result, {
+            hint: result.hint,
+            warn: result.warn,
+            err: result.err,
+        });
+        if (!options.err) {
+            result.valid = result.valid ?? true;
+        }
+        return result;
+    }
+
+    const coded = resolveCodeResult(err, options);
+    if (coded) {
+        if (coded.hint) result = appendValue(result, 'hint', coded.hint);
+        if (coded.warn) result = appendValue(result, 'warn', coded.warn);
+        if (coded.err) result = appendValue(result, 'err', coded.err);
+        setBaseText(result, getBaseText(coded));
+        result.valid = coded.valid;
+        return result;
+    }
+
+    const level = resolveDefaultLevel(options);
+    result = appendValue(result, level, err);
+    setBaseText(result, {
+        hint: result.hint,
+        warn: result.warn,
+        err: result.err,
+    });
+    result.valid = level !== 'err';
     return result;
 }
 
-function appendString(data: any, key: string, value: string | string[]): any {
-    let found = data[key];
-    if (!found) {
-        data[key] = value;
-        return data;
+function materializeResult(result: IResult, options?: ResultOptions): IResult {
+    const next: IResult = { ...result };
+    if (defined(result.code)) {
+        const base = getBaseText(result);
+        const translated = resolveCatalog(options).getResult(result.code, options?.language);
+        if (translated) {
+            delete next.hint;
+            delete next.warn;
+            delete next.err;
+
+            if (defined(translated.hint) && translated.hint !== '') next.hint = translated.hint;
+            else if (defined(base.hint)) next.hint = base.hint;
+
+            if (defined(translated.warn) && translated.warn !== '') next.warn = translated.warn;
+            else if (defined(base.warn)) next.warn = base.warn;
+
+            if (defined(translated.err) && translated.err !== '') next.err = translated.err;
+            else if (defined(base.err)) next.err = base.err;
+
+            next.valid = translated.valid;
+            next.code = translated.code;
+            setBaseText(next, base);
+        }
+    } else {
+        if (defined(result.hint)) next.hint = Array.isArray(result.hint) ? [...result.hint] : result.hint;
+        if (defined(result.warn)) next.warn = Array.isArray(result.warn) ? [...result.warn] : result.warn;
+        if (defined(result.err)) next.err = Array.isArray(result.err) ? [...result.err] : result.err;
     }
 
-    if (typeof found === 'string') {
-        data[key] = [found, value ];
-    } else if (Array.isArray(found)) {
-        found.push(value);
-    } else {
-        console.debug('Noop for ', key, ' with value:', value, ' in data:', data);
+    if (Object.prototype.hasOwnProperty.call(result, 'results')) {
+        const nested = result as ResultSet;
+        const materialized = nested.results?.map(child => materializeResult(child, options)) ?? [];
+
+        if (materialized.length > 0) {
+            (next as ResultSet).results = materialized;
+        } else {
+            delete (next as ResultSet).results;
+        }
     }
-    return data;
+
+    return next;
 }
 
 function extractMessages(set: ResultSet): ResultSet {
@@ -82,7 +277,7 @@ function extractMessages(set: ResultSet): ResultSet {
         if (child.warn) Array.isArray(child.warn) ? warnings.push(...child.warn) : warnings.push(child.warn);
         if (child.err) Array.isArray(child.err) ? errors.push(...child.err) : errors.push(child.err);
 
-        if (Object.prototype.hasOwnProperty.call(child, 'results')) {
+        if ((child as ResultSet).results?.length) {
             let childset = extractMessages(child as ResultSet);
 
             hints.push(...childset.hints || []);
@@ -120,6 +315,9 @@ function nestFields(source: any, set: ResultSet): any {
         atRoot.valid = false;
         atRoot.err = set.err;
     }
+    if (defined(set.code)) {
+        atRoot.code = set.code;
+    }
     if (Object.keys(atRoot).length) {
         unnamedResults.push(atRoot);
     }
@@ -137,21 +335,25 @@ function nestFields(source: any, set: ResultSet): any {
         existing.valid = existing.valid !== false ? child.valid : false;
 
         if (child.hint) {
-            existing.hint = existing.hint ? (Array.isArray(existing.hint) ? [...existing.hint, child.hint] : [existing.hint, child.hint]) : child.hint;
+            appendValue(existing, 'hint', child.hint);
         }
 
         if (child.warn) {
-            existing.warn = existing.warn ? (Array.isArray(existing.warn) ? [...existing.warn, child.warn] : [existing.warn, child.warn]) : child.warn;
+            appendValue(existing, 'warn', child.warn);
         }
 
         if (child.err) {
-            existing.err = existing.err ? (Array.isArray(existing.err) ? [...existing.err, child.err] : [existing.err, child.err]) : child.err;
+            appendValue(existing, 'err', child.err);
+        }
+
+        if (defined(child.code) && !defined(existing.code)) {
+            existing.code = child.code;
         }
 
         const childResults = (child as ResultSet).results;
         // Nest child results recursively using the relevant portion of the source data
         // For nested fields, we can use the child.field to access the corresponding source value for that field
-        if (childResults) {
+        if (childResults?.length) {
             existing.results = nestFields(source[child.field], child as ResultSet);
             // console.debug('Nested results for field', child.field, ':', child);
         }
@@ -194,21 +396,25 @@ function mergeFields(set: ResultSet): ResultSet {
         let merged: IResult = existing;
 
         if (child.hint) {
-            merged = appendString(merged, 'hint', child.hint);
+            merged = appendValue(merged, 'hint', child.hint);
         }
 
         if (child.warn) {
-            merged = appendString(merged, 'warn', child.warn);
+            merged = appendValue(merged, 'warn', child.warn);
         }
 
         if (child.err) {
-            merged = appendString(merged, 'err', child.err);
+            merged = appendValue(merged, 'err', child.err);
+        }
+
+        if (defined(child.code) && !defined(merged.code)) {
+            merged.code = child.code;
         }
 
         const childResults = (child as ResultSet).results;
-        if (childResults) {
+        if (childResults?.length) {
             const mergedSet = merged as ResultSet;
-            const mergedResults = mergedSet.results ?? [];
+            const mergedResults = mergedSet.results ? [...mergedSet.results] : [];
 
             mergedResults.push(...childResults);
             mergedSet.results = mergedResults;
@@ -220,18 +426,28 @@ function mergeFields(set: ResultSet): ResultSet {
     let mergedResults: ResultSet[] = Object.values(fieldMap);
     mergedResults.push(...unnamedResults);
 
-    let result: ResultSet = { ...set, ...{ valid: set.valid, results: mergedResults } };
+    let result: ResultSet = { ...set, ...{ valid: set.valid } };
+    if (mergedResults.length) {
+        result.results = mergedResults;
+    } else {
+        delete result.results;
+    }
     // if (set.hint) result.hints = set.hints;
     // if (set.warn) result.warnings = set.warnings;
     // if (set.err) result.errors = set.errors;
     return result;
 }
 
+export function finalizeResult(out: IResult, options?: ResultOptions): IResult {
+    return clearBaseText(materializeResult(out, options));
+}
+
 export function collectResults(input: any, out: ResultSet, options?: ResultOptions): ResultSet {
-    const merged = mergeFields(out);
+    const merged = finalizeResult(mergeFields(out), options) as ResultSet;
+    const formatOnly = options?.raw || options?.nested || options?.flattened;
 
     let final: any = {};
-    if (!options || Object.keys(options).length === 0) {
+    if (!options || Object.keys(options).length === 0 || !formatOnly) {
         final = { ...merged };
     } else {
         if (options.raw) final = { ...final, raw: merged };

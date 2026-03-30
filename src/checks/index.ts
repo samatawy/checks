@@ -11,14 +11,27 @@ export { UrlCheck } from './url.check';
 export { ValueCheck } from './value.check';
 export { FileCheck } from './file.check';
 export { ImageCheck } from './image.check';
+// export { ResultCatalog } from '../i18n/result.catalog';
 
 export type {
     Check,
+    // CheckMessageCatalog,
+    // CheckMessageDefinition,
+    // CheckMessageLevelDefinition,
     CheckOptions,
     IResult,
+    // MessageCode,
+    // MessageLevel,
+    // MultiCheckMessageDefinition,
+    // ResultMessage,
     ResultSet,
+    // SingleCheckMessageDefinition,
     SingleResult,
     StringCheckOptions,
+    TolerantCheckOptions,
+    ResultCode,
+    ResultCodeDefinition,
+    IResultCatalog,
 } from './types';
 
 // export {

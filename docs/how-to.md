@@ -2,11 +2,7 @@
 
 This guide covers common tasks you are likely to perform with the validation API.
 
-Each example includes:
-
-- the import statement
-- a complete usage snippet
-- a sample output shape
+Each example includes the import statement, a complete usage snippet, and the preferred `result(...)` call for the scenario.
 
 ## Install The Right Dependencies
 
@@ -22,15 +18,9 @@ For file and image validation:
 npm install @samatawy/checks file-type probe-image-size
 ```
 
-Why there are two install paths:
-
-- `file-type` and `probe-image-size` are optional peer dependencies
-- they are only needed for binary inspection features
-- many consumers will never use `file()` or `image()`
-
 ## Validate A Simple Object
 
-Use `ObjectCheck` when you want to validate a plain object and collect a final result.
+Use `ObjectCheck` when you want to validate a plain object and return the merged nested result tree.
 
 ```ts
 import { ObjectCheck } from '@samatawy/checks';
@@ -43,17 +33,8 @@ const check = await ObjectCheck.for({
   person.optional('age').number().atLeast(18)
 ]);
 
-const result = check.collect();
+const result = check.result({ language: 'en' });
 console.log(result);
-```
-
-Sample output:
-
-```json
-{
-  "valid": true,
-  "results": []
-}
 ```
 
 ## Require Nested Object Fields
@@ -74,32 +55,8 @@ const check = await ObjectCheck.for({
   ])
 ]);
 
-const result = check.collect();
-console.log(result);
-```
-
-Sample output:
-
-```json
-{
-  "valid": false,
-  "results": [
-    {
-      "field": "address",
-      "valid": false,
-      "results": [
-        {
-          "field": "street",
-          "valid": false,
-          "err": "Field street is required"
-        }
-      ]
-    }
-  ],
-  "errors": [
-    "Field street is required"
-  ]
-}
+const result = check.result({ flattened: true, language: 'en' });
+console.log(result.errors);
 ```
 
 ## Validate Array Items
@@ -122,20 +79,10 @@ const check = await ObjectCheck.for({
   ])
 ]);
 
-const result = check.collect();
-console.log(result);
-```
+const result = check.result({ raw: true, flattened: true, language: 'en' }) as any;
 
-Sample output:
-
-```json
-{
-  "valid": false,
-  "errors": [
-    "Field 1.name is required",
-    "Field 1.age must be a number at most 17"
-  ]
-}
+console.log(result.raw.results);
+console.log(result.errors);
 ```
 
 ## Add A Custom Predicate
@@ -154,19 +101,8 @@ const check = await ObjectCheck.for({
   })
 ]);
 
-const result = check.collect();
-console.log(result);
-```
-
-Sample output:
-
-```json
-{
-  "valid": true,
-  "warnings": [
-    "child_count should equal the number of children"
-  ]
-}
+const result = check.result({ flattened: true, language: 'en' });
+console.log(result.warnings);
 ```
 
 ## Use An Async Predicate
@@ -184,19 +120,8 @@ const check = await ObjectCheck.for({
   }, { err: 'Photo must be an image data URL' })
 ]);
 
-const result = check.collect();
-console.log(result);
-```
-
-Sample output:
-
-```json
-{
-  "valid": false,
-  "errors": [
-    "Photo must be an image data URL"
-  ]
-}
+const result = check.result({ flattened: true, language: 'en' });
+console.log(result.errors);
 ```
 
 ## Validate File Size And MIME Type
@@ -217,19 +142,8 @@ const check = await ObjectCheck.for({
   )
 ]);
 
-const result = check.collect();
-console.log(result);
-```
-
-Sample output:
-
-```json
-{
-  "valid": false,
-  "errors": [
-    "Field avatar must be at least 5120 bytes"
-  ]
-}
+const result = check.result({ flattened: true, language: 'en' });
+console.log(result.errors);
 ```
 
 ## Validate Image Dimensions
@@ -251,24 +165,13 @@ const check = await ObjectCheck.for({
   )
 ]);
 
-const result = check.collect();
-console.log(result);
-```
-
-Sample output:
-
-```json
-{
-  "valid": false,
-  "errors": [
-    "Field photo must be at least 200 pixels wide"
-  ]
-}
+const result = check.result({ flattened: true, language: 'en' });
+console.log(result.errors);
 ```
 
 ## Choose A Result Shape
 
-Use the collection method that matches how you want to consume validation output.
+Use `result(options?)` to select the output you want.
 
 ```ts
 import { ObjectCheck } from '@samatawy/checks';
@@ -281,36 +184,29 @@ const check = await ObjectCheck.for({
   input.required('tags').array().notEmpty()
 ]);
 
-console.log(check.collect());
-console.log(check.collectFlat());
-console.log(check.collectNested());
+console.log(check.result({ language: 'en' }));
+console.log(check.result({ flattened: true, language: 'en' }));
+console.log(check.result({ nested: true, language: 'en' }));
+console.log(check.result({ raw: true, nested: true, flattened: true, language: 'en' }));
 ```
 
-Sample output:
+Use these options as a rule of thumb:
 
-```json
-{
-  "collect": {
-    "valid": false,
-    "results": [
-      {
-        "field": "profile",
-        "valid": false,
-        "err": "Field profile must not be empty"
-      },
-      {
-        "field": "tags",
-        "valid": false,
-        "err": "Field tags must not be empty"
-      }
-    ],
-    "errors": [
-      "Field profile must not be empty",
-      "Field tags must not be empty"
-    ]
-  }
-}
-```
+- `language` for the merged nested result tree
+- `flattened: true` when you only need message arrays such as `errors`
+- `nested: true` when you want an input-shaped projection under `input`
+- `raw: true` when you also want the merged internal result tree exposed under `raw`
+
+## Use Coded Results Only When Needed
+
+If you need stable codes and translation catalogs, read [coded-results.md](coded-results.md).
+
+That page covers:
+
+- `ResultCatalog.global`
+- separate `ResultCatalog` instances
+- `code` on results
+- fallback behavior when a translation is missing
 
 ## Pick The Right Entry Point
 

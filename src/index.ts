@@ -11,4 +11,5 @@
 // }
 
 export * from './checks';
+export * from './i18n';
 export * from './schema';

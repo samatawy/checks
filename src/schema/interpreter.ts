@@ -122,8 +122,8 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return defined(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isRuleEnvelope(value: unknown): value is { value?: unknown; hint?: unknown; warn?: unknown; err?: unknown } {
-  return isPlainObject(value) && ('value' in value || 'hint' in value || 'warn' in value || 'err' in value);
+function isRuleEnvelope(value: unknown): value is { value?: unknown; hint?: unknown; warn?: unknown; err?: unknown; code?: unknown } {
+  return isPlainObject(value) && ('value' in value || 'hint' in value || 'warn' in value || 'err' in value || 'code' in value);
 }
 
 function normalizeFlag(rule: RuleFlag | undefined): NormalizedRuleFlag | null {
@@ -140,6 +140,7 @@ function normalizeFlag(rule: RuleFlag | undefined): NormalizedRuleFlag | null {
     hint: rule.hint,
     warn: rule.warn,
     err: rule.err,
+    code: rule.code as CheckOptions['code'],
   };
 }
 
@@ -154,7 +155,8 @@ function normalizeValue<T>(rule: RuleValue<T> | undefined): NormalizedRuleValue<
       value: rule.value as T,
       hint: rule.hint as CheckOptions['hint'],
       warn: rule.warn as CheckOptions['warn'],
-      err: rule.err as string | undefined,
+      err: rule.err as CheckOptions['err'],
+      code: rule.code as CheckOptions['code'],
     };
   }
 
@@ -169,7 +171,7 @@ function toCheckOptions(rule: CheckOptions | null | undefined): CheckOptions | u
     return undefined;
   }
 
-  if (!defined(rule.hint) && !defined(rule.warn) && !defined(rule.err)) {
+  if (!defined(rule.hint) && !defined(rule.warn) && !defined(rule.err) && !defined(rule.code)) {
     return undefined;
   }
 
@@ -177,6 +179,7 @@ function toCheckOptions(rule: CheckOptions | null | undefined): CheckOptions | u
     hint: rule.hint,
     warn: rule.warn,
     err: rule.err,
+    code: rule.code,
   };
 }
 

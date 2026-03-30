@@ -111,6 +111,15 @@ export class NumberCheck extends ValueCheck {
         return this;
     }
 
+    public non_negative(options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        if (this.value! < 0) {
+            this.errorMessage(`Field ${this.key} must not be a negative number`, options);
+        }
+        return this;
+    }
+
     public roundUp(options?: CheckOptions): this {
         if (!this.valid_type) return this;
 

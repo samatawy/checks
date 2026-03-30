@@ -121,11 +121,7 @@ export class ObjectCheck implements Check {
                 break;
             }
 
-            if (found.hint || found.warn || found.err) {
-                this.out.results = this.out.results || [];
-                this.out.results.push(found);
-            }
-            if ((found as ResultSet).results?.length) {
+            if (found.hint || found.warn || found.err || (found as ResultSet).results?.length) {
                 this.out.results = this.out.results || [];
                 this.out.results.push(found);
             }
@@ -178,6 +174,10 @@ export class ObjectCheck implements Check {
         // Check for extra fields if that option is enabled
         if (this.check_extra_fields) {
             this.checkExtraFields();
+        }
+
+        if (!options || Object.keys(options).length === 0) {
+            return this.out;
         }
 
         // format output based on options

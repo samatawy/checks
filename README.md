@@ -2,7 +2,28 @@
 
 TypeScript validation utilities for fluent object, array, field, string, number, date, file, and image checks.
 
-The package builds to both ESM and CommonJS, ships declaration files, and exposes a validation DSL that supports both synchronous and asynchronous rules.
+The package builds to both ESM and CommonJS, ships declaration files, and supports both synchronous and asynchronous validation flows.
+
+## Documentation
+
+- [docs/index.md](docs/index.md)
+- [docs/checks.md](docs/checks.md)
+- [docs/how-to.md](docs/how-to.md)
+- [docs/coded-results.md](docs/coded-results.md)
+- [docs/development.md](docs/development.md)
+- [docs/publishing.md](docs/publishing.md)
+
+## Where It Fits
+
+This package is a good fit when validation is part of application logic instead of a one-off form helper.
+
+Typical uses:
+
+- data ingestion pipelines that need to validate imported records before persistence
+- data quality audits that need both nested findings and flattened issue lists
+- API boundary validation for request payloads, events, or jobs
+- admin or back-office tooling that needs warnings and hints, not just hard failures
+- file and image intake flows that need MIME, size, or dimension checks
 
 ## Installation
 
@@ -12,11 +33,7 @@ npm install @samatawy/checks
 
 ### Optional peer dependencies
 
-The core object, array, string, number, and date validators work with just:
-
-```bash
-npm install @samatawy/checks
-```
+The core object, array, string, number, and date validators work with just the main package.
 
 If you use `FileCheck`, `ImageCheck`, `field.file()`, or `field.image()`, also install the binary inspection peer dependencies:
 
@@ -28,9 +45,9 @@ Why these are optional:
 
 - `file-type` is used to detect MIME types from file buffers
 - `probe-image-size` is used for image metadata in Node runtimes
-- browser image dimension checks can also use browser-native APIs, so these packages are not required for every consumer
+- browser image dimension checks can also use browser-native APIs
 
-## Quick start
+## Quick Start
 
 ```ts
 import { ObjectCheck } from '@samatawy/checks';
@@ -51,18 +68,46 @@ const check = await ObjectCheck.for({
     ])
   ]);
 
-const result = check.collect();
+const result = check.result({ language: 'en' });
 
 if (!result.valid) {
-  console.error(result.errors);
+  console.error(result.results);
 }
 ```
 
-`check`, `rules`, `is_true`, `check_each`, `is_true_each`, `file`, and `image` may all be async depending on which validators you use, so `await` at the rule boundary is the safe default.
+`check`, `is_true`, `check_each`, `is_true_each`, `file`, and `image` may all become async depending on the validators you use, so `await` at the outer rule boundary is the safe default.
+
+## Getting Results
+
+The package now uses `result(options?)` as the main output API.
+
+For object and array checks:
+
+- `result({ language })` returns the merged nested result tree
+- `result({ flattened: true, language })` returns flattened `hints`, `warnings`, and `errors`
+- `result({ nested: true, language })` returns an input-shaped projection under `input`
+- `result({ raw: true, nested: true, flattened: true, language })` returns all projections at once
+
+For value-level checks such as `FieldCheck`, `StringCheck`, or `NumberCheck`, `result({ language })` returns the finalized single result.
+
+Example:
+
+```ts
+const output = check.result({
+  raw: true,
+  nested: true,
+  flattened: true,
+  language: 'en'
+});
+
+console.log(output.raw);
+console.log(output.input);
+console.log(output.errors);
+```
+
+Use `result()` with no options when you want the current internal result state while building advanced flows. For application-facing output, prefer explicit result options.
 
 ## Public API
-
-### Entry points
 
 Everything is exported from the package root in [src/index.ts](src/index.ts).
 
@@ -81,66 +126,53 @@ Everything is exported from the package root in [src/index.ts](src/index.ts).
 - `ImageCheck`
 - `ValueCheck`
 
-### Shared types
+### Result and option types
 
 - `Check`
 - `CheckOptions`
 - `StringCheckOptions`
+- `TolerantCheckOptions`
+- `IResult`
 - `SingleResult`
 - `ResultSet`
-- `IResult`
+- `ResultCode`
+- `ResultCodeDefinition`
+- `IResultCatalog`
 
-## Validation model
+### Catalog exports
 
-The API is designed around fluent checks that accumulate validation output.
+- `ResultCatalog`
+- `ResultCatalog.global`
+
+## Validation Model
+
+The fluent API accumulates validation output while you compose rules.
 
 - `required(name)` asserts that a field exists
 - `optional(name)` starts a field check without requiring presence
 - `conditional(name, condition)` requires a field only when another condition is met
-- `noExtraFields()` rejects undeclared object keys when collecting results
-- `check(...)` applies nested object rules
-- `check(...)` on arrays applies array-level rules and nested synthetic results
-- `check_each(...)` applies nested array item rules
+- `noExtraFields()` rejects undeclared object keys in final object results
+- `check(...)` applies nested object or array rules
+- `check_each(...)` applies nested rules to each array item
 - `noDuplicates()` rejects duplicate array values or duplicate keys when you provide a selector key
-- `is_true(...)` and `is_true_each(...)` let you add custom predicates
+- `is_true(...)` and `is_true_each(...)` add custom predicates
 - `file()` and `image()` create asynchronously initialized binary validators
-- `email()` and `url()` are available from both `FieldCheck` and `StringCheck` and branch into protocol-specific validators
-- `trim()`, `integer()`, `positive()`, `isBase64()`, and related helpers support common string and number validation tasks
-- `result()` returns the immediate result state
-- `collect()` returns nested results with flattened `hints`, `warnings`, and `errors`
-- `collectFlat()` returns a flattened result structure only
-- `collectNested()` returns a nested result structure that mirrors the input shape
+- `email()` and `url()` branch into specialized string validators
 
 String-related inheritance:
 
-- `StringCheck`, `EmailCheck`, and `UrlCheck` share the common string comparison methods through an internal `StringBaseCheck`
-- those inherited methods are available on the exported concrete classes; `StringBaseCheck` itself is internal and is not required for consumers
+- `StringCheck`, `EmailCheck`, and `UrlCheck` share common string comparison methods through the internal `StringBaseCheck`
+- `StringBaseCheck` itself is not part of the public API
 
-Example with warnings and nested arrays:
+## Coded Results
 
-```ts
-import { ObjectCheck } from '@samatawy/checks';
+Stable result codes and translated output are supported, but they are optional. If you just need direct inline messages, you can ignore that layer entirely.
 
-const check = await ObjectCheck.for({
-  child_count: 2,
-  children: [{ name: 'A', age: 10 }, { name: 'B', age: 19 }]
-})
-  .check(person => [
-    person.optional('children').array().maxLength(10)
-      .check_each(child => [
-        child.object(),
-        child.required('name').string(),
-        child.optional('age').number().greaterThan(0).atMost(17)
-      ]),
-    person.is_true(data => (data.child_count || 0) === (data.children?.length || 0), {
-      warn: 'child_count should equal the number of children'
-    })
-  ]);
+The dedicated guide is here:
 
-const result = check.collect();
-```
+- [docs/coded-results.md](docs/coded-results.md)
 
-Example with files and images:
+## File And Image Validation
 
 ```ts
 import { ObjectCheck } from '@samatawy/checks';
@@ -161,33 +193,7 @@ const check = await ObjectCheck.for(input).check(person => [
   )
 ]);
 
-const result = check.collect();
-```
-
-## Result shapes
-
-`SingleResult` represents a single validation outcome.
-
-```ts
-interface SingleResult {
-  valid: boolean;
-  field?: string | number | null | undefined;
-  hint?: string | string[];
-  warn?: string | string[];
-  err?: string;
-}
-```
-
-`ResultSet` extends that model with nested `results` plus flattened `hints`, `warnings`, and `errors` arrays.
-
-`CheckOptions` supports either a single hint/warn string or an array of messages:
-
-```ts
-interface CheckOptions {
-  hint?: string | string[];
-  warn?: string | string[];
-  err?: string;
-}
+const result = check.result({ flattened: true, language: 'en' });
 ```
 
 ## Development
@@ -208,14 +214,6 @@ Useful scripts:
 - `npm run test:watch` runs Vitest in watch mode
 
 When validating integration in this workspace, use the package build output from `dist/` and then rebuild the local consumer package if it depends on `file:../checks`.
-
-## Documentation
-
-- [docs/index.md](docs/index.md)
-- [docs/checks.md](docs/checks.md)
-- [docs/how-to.md](docs/how-to.md)
-- [docs/development.md](docs/development.md)
-- [docs/publishing.md](docs/publishing.md)
 
 ## License
 

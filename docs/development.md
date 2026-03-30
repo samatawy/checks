@@ -55,7 +55,7 @@ The package now mixes synchronous validators with async entry points.
 - `ValueCheck.is_true()`, `ObjectCheck.is_true()`, and `ArrayCheck.is_true_each()` support async predicates
 - `FieldCheck.file()` and `FieldCheck.image()` return promises because binary data must be loaded before validation
 
-When updating docs or examples, prefer `await` at the outer rule boundary and call `collect()` after the awaited check chain resolves.
+When updating docs or examples, prefer `await` at the outer rule boundary and use `result(...)` for the final output shape after the awaited check chain resolves.
 
 ## Notes for this workspace
 
