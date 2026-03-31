@@ -1,5 +1,5 @@
 import { appendError, defined, finalizeResult, isPromise } from './helper.functions';
-import type { Check, CheckOptions, IResult, ResultOptions } from './types';
+import type { Check, CheckOptions, IResult, ResultOptions } from '../types';
 
 export abstract class ValueCheck implements Check {
 

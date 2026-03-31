@@ -1,4 +1,4 @@
-import type { CheckOptions } from './types';
+import type { CheckOptions } from '../types';
 import { defined } from './helper.functions';
 import { FileCheck } from './file.check';
 import * as probe from 'probe-image-size'; // Works in Node AND browser but with different methods!

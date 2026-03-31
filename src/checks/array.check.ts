@@ -1,4 +1,4 @@
-import type { Check, CheckOptions, IResult, ResultSet, ResultOptions } from './types';
+import type { Check, CheckOptions, IResult, ResultSet, ResultOptions } from '../types';
 import { ArrayItemCheck } from './array.item.check';
 import { defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
 import { collectResults } from './helper.functions';
@@ -128,8 +128,6 @@ export class ArrayCheck implements Check {
             const found = check.result();
 
             if (found.hint || found.warn || found.err) {
-                // this.out.results = this.out.results || [];
-                // this.out.results.push(found);
                 per_item.push(found);
             }
             if (found.err) {
@@ -139,10 +137,10 @@ export class ArrayCheck implements Check {
         if (per_item.length) {
             const prefix = i;   // defined(this.key) ? `Field ${this.key}[${i}]` : `Item ${i}`;
             this.out.results = this.out.results || [];
-            this.out.results.push({ 
-                field: prefix, 
-                valid: per_item.every(r => r.valid), 
-                results: per_item 
+            this.out.results.push({
+                field: prefix,
+                valid: per_item.every(r => r.valid),
+                results: per_item
             });
         }
         return this;

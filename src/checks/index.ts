@@ -4,40 +4,33 @@ export { DateCheck } from './date.check';
 export { FieldCheck } from './field.check';
 export { NumberCheck } from './number.check';
 export { ObjectCheck } from './object.check';
-// export { StringBaseCheck } from './string.base.check';
 export { StringCheck } from './string.check';
 export { EmailCheck } from './email.check';
 export { UrlCheck } from './url.check';
 export { ValueCheck } from './value.check';
 export { FileCheck } from './file.check';
 export { ImageCheck } from './image.check';
-// export { ResultCatalog } from '../i18n/result.catalog';
 
 export type {
     Check,
-    // CheckMessageCatalog,
-    // CheckMessageDefinition,
-    // CheckMessageLevelDefinition,
     CheckOptions,
     IResult,
-    // MessageCode,
-    // MessageLevel,
-    // MultiCheckMessageDefinition,
-    // ResultMessage,
     ResultSet,
-    // SingleCheckMessageDefinition,
     SingleResult,
     StringCheckOptions,
     TolerantCheckOptions,
     ResultCode,
+    TranslationMap,
     ResultCodeDefinition,
     IResultCatalog,
-} from './types';
+    ResultOptions,
+
+} from '../types';
 
 // export {
-    // buildErrorMessage,
-    // appendError,
-    // collectResults,
-    // defined,
-    // isPromise,
+// buildErrorMessage,
+// appendError,
+// collectResults,
+// defined,
+// isPromise,
 // } from './helper.functions';

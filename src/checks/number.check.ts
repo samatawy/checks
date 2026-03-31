@@ -1,4 +1,4 @@
-import type { CheckOptions, TolerantCheckOptions } from './types';
+import type { CheckOptions, TolerantCheckOptions } from '../types';
 import { ValueCheck } from './value.check';
 
 export class NumberCheck extends ValueCheck {
@@ -34,13 +34,6 @@ export class NumberCheck extends ValueCheck {
                 this.errorMessage(`Field ${this.key} must be a number`, options);
             }
 
-            // this.valid_type = typeof this.data[this.key] === 'number';
-            // if (this.valid_type) {
-            //     this.value = this.data[this.key];
-            // }
-            // else {
-            //     this.errorMessage(`Field ${this.key} must be a number`);
-            // }
         } else {
             this.valid_type = false;
         }
@@ -70,15 +63,6 @@ export class NumberCheck extends ValueCheck {
         }
         return this;
     }
-
-    // public float(): this {
-    //     if (!this.valid_type) return this;
-
-    //     if (typeof this.value === 'number' && !Number.isInteger(this.value)) {
-    //         this.errorMessage(`Field ${this.key} must be a float`, options);
-    //     }
-    //     return this;
-    // }
 
     public minPrecision(decimalPlaces: number, options?: CheckOptions): this {
         if (!this.valid_type) return this;

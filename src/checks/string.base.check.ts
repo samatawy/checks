@@ -1,4 +1,4 @@
-import type { CheckOptions, StringCheckOptions } from './types';
+import type { CheckOptions, StringCheckOptions } from '../types';
 import { ValueCheck } from './value.check';
 
 export abstract class StringBaseCheck extends ValueCheck {

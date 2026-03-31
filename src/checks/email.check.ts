@@ -1,10 +1,10 @@
-import type { CheckOptions } from './types';
+import type { CheckOptions } from '../types';
 import { StringBaseCheck } from './string.base.check';
 
 export class EmailCheck extends StringBaseCheck {
 
     private _email?: string;
-    
+
     constructor(key: string | number, data: any) {
         super(key, data);
 

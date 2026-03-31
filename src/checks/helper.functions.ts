@@ -1,5 +1,5 @@
 import { ResultCatalog } from '../i18n/result.catalog';
-import type { CheckOptions, SingleResult, ResultSet, IResult, ResultOptions } from './types';
+import type { CheckOptions, SingleResult, ResultSet, IResult, ResultOptions } from '../types';
 
 const baseTextKey = Symbol('baseText');
 
@@ -10,10 +10,10 @@ export function defined<T>(value: T | null | undefined): value is NonNullable<T>
 }
 
 export function isPromise(value: any): value is Promise<any> {
-    return value 
-    && typeof value === 'object' 
-    && typeof value.then === 'function' 
-    && typeof value.catch === 'function';
+    return value
+        && typeof value === 'object'
+        && typeof value.then === 'function'
+        && typeof value.catch === 'function';
 }
 
 function toArray(value?: string | string[]): string[] {
@@ -432,9 +432,7 @@ function mergeFields(set: ResultSet): ResultSet {
     } else {
         delete result.results;
     }
-    // if (set.hint) result.hints = set.hints;
-    // if (set.warn) result.warnings = set.warnings;
-    // if (set.err) result.errors = set.errors;
+
     return result;
 }
 

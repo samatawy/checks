@@ -1,4 +1,4 @@
-import type { CheckOptions } from './types';
+import type { CheckOptions } from '../types';
 import { ValueCheck } from './value.check';
 
 export class DateCheck extends ValueCheck {

@@ -1,4 +1,4 @@
-import type { CheckOptions } from './types';
+import type { CheckOptions } from '../types';
 import { ValueCheck } from './value.check';
 import { fileTypeFromBuffer } from 'file-type'; // Works in Node AND browser!
 
@@ -46,16 +46,16 @@ export class FileCheck extends ValueCheck {
             return this;
         }
 
-            if (expectedMime.endsWith('/*')) {
-                const prefix = expectedMime.slice(0, -2);
-                if (!this.type.startsWith(prefix + '/')) {
-                    this.errorMessage(`Field ${this.key} must be of type ${expectedMime}, but got ${this.type}`, options);
-                }
-                return this;
-            } else if (this.type !== expectedMime) {
+        if (expectedMime.endsWith('/*')) {
+            const prefix = expectedMime.slice(0, -2);
+            if (!this.type.startsWith(prefix + '/')) {
                 this.errorMessage(`Field ${this.key} must be of type ${expectedMime}, but got ${this.type}`, options);
             }
             return this;
+        } else if (this.type !== expectedMime) {
+            this.errorMessage(`Field ${this.key} must be of type ${expectedMime}, but got ${this.type}`, options);
+        }
+        return this;
     }
 
     public notEmpty(options?: CheckOptions): this {

@@ -1,4 +1,4 @@
-import type { CheckOptions } from './types';
+import type { CheckOptions } from '../types';
 import { appendError } from './helper.functions';
 import { NumberCheck } from './number.check';
 import { StringCheck } from './string.check';

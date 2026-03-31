@@ -1,4 +1,4 @@
-import type { CheckOptions, TolerantCheckOptions } from './types';
+import type { CheckOptions, TolerantCheckOptions } from '../types';
 import { appendError } from "./helper.functions";
 
 import { NumberCheck } from './number.check';
@@ -22,7 +22,6 @@ export class FieldCheck extends ValueCheck {
         if (this.data === null || this.data === undefined ||
             this.key === null || this.key === undefined ||
             this.data[this.key] === null || this.data[this.key] === undefined) {
-            // this.out = { ...this.out, ...{ valid: false, err: `Field ${this.key} is required` } };
             this.out = appendError(this.out, `Field ${this.key} is required`, options);
         }
         return this;
@@ -84,9 +83,6 @@ export class FieldCheck extends ValueCheck {
             this.out = appendError(this.out, `Field ${this.key} must be a boolean`, options);
         }
 
-        // if (typeof this.data[this.key] !== 'boolean') {
-        //     this.out = appendError(this.out, `Field ${this.key} must be a boolean`, options);
-        // }
         return this;
     }
 }

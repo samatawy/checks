@@ -6,12 +6,18 @@ The package builds to both ESM and CommonJS, ships declaration files, and suppor
 
 ## Documentation
 
-- [docs/index.md](docs/index.md)
-- [docs/checks.md](docs/checks.md)
-- [docs/how-to.md](docs/how-to.md)
-- [docs/coded-results.md](docs/coded-results.md)
-- [docs/development.md](docs/development.md)
-- [docs/publishing.md](docs/publishing.md)
+- Developer guides:
+- [help/index.md](help/index.md)
+- [help/checks.md](help/checks.md)
+- [help/how-to.md](help/how-to.md)
+- [help/coded-results.md](help/coded-results.md)
+- [help/development.md](help/development.md)
+- [help/publishing.md](help/publishing.md)
+
+- Generated API reference:
+- Run `npm run docs` to generate the API reference in `docs/`.
+- The generated entry page is `docs/index.html`.
+- The generated module overview is `docs/modules.html`.
 
 ## Where It Fits
 
@@ -170,7 +176,7 @@ Stable result codes and translated output are supported, but they are optional. 
 
 The dedicated guide is here:
 
-- [docs/coded-results.md](docs/coded-results.md)
+- [help/coded-results.md](help/coded-results.md)
 
 ## File And Image Validation
 

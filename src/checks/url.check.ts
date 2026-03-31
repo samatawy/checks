@@ -1,10 +1,10 @@
-import type { CheckOptions } from './types';
+import type { CheckOptions } from '../types';
 import { StringBaseCheck } from './string.base.check';
 
 export class UrlCheck extends StringBaseCheck {
 
     private _url?: URL;
-    
+
     constructor(key: string | number, data: any) {
         super(key, data);
 

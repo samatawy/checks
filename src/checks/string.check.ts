@@ -1,4 +1,4 @@
-import type { CheckOptions, StringCheckOptions } from './types';
+import type { CheckOptions, StringCheckOptions } from '../types';
 import { StringBaseCheck } from './string.base.check';
 import { EmailCheck } from './email.check';
 import { UrlCheck } from './url.check';
@@ -12,7 +12,7 @@ export class StringCheck extends StringBaseCheck {
     public email(options?: CheckOptions): EmailCheck {
         return new EmailCheck(this.key!, this.data);
     }
-    
+
     public url(options?: CheckOptions): UrlCheck {
         return new UrlCheck(this.key!, this.data);
     }

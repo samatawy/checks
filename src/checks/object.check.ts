@@ -1,9 +1,24 @@
-import type { Check, CheckOptions, IResult, ResultSet, ResultOptions } from './types';
+import type { Check, CheckOptions, IResult, ResultSet, ResultOptions } from '../types';
 import { ArrayCheck } from './array.check';
 import { FieldCheck } from './field.check';
 import { defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
 import { collectResults } from './helper.functions';
 
+/**
+ * Validates object-shaped input and coordinates checks for its fields.
+ *
+ * Use this class when the input should be an object and individual fields
+ * need their own validation rules.
+ *
+ * @example
+ * ```ts
+ * const result = await ObjectCheck.for({ name: 'Ada' })
+ *   .check(checker => [
+ *     checker.required('name').notEmpty()
+ *   ])
+ *   .then(checker => checker.result({ nested: true }));
+ * ```
+ */
 export class ObjectCheck implements Check {
 
     protected key: string | number | null | undefined;
@@ -20,10 +35,23 @@ export class ObjectCheck implements Check {
 
     protected out: ResultSet;
 
+    /**
+     * Creates an object checker for a top-level input value.
+     *
+     * @example
+     * ```ts
+     * const checker = ObjectCheck.for({ email: 'user@example.com' });
+     * ```
+     */
     static for(data: any): ObjectCheck {
         return new ObjectCheck(null, data);
     }
 
+    /**
+     * Creates an object checker for a value or for a named field within a parent object.
+     *
+     * When both `key` and `data` are provided, the checker reads `data[key]`.
+     */
     constructor(key: string | number | null | undefined, data: any) {
 
         this.key = key;
@@ -46,6 +74,14 @@ export class ObjectCheck implements Check {
         }
     }
 
+    /**
+     * Requires the value to exist and contain at least one key.
+     *
+     * @example
+     * ```ts
+     * const result = ObjectCheck.for({}).notEmpty().result();
+     * ```
+     */
     public notEmpty(options?: CheckOptions): this {
         const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
 
@@ -59,6 +95,11 @@ export class ObjectCheck implements Check {
         return this;
     }
 
+    /**
+     * Requires the value to be a non-array object.
+     *
+     * This check runs automatically during construction when a value is present.
+     */
     public object(options?: CheckOptions): this {
         const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
 
@@ -73,16 +114,45 @@ export class ObjectCheck implements Check {
         return this;
     }
 
+    /**
+     * Returns a checker for a required field and marks that field as known.
+     *
+     * Known fields are used later by {@link noExtraFields}.
+     *
+     * @example
+     * ```ts
+     * const nameCheck = ObjectCheck.for({ name: 'Ada' }).required('name');
+     * ```
+     */
     public required(name: string, options?: CheckOptions): FieldCheck {
         this.known_keys.add(name);
         return new FieldCheck(name, this.data).required(options);
     }
 
+    /**
+     * Returns a checker for an optional field and marks that field as known.
+     *
+     * @example
+     * ```ts
+     * const nicknameCheck = ObjectCheck.for({}).optional('nickname');
+     * ```
+     */
     public optional(name: string): FieldCheck {
         this.known_keys.add(name);
         return new FieldCheck(name, this.data);
     }
 
+    /**
+     * Returns a field checker that becomes required only when `condition` passes.
+     *
+     * The condition receives the current object value.
+     *
+     * @example
+     * ```ts
+     * const checker = ObjectCheck.for({ type: 'person' });
+     * checker.conditional('name', data => data.type === 'person').notEmpty();
+     * ```
+     */
     public conditional(name: string, condition: (data: any) => boolean, options?: CheckOptions): FieldCheck {
         this.known_keys.add(name);
         if (condition(this.data)) {
@@ -92,6 +162,20 @@ export class ObjectCheck implements Check {
         }
     }
 
+    /**
+     * Fails when the input contains keys that were not declared through
+     * {@link required}, {@link optional}, or {@link conditional}.
+     *
+     * The extra-field check is evaluated when {@link result} is called.
+     *
+     * @example
+     * ```ts
+     * const result = ObjectCheck.for({ name: 'Ada', extra: true })
+     *   .required('name')
+     *   .noExtraFields()
+     *   .result();
+     * ```
+     */
     public noExtraFields(options?: CheckOptions): this {
         this.check_extra_fields = true;
         return this;
@@ -132,12 +216,38 @@ export class ObjectCheck implements Check {
         return this;
     }
 
+    /**
+     * Runs a group of field or nested checks and merges their results.
+     *
+     * Return an array of checks from the callback. Each check can be synchronous
+     * or a promise.
+     *
+     * @example
+     * ```ts
+     * const checker = await ObjectCheck.for({ name: 'Ada', age: 37 }).check(c => [
+     *   c.required('name').notEmpty(),
+     *   c.optional('age').number()
+     * ]);
+     * ```
+     */
     public async check(func: (checker: ObjectCheck) => (Check | Promise<Check>)[]): Promise<this> {
         const field_checks = func(this);
         await this.rules(field_checks);
         return this;
     }
 
+    /**
+     * Applies a custom predicate to the current object value.
+     *
+     * When the predicate returns `false`, the result contains `Custom check failed`
+     * unless custom check options override the message or code.
+     *
+     * @example
+     * ```ts
+     * const checker = await ObjectCheck.for({ role: 'admin' })
+     *   .isTrue(data => data.role === 'admin');
+     * ```
+     */
     public async isTrue(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<ObjectCheck> {
         if (!this.has_value) return this;
 
@@ -156,6 +266,11 @@ export class ObjectCheck implements Check {
         this.out = appendError(this.out, err, options);
     }
 
+    /**
+     * Merges a prior result into this checker when that prior result is invalid.
+     *
+     * This is useful when composing validations from external sources.
+     */
     public inherit(priors: IResult): this {
         if (!priors.valid) {
             this.out = { ...this.out, ...priors };
@@ -163,6 +278,19 @@ export class ObjectCheck implements Check {
         return this;
     }
 
+    /**
+     * Returns the validation result for the current object.
+     *
+     * With no options, this returns the raw internal result structure. With
+     * options, the output is formatted through the package result helpers.
+     *
+     * @example
+     * ```ts
+     * const result = await ObjectCheck.for({ name: 'Ada' })
+     *   .check(c => [c.required('name').notEmpty()])
+     *   .then(c => c.result({ nested: true }));
+     * ```
+     */
     public result(options?: ResultOptions): IResult {
         // ensure overall validity is false if any part is invalid
         for (const part of this.out.results || []) {
