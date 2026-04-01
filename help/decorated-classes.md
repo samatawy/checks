@@ -9,10 +9,10 @@ Use this approach when you want validation rules to live next to DTO-like classe
 The package root exports the decorator API directly:
 
 - `required()` and `optional()` for property presence
-- `nested(ClassType)` for nested decorated objects
+- `matchesType(ClassType)` for applying a decorated class to an object property
 - `type.*()` for property type entry points
 - `items.*()` for array item type entry points
-- grouped rule decorators such as `string`, `number`, `date`, `email`, `url`, `file`, `image`, `array`, and `item`
+- grouped rule decorators such as `object`, `string`, `number`, `date`, `email`, `url`, `file`, `image`, `array`, and `item`
 - `validateDecoratedClass(input, ClassType)` for validating a plain input object against a decorated class
 
 ## Validate A Decorated Class Directly
@@ -55,7 +55,7 @@ console.log(result.results);
 
 ## Validate A Decorated Class Through ObjectCheck
 
-Use `decorated(...)` when you want to combine decorated-class validation with the existing fluent object API.
+Use `matchesType(...)` when you want to combine decorated-class validation with the existing fluent object API.
 
 ```ts
 import {
@@ -74,7 +74,7 @@ class PersonDto {
 
 const check = await ObjectCheck.for({
   name: 'Ada',
-}).decorated(PersonDto, {
+}).matchesType(PersonDto, {
   noExtraFields: true,
 });
 
@@ -87,12 +87,12 @@ This is useful when you want a decorated class to define the main shape, but sti
 ```ts
 const check = await ObjectCheck.for(payload)
   .notEmpty()
-  .decorated(PersonDto, { noExtraFields: true });
+  .matchesType(PersonDto, { noExtraFields: true });
 ```
 
 ## Validate A Nested Field With A Decorated Class
 
-Use `field.decorated(...)` when a field itself should be validated against a decorated class.
+Use `field.matchesType(...)` when a field itself should be validated against a decorated class.
 
 ```ts
 import {
@@ -112,7 +112,7 @@ class AddressDto {
 const check = await ObjectCheck.for({
   address: { city: 'Cairo' },
 }).check(person => [
-  person.required('address').decorated(AddressDto, {
+  person.required('address').matchesType(AddressDto, {
     noExtraFields: true,
   }),
 ]);
@@ -121,11 +121,12 @@ const result = check.result({ nested: true, language: 'en' });
 console.log(result);
 ```
 
-When the field belongs to another decorated class, use `nested(...)` on the property itself. The nested class can still define its own field rules.
+When the field belongs to another decorated class, use `@matchesType(...)` or `@type.object()` with `@object.matchesType(...)`. The nested class can still define its own field rules.
 
 ```ts
 import {
-  nested,
+  matchesType,
+  object,
   optional,
   required,
   type,
@@ -157,7 +158,7 @@ class PersonDto {
   name!: string;
 
   @required()
-  @nested(AddressDto)
+  @matchesType(AddressDto)
   address!: AddressDto;
 }
 
@@ -176,6 +177,25 @@ console.log(check.result({ nested: true, language: 'en' }));
 ```
 
 That is the decorator equivalent of saying “this field must be an object that matches this decorated structure”.
+
+If you only need object-level rules without another decorated class, use `@type.object()` with `@object.*()`.
+
+```ts
+import { object, required, type, validateDecoratedClass } from '@samatawy/checks';
+
+class PayloadDto {
+  @required()
+  @type.object()
+  @object.notEmpty()
+  metadata!: Record<string, unknown>;
+}
+
+const check = await validateDecoratedClass({
+  metadata: {},
+}, PayloadDto);
+
+console.log(check.result({ nested: true, language: 'en' }));
+```
 
 ## Validate A Nested Object With Inline Field Rules
 
@@ -202,18 +222,26 @@ console.log(check.result({ nested: true, language: 'en' }));
 
 Use this style when the nested object rules are local to one workflow and do not need a reusable decorated class.
 
-## Why There Is No `object()` Decorator
+## How Object Decorators Work
 
-There is no standalone `object()` decorator because a plain object usually needs more than a type check. In practice, object validation means one of these:
+Object validation has an explicit type entry point: `@type.object()`.
 
-- the field must match another decorated class, which is what `nested(ClassType)` expresses
-- the field must be checked inline with explicit nested field rules, which is what `field.object().check(...)` does
+Use it when a property must be treated as an object before additional object-specific rules are applied.
 
-So the API models object fields through structure-aware entry points instead of a bare `@type.object()` decorator that would only say “this is an object” without describing the shape.
+In practice, object validation usually looks like one of these:
+
+- `@matchesType(ClassType)` when the whole property should follow another decorated class
+- `@type.object()` with `@object.matchesType(ClassType)` when you want the object intent and the nested class rule to be explicit together
+- `@type.object()` with `@object.notEmpty()` or `@object.noExtraFields()` when you want object-level rules without another decorated class
+- `field.object().check(...)` when the nested rules are local and you do not want a reusable decorated class
+
+So `@type.object()` is the object type entry point, while `@matchesType(...)` and `@object.*()` describe what that object must satisfy.
+
+Further checks (e.g. for typed fields in an object), use the fluid API. 
 
 ## Validate Array Items With A Decorated Class
 
-Use `item.decorated(...)` or array decorators when each element in an array should follow the same decorated definition.
+Use `item.matchesType(...)` or array decorators when each element in an array should follow the same decorated definition.
 
 ```ts
 import {
@@ -234,20 +262,20 @@ const check = await ArrayCheck.for([
   { name: 'A' },
   { name: 'B' },
 ]).checkEach(item => [
-  item.decorated(ChildDto),
+  item.matchesType(ChildDto),
 ]);
 
 const result = check.result({ raw: true, flattened: true, language: 'en' }) as any;
 console.log(result.raw.results);
 ```
 
-For an array property inside a decorated class, use `@items.nested(...)` when each element should match another decorated class.
+For an array property inside a decorated class, use `@items.object()` with `@item.object.matchesType(...)` when each element should match another decorated class.
 
 ```ts
 import {
   array,
   items,
-  nested,
+  item,
   required,
   type,
   string,
@@ -265,7 +293,8 @@ class FamilyDto {
   @required()
   @type.array()
   @array.minLength(1)
-  @items.nested(ChildDto)
+  @items.object()
+  @item.object.matchesType(ChildDto)
   children!: ChildDto[];
 }
 
@@ -380,4 +409,4 @@ The fluent API is usually simpler when:
 - the rule logic is highly dynamic
 - the validation shape depends heavily on runtime conditions
 
-You can mix both styles. `ObjectCheck.decorated(...)` and `field.decorated(...)` are specifically designed for that.
+You can mix both styles. `ObjectCheck.matchesType(...)` and `field.matchesType(...)` are specifically designed for that.

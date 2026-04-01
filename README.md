@@ -24,6 +24,8 @@ The package builds to both ESM and CommonJS, ships declaration files, and suppor
 - The generated entry page is `docs/index.html`.
 - The generated module overview is `docs/modules.html`.
 
+- Hosted API reference: [samatawy.github.io/checks](https://samatawy.github.io/checks/)
+
 ## Where It Fits
 
 This package is a good fit when validation is part of application logic instead of a one-off form helper.
@@ -86,7 +88,7 @@ if (!result.valid) {
 }
 ```
 
-`check`, `isTrue`, `checkEach`, `isTrueEach`, `file`, and `image` may all become async depending on the validators you use, so `await` at the outer rule boundary is the safe default.
+`check`, `isTrue`, `checkEach`, `isTrueEach`, `file`, `image`, and decorated object validation may all become async depending on the validators you use, so `await` at the outer rule boundary is the safe default.
 
 ## Getting Results
 

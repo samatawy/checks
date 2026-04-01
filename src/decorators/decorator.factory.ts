@@ -17,6 +17,7 @@ export interface DecoratedValidationOptions {
 }
 
 type EntryPoint =
+	| 'object'
 	| 'string'
 	| 'number'
 	| 'boolean'
@@ -72,7 +73,7 @@ export function optional(): PropertyDecorator {
 	};
 }
 
-export function nested(type: ClassConstructor): PropertyDecorator {
+export function matchesType(type: ClassConstructor): PropertyDecorator {
 	return function (target: object, propertyKey: string | symbol): void {
 		const metadata = ensurePropertyMetadata(target, propertyKey);
 		metadata.nested = type;
@@ -80,6 +81,9 @@ export function nested(type: ClassConstructor): PropertyDecorator {
 }
 
 export const type = {
+	object(): PropertyDecorator {
+		return setPropertyEntryPoint('object');
+	},
 	string(): PropertyDecorator {
 		return setPropertyEntryPoint('string');
 	},
@@ -110,6 +114,9 @@ export const type = {
 };
 
 export const items = {
+	object(): PropertyDecorator {
+		return setItemEntryPoint('object');
+	},
 	string(): PropertyDecorator {
 		return setItemEntryPoint('string');
 	},
@@ -137,7 +144,7 @@ export const items = {
 	array(): PropertyDecorator {
 		return setItemEntryPoint('array');
 	},
-	nested(type: ClassConstructor): PropertyDecorator {
+	matchesType(type: ClassConstructor): PropertyDecorator {
 		return function (target: object, propertyKey: string | symbol): void {
 			const metadata = ensureItemMetadata(target, propertyKey);
 			metadata.nested = type;
@@ -226,16 +233,14 @@ async function applyPropertyRules(
 		? checker.required(property, metadata.required)
 		: checker.optional(property);
 
-	if (metadata.nested) {
-		const nestedCheck = baseField.object() as ObjectCheck;
-		await applyDecoratedClass(nestedCheck, metadata.nested, options);
-		return nestedCheck;
-	}
-
 	let current: any = baseField;
 	let currentEntryPoint: ActiveEntryPoint = 'field';
 
-	if (metadata.entrypoint) {
+	if (metadata.nested) {
+		current = baseField.object() as ObjectCheck;
+		currentEntryPoint = 'object';
+		await applyDecoratedClass(current, metadata.nested, options);
+	} else if (metadata.entrypoint) {
 		current = await resolveEntryPoint(baseField, 'property', metadata.entrypoint);
 		currentEntryPoint = metadata.entrypoint.kind;
 	}
@@ -270,16 +275,14 @@ async function applyItemRules(
 ): Promise<Check> {
 	const baseItem: any = itemChecker;
 
-	if (metadata.nested) {
-		const nestedCheck = baseItem.object() as ObjectCheck;
-		await applyDecoratedClass(nestedCheck, metadata.nested, options);
-		return nestedCheck;
-	}
-
 	let current: any = baseItem;
 	let currentEntryPoint: ActiveEntryPoint = 'field';
 
-	if (metadata.entrypoint) {
+	if (metadata.nested) {
+		current = baseItem.object() as ObjectCheck;
+		currentEntryPoint = 'object';
+		await applyDecoratedClass(current, metadata.nested, options);
+	} else if (metadata.entrypoint) {
 		current = await resolveEntryPoint(baseItem, 'item', metadata.entrypoint);
 		currentEntryPoint = metadata.entrypoint.kind;
 	}
@@ -316,6 +319,8 @@ async function ensureEntryPoint(
 
 async function resolvePropertyEntryPoint(base: any, entrypoint: EntryPointConfig): Promise<any> {
 	switch (entrypoint.kind) {
+		case 'object':
+			return base.object();
 		case 'string':
 			return base.string();
 		case 'number':
@@ -339,6 +344,8 @@ async function resolvePropertyEntryPoint(base: any, entrypoint: EntryPointConfig
 
 async function resolveItemEntryPoint(base: any, entrypoint: EntryPointConfig): Promise<any> {
 	switch (entrypoint.kind) {
+		case 'object':
+			return base.object();
 		case 'string':
 			return base.string();
 		case 'number':

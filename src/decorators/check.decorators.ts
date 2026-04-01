@@ -6,7 +6,21 @@ import { UrlCheck } from '../checks/url.check';
 import { FileCheck } from '../checks/file.check';
 import { ImageCheck } from '../checks/image.check';
 import { ArrayCheck } from '../checks/array.check';
-import { createDecoratorGroup } from './decorator.factory';
+import { ObjectCheck } from '../checks/object.check';
+import { createDecoratorGroup, items, matchesType } from './decorator.factory';
+
+const objectMethods = [
+	'notEmpty',
+	'noExtraFields',
+] as const;
+
+const objectRules = createDecoratorGroup('property', 'object', ObjectCheck, objectMethods);
+const itemObjectRules = createDecoratorGroup('item', 'object', ObjectCheck, objectMethods);
+
+export const object = {
+	...objectRules,
+	matchesType,
+};
 
 export const string = createDecoratorGroup('property', 'string', StringCheck, [
 	'minLength',
@@ -102,6 +116,10 @@ export const array = createDecoratorGroup('property', 'array', ArrayCheck, [
 ] as const);
 
 export const item = {
+	object: {
+		...itemObjectRules,
+		matchesType: items.matchesType,
+	},
 	string: createDecoratorGroup('item', 'string', StringCheck, [
 		'minLength',
 		'maxLength',

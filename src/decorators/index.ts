@@ -1,13 +1,14 @@
 export {
 	required,
 	optional,
-	nested,
+	matchesType,
 	type,
 	items,
 	validateDecoratedClass,
 } from './decorator.factory';
 
 export {
+	object,
 	string,
 	number,
 	date,

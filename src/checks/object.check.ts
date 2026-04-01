@@ -239,17 +239,17 @@ export class ObjectCheck implements Check {
     }
 
     /**
-     * Validates the current object value against a decorated class definition.
+    * Validates the current object value against a decorated class definition.
      *
      * This merges the decorated-class result into the current checker so it can
      * be composed with fluent object rules.
      *
      * @example
      * ```ts
-     * const checker = await ObjectCheck.for(payload).decorated(PersonDto);
+     * const checker = await ObjectCheck.for(payload).matchesType(PersonDto);
      * ```
      */
-    public async decorated<T>(
+    public async matchesType<T>(
         type: abstract new (...args: any[]) => T,
         options?: DecoratedValidationOptions,
     ): Promise<this> {

@@ -32,11 +32,11 @@ export class FieldCheck extends ValueCheck {
         return new ObjectCheck(this.key, this.data).inherit(this.out);
     }
 
-    public async decorated<T>(
+    public async matchesType<T>(
         type: abstract new (...args: any[]) => T,
         options?: DecoratedValidationOptions,
     ): Promise<ObjectCheck> {
-        return this.object().decorated(type, options);
+        return this.object().matchesType(type, options);
     }
 
     public array(): ArrayCheck {
