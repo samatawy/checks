@@ -1,7 +1,7 @@
 {
     "name": "@samatawy/checks",
-    "version": "0.1.4",
-    "description": "Fluent TypeScript validation checks for objects, arrays, files, and images.",
+    "version": "0.1.5",
+    "description": "Fluent TypeScript validation checks for objects, arrays, files, images, etc.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/index.js",
@@ -39,7 +39,10 @@
         "typescript",
         "npm",
         "library",
+        "json",
         "validation",
+        "schema",
+        "decorators",
         "checks"
     ],
     "author": "Sam Atawy",

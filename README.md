@@ -2,6 +2,10 @@
 
 TypeScript validation utilities for fluent object, array, field, string, number, date, file, and image checks.
 
+The main focus is on developer convenience and maintainability. The code is optimized for readability, IDE and AI friendliness, declarative class decoration, etc.
+
+The other focus is on business applications. Features such as error code management and i18n are designed for use in large projects with strict requirements.
+
 The package builds to both ESM and CommonJS, ships declaration files, and supports both synchronous and asynchronous validation flows.
 
 ## Documentation
