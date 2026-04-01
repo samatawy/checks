@@ -293,6 +293,67 @@ function extractMessages(set: ResultSet): ResultSet {
     return result;
 }
 
+function getNestedSourceValue(source: any, field: string | number | undefined): any {
+    if (!defined(field) || !defined(source)) {
+        return undefined;
+    }
+
+    if (typeof source !== 'object') {
+        return undefined;
+    }
+
+    return source[field as keyof typeof source];
+}
+
+function isTransparentUnnamedResult(result: IResult): result is ResultSet {
+    if (defined(result.field) || defined(result.hint) || defined(result.warn) || defined(result.err) || defined(result.code)) {
+        return false;
+    }
+
+    return Boolean((result as ResultSet).results?.length);
+}
+
+function mergeNestedFieldMap(
+    fieldMap: { [key: string]: any },
+    unnamedResults: IResult[],
+    nested: any,
+): void {
+    for (const [key, value] of Object.entries(nested)) {
+        if (key === '*') {
+            unnamedResults.push(...value as IResult[]);
+            continue;
+        }
+
+        fieldMap[key] = value;
+    }
+}
+
+function collapseRedundantIndexedLayer(fieldKey: string, nested: any): any {
+    if (!/^\d+$/.test(fieldKey) || !nested || typeof nested !== 'object' || Array.isArray(nested)) {
+        return nested;
+    }
+
+    const keys = Object.keys(nested);
+    if (keys.length !== 1 || keys[0] !== fieldKey) {
+        return nested;
+    }
+
+    const duplicate = nested[fieldKey];
+    if (!duplicate || typeof duplicate !== 'object' || Array.isArray(duplicate)) {
+        return nested;
+    }
+
+    if (defined(duplicate.field) || defined(duplicate.value) || defined(duplicate.hint) || defined(duplicate.warn) || defined(duplicate.err) || defined(duplicate.code)) {
+        return nested;
+    }
+
+    if (!duplicate.results || typeof duplicate.results !== 'object') {
+        return nested;
+    }
+
+    return duplicate.results;
+}
+
 /**
  * Extract values and results per field into an object structure
  * where each field is a key, and its value is an object containing the combined results for that field.
@@ -324,13 +385,18 @@ function nestFields(source: any, set: ResultSet): any {
 
     for (let child of set.results || []) {
         if (!defined(child.field)) {
-            // If no field, just keep as is (or handle differently if needed)
+            if (isTransparentUnnamedResult(child)) {
+                mergeNestedFieldMap(fieldMap, unnamedResults, nestFields(source, child));
+                continue;
+            }
+
             unnamedResults.push({ ...child });
             continue;
         }
 
         const fieldKey = String(child.field);
-        const existing = fieldMap[fieldKey] || { value: source[child.field] };
+        const childSource = getNestedSourceValue(source, child.field);
+        const existing = fieldMap[fieldKey] || { value: childSource };
 
         existing.valid = existing.valid !== false ? child.valid : false;
 
@@ -354,7 +420,7 @@ function nestFields(source: any, set: ResultSet): any {
         // Nest child results recursively using the relevant portion of the source data
         // For nested fields, we can use the child.field to access the corresponding source value for that field
         if (childResults?.length) {
-            existing.results = nestFields(source[child.field], child as ResultSet);
+            existing.results = collapseRedundantIndexedLayer(fieldKey, nestFields(childSource, child as ResultSet));
             // console.debug('Nested results for field', child.field, ':', child);
         }
         // console.debug('Mapping field', fieldKey, 'with result', existing);

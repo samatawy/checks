@@ -10,6 +10,7 @@ The package builds to both ESM and CommonJS, ships declaration files, and suppor
 - [help/index.md](help/index.md)
 - [help/checks.md](help/checks.md)
 - [help/how-to.md](help/how-to.md)
+- [help/decorated-classes.md](help/decorated-classes.md)
 - [help/coded-results.md](help/coded-results.md)
 - [help/development.md](help/development.md)
 - [help/publishing.md](help/publishing.md)

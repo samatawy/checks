@@ -1,4 +1,5 @@
 import type { CheckOptions } from '../types';
+import type { DecoratedValidationOptions } from '../decorators/decorator.factory';
 import { appendError } from './helper.functions';
 import { NumberCheck } from './number.check';
 import { StringCheck } from './string.check';
@@ -20,6 +21,13 @@ export class ArrayItemCheck extends ValueCheck {
 
     public object(): ObjectCheck {
         return new ObjectCheck(this.key, this.data).inherit(this.out);
+    }
+
+    public async decorated<T>(
+        type: abstract new (...args: any[]) => T,
+        options?: DecoratedValidationOptions,
+    ): Promise<ObjectCheck> {
+        return this.object().decorated(type, options);
     }
 
     public required(name: string, options?: CheckOptions): FieldCheck {

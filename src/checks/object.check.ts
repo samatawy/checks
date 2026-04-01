@@ -1,4 +1,6 @@
 import type { Check, CheckOptions, IResult, ResultSet, ResultOptions } from '../types';
+import type { DecoratedValidationOptions } from '../decorators/decorator.factory';
+import { validateDecoratedClass } from '../decorators/decorator.factory';
 import { ArrayCheck } from './array.check';
 import { FieldCheck } from './field.check';
 import { defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
@@ -237,6 +239,26 @@ export class ObjectCheck implements Check {
     }
 
     /**
+     * Validates the current object value against a decorated class definition.
+     *
+     * This merges the decorated-class result into the current checker so it can
+     * be composed with fluent object rules.
+     *
+     * @example
+     * ```ts
+     * const checker = await ObjectCheck.for(payload).decorated(PersonDto);
+     * ```
+     */
+    public async decorated<T>(
+        type: abstract new (...args: any[]) => T,
+        options?: DecoratedValidationOptions,
+    ): Promise<this> {
+        const decorated = await validateDecoratedClass(this.data, type, options);
+        this.mergeDecoratedResult(decorated.result() as ResultSet);
+        return this;
+    }
+
+    /**
      * Applies a custom predicate to the current object value.
      *
      * When the predicate returns `false`, the result contains `Custom check failed`
@@ -264,6 +286,50 @@ export class ObjectCheck implements Check {
 
     protected errorMessage(err: string, options?: CheckOptions): void {
         this.out = appendError(this.out, err, options);
+    }
+
+    private mergeDecoratedResult(result: ResultSet): void {
+        if (defined(result.hint)) {
+            this.out.hint = this.mergeMessageValue(this.out.hint, result.hint);
+        }
+        if (defined(result.warn)) {
+            this.out.warn = this.mergeMessageValue(this.out.warn, result.warn);
+        }
+        if (defined(result.err)) {
+            this.out.err = this.mergeMessageValue(this.out.err, result.err);
+            this.out.valid = false;
+        }
+        if (defined(result.code) && !defined(this.out.code)) {
+            this.out.code = result.code;
+        }
+        if (result.results?.length) {
+            this.out.results = [...(this.out.results ?? []), ...result.results];
+        }
+        if (!result.valid) {
+            this.out.valid = false;
+        }
+    }
+
+    private mergeMessageValue(
+        current?: string | string[],
+        incoming?: string | string[],
+    ): string | string[] | undefined {
+        const values = this.toArray(current);
+        values.push(...this.toArray(incoming));
+
+        if (values.length === 0) {
+            return undefined;
+        }
+
+        return values.length === 1 ? values[0] : values;
+    }
+
+    private toArray(value?: string | string[]): string[] {
+        if (!defined(value)) {
+            return [];
+        }
+
+        return Array.isArray(value) ? [...value] : [value];
     }
 
     /**

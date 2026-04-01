@@ -58,7 +58,7 @@ export class ResultCatalog implements IResultCatalog {
      * Registers every code exposed by another catalog.
      */
     public registerAll(source: IResultCatalog): this {
-        for(const code of source.listCodes()) {
+        for (const code of source.listCodes()) {
             const definition = source.getDefinition(code);
             this.register(code, definition!);
         }

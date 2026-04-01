@@ -1,4 +1,4 @@
-import type { CheckOptions, StringCheckOptions } from '../types';
+import type { CheckOptions } from '../types';
 import { StringBaseCheck } from './string.base.check';
 import { EmailCheck } from './email.check';
 import { UrlCheck } from './url.check';
@@ -44,6 +44,14 @@ export class StringCheck extends StringBaseCheck {
         return this;
     }
 
+    public isUUID(options?: CheckOptions): this {
+        if (!this.valid_type) return this;
+
+        if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(this.data[this.key])) {
+            this.errorMessage(`Field ${this.key} must be a valid UUID`, options);
+        }
+        return this;
+    }
 
     public isHexadecimal(options?: CheckOptions): this {
         if (!this.valid_type) return this;
