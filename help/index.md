@@ -7,6 +7,7 @@ This package exposes a fluent validation API for working with objects, arrays, f
 - [checks.md](checks.md) for the validation classes, types, and usage patterns
 - [how-to.md](how-to.md) for task-oriented recipes with imports and sample output
 - [decorated-classes.md](decorated-classes.md) for class decorators and decorator-based validation
+- [object-factory.md](object-factory.md) for validated object creation and hydration
 - [coded-results.md](coded-results.md) for optional result-code catalogs and translation
 - [development.md](development.md) for local development and maintenance
 - [publishing.md](publishing.md) for release and publish steps

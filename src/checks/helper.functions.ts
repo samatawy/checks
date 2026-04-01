@@ -421,9 +421,7 @@ function nestFields(source: any, set: ResultSet): any {
         // For nested fields, we can use the child.field to access the corresponding source value for that field
         if (childResults?.length) {
             existing.results = collapseRedundantIndexedLayer(fieldKey, nestFields(childSource, child as ResultSet));
-            // console.debug('Nested results for field', child.field, ':', child);
         }
-        // console.debug('Mapping field', fieldKey, 'with result', existing);
 
         fieldMap[fieldKey] = existing;
     }

@@ -15,6 +15,7 @@ The package builds to both ESM and CommonJS, ships declaration files, and suppor
 - [help/checks.md](help/checks.md)
 - [help/how-to.md](help/how-to.md)
 - [help/decorated-classes.md](help/decorated-classes.md)
+- [help/object-factory.md](help/object-factory.md)
 - [help/coded-results.md](help/coded-results.md)
 - [help/development.md](help/development.md)
 - [help/publishing.md](help/publishing.md)
@@ -176,6 +177,20 @@ String-related inheritance:
 
 - `StringCheck`, `EmailCheck`, and `UrlCheck` share common string comparison methods through the internal `StringBaseCheck`
 - `StringBaseCheck` itself is not part of the public API
+
+## Object Factory
+
+If a class exposes static `validateInput(input)` and `fromValidInput(input)` methods, you can validate input and hydrate an instance with `ObjectFactory`.
+
+Use:
+
+- `ObjectFactory.create(...)` for the full factory result including `check`
+- `ObjectFactory.createOrThrow(...)` for exception-based flow
+- `ObjectFactory.createOrErrors(...)` for a non-throwing `{ instance }` or `{ errors }` shortcut
+
+The dedicated guide is here:
+
+- [help/object-factory.md](help/object-factory.md)
 
 ## Coded Results
 

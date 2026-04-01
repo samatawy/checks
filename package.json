@@ -1,6 +1,6 @@
 {
     "name": "@samatawy/checks",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "description": "Fluent TypeScript validation checks for objects, arrays, files, images, etc.",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -43,7 +43,8 @@
         "validation",
         "schema",
         "decorators",
-        "checks"
+        "checks",
+        "factory"
     ],
     "author": "Sam Atawy",
     "license": "MIT",

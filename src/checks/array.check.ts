@@ -183,7 +183,6 @@ export class ArrayCheck implements Check {
                 this.out.valid = false;
             }
         }
-        console.debug('Completed isTrueEach checks for array', this.out);
         return this;
     }
 

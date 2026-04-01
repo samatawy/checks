@@ -410,3 +410,9 @@ The fluent API is usually simpler when:
 - the validation shape depends heavily on runtime conditions
 
 You can mix both styles. `ObjectCheck.matchesType(...)` and `field.matchesType(...)` are specifically designed for that.
+
+## Create Typed Instances With `ObjectFactory`
+
+If you want validation and object creation together, see [object-factory.md](object-factory.md).
+
+That guide covers the required static methods, `ObjectFactory.create(...)`, `ObjectFactory.createOrThrow(...)`, and `ObjectFactory.createOrErrors(...)`.
