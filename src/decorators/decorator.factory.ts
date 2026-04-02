@@ -4,11 +4,11 @@ import { ArrayItemCheck } from '../checks/array.item.check';
 import { FieldCheck } from '../checks/field.check';
 import type { Check, CheckOptions, ResultOptions, TolerantCheckOptions } from '../types';
 
-export type ClassConstructor<T = unknown> = abstract new (...args: any[]) => T;
+type ClassConstructor<T = unknown> = abstract new (...args: any[]) => T;
 type CheckerPrototype = { prototype: object };
-type DecoratorFactory = (...args: unknown[]) => PropertyDecorator;
+type PublicDecoratorFactory = (...args: unknown[]) => PropertyDecorator;
 type DecoratorTarget = 'property' | 'item';
-export type DecoratorGroup<TMethods extends string> = Record<TMethods, DecoratorFactory>;
+type DecoratorGroup<TMethods extends string> = Record<TMethods, PublicDecoratorFactory>;
 
 export interface DecoratedValidationOptions {
 	noExtraFields?: boolean;
@@ -73,7 +73,7 @@ export function optional(): PropertyDecorator {
 	};
 }
 
-export function matchesType(type: ClassConstructor): PropertyDecorator {
+export function matchesType(type: abstract new (...args: any[]) => unknown): PropertyDecorator {
 	return function (target: object, propertyKey: string | symbol): void {
 		const metadata = ensurePropertyMetadata(target, propertyKey);
 		metadata.nested = type;
@@ -144,7 +144,7 @@ export const items = {
 	array(): PropertyDecorator {
 		return setItemEntryPoint('array');
 	},
-	matchesType(type: ClassConstructor): PropertyDecorator {
+	matchesType(type: abstract new (...args: any[]) => unknown): PropertyDecorator {
 		return function (target: object, propertyKey: string | symbol): void {
 			const metadata = ensureItemMetadata(target, propertyKey);
 			metadata.nested = type;
@@ -159,7 +159,7 @@ export const dateField = type.date;
 
 export async function validateDecoratedClass<T>(
 	input: unknown,
-	type: ClassConstructor<T>,
+	type: abstract new (...args: any[]) => T,
 	options: DecoratedValidationOptions = {},
 ): Promise<ObjectCheck> {
 	const check = ObjectCheck.for(input);
@@ -180,7 +180,7 @@ export function createDecoratorGroup<const TMethods extends readonly string[]>(
 	assertMethodsExist(entrypoint, checkerType, methods);
 
 	const entries = methods.map(method => {
-		const decorator: DecoratorFactory = (...args: unknown[]) => {
+		const decorator: PublicDecoratorFactory = (...args: unknown[]) => {
 			return function (targetObject: object, propertyKey: string | symbol): void {
 				if (target === 'property') {
 					const metadata = ensurePropertyMetadata(targetObject, propertyKey);

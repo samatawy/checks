@@ -1,3 +1,9 @@
+---
+title: Object Factory
+group: Guides
+category: Object Hydration
+---
+
 # Object Factory
 
 This guide covers `ObjectFactory`, which combines validation and object creation.

@@ -1,3 +1,9 @@
+---
+title: Development
+group: Maintenance
+category: Contributor Guide
+---
+
 # Development
 
 ## Install
@@ -32,8 +38,9 @@ npm run test:watch
 ```text
 src/index.ts          Public package entrypoint
 src/checks/           Validation classes, shared types, and helpers
+help/                 Source markdown guides for TypeDoc project documents
+docs/                 Generated TypeDoc site output
 test/                 Vitest coverage for the exported surface
-docs/                 Markdown documentation
 dist/                 Generated output
 ```
 

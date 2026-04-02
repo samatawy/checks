@@ -1,16 +1,16 @@
+---
+title: Documentation
+---
+
 # Documentation
 
 This package exposes a fluent validation API for working with objects, arrays, fields, strings, numbers, dates, files, and images.
 
-## Guides
+The generated docs site is organized into three top-level sections:
 
-- [checks.md](checks.md) for the validation classes, types, and usage patterns
-- [how-to.md](how-to.md) for task-oriented recipes with imports and sample output
-- [decorated-classes.md](decorated-classes.md) for class decorators and decorator-based validation
-- [object-factory.md](object-factory.md) for validated object creation and hydration
-- [coded-results.md](coded-results.md) for optional result-code catalogs and translation
-- [development.md](development.md) for local development and maintenance
-- [publishing.md](publishing.md) for release and publish steps
+- [How-To](how-to-section.md) for recipes, examples, decorated classes, and object hydration
+- [Reference](reference-section.md) for the validation API and coded-result behavior
+- [Maintenance](maintenance-section.md) for development and publishing workflows
 
 ## Package overview
 
@@ -26,8 +26,6 @@ The public API is exported from [src/index.ts](../src/index.ts) and includes:
 ## Recommended reading order
 
 1. Start with the README for a quick usage example.
-2. Use [how-to.md](how-to.md) for common tasks and complete recipes.
-3. Read [coded-results.md](coded-results.md) only if you need stable codes or translation catalogs.
-4. Use [checks.md](checks.md) as the API reference.
-5. Review [development.md](development.md) before extending the package.
-6. Review [publishing.md](publishing.md) before release.
+2. Use [How-To](how-to-section.md) for common tasks and end-to-end examples.
+3. Read [Reference](reference-section.md) when you need API details or coded-result behavior.
+4. Review [Maintenance](maintenance-section.md) before extending or publishing the package.

@@ -1,3 +1,9 @@
+---
+title: Coded Results
+group: Guides
+category: Advanced
+---
+
 # Coded Results
 
 This guide covers the optional result-code layer.

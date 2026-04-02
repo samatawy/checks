@@ -1,3 +1,9 @@
+---
+title: Decorated Classes
+group: Guides
+category: Decorators
+---
+
 # Decorated Classes
 
 This guide covers the decorator-based validation API.

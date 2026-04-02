@@ -14,15 +14,7 @@ const objectMethods = [
 	'noExtraFields',
 ] as const;
 
-const objectRules = createDecoratorGroup('property', 'object', ObjectCheck, objectMethods);
-const itemObjectRules = createDecoratorGroup('item', 'object', ObjectCheck, objectMethods);
-
-export const object = {
-	...objectRules,
-	matchesType,
-};
-
-export const string = createDecoratorGroup('property', 'string', StringCheck, [
+const stringMethods = [
 	'minLength',
 	'maxLength',
 	'pattern',
@@ -45,11 +37,9 @@ export const string = createDecoratorGroup('property', 'string', StringCheck, [
 	'noSpecialCharacters',
 	'noSpaces',
 	'maxWords',
-] as const);
+] as const;
 
-export const stringRules = string;
-
-export const number = createDecoratorGroup('property', 'number', NumberCheck, [
+const numberMethods = [
 	'integer',
 	'minPrecision',
 	'positive',
@@ -59,11 +49,9 @@ export const number = createDecoratorGroup('property', 'number', NumberCheck, [
 	'lessThan',
 	'atLeast',
 	'atMost',
-] as const);
+] as const;
 
-export const numberRules = number;
-
-export const date = createDecoratorGroup('property', 'date', DateCheck, [
+const dateMethods = [
 	'after',
 	'before',
 	'sameDay',
@@ -73,30 +61,28 @@ export const date = createDecoratorGroup('property', 'date', DateCheck, [
 	'withinHours',
 	'withinDays',
 	'withinMonths',
-] as const);
+] as const;
 
-export const dateRules = date;
-
-export const email = createDecoratorGroup('property', 'email', EmailCheck, [
+const emailMethods = [
 	'host',
 	'tld',
-] as const);
+] as const;
 
-export const url = createDecoratorGroup('property', 'url', UrlCheck, [
+const urlMethods = [
 	'host',
 	'tld',
 	'protocol',
 	'port',
-] as const);
+] as const;
 
-export const file = createDecoratorGroup('property', 'file', FileCheck, [
+const fileMethods = [
 	'mimeType',
 	'notEmpty',
 	'minSize',
 	'maxSize',
-] as const);
+] as const;
 
-export const image = createDecoratorGroup('property', 'image', ImageCheck, [
+const imageMethods = [
 	'mimeType',
 	'notEmpty',
 	'minSize',
@@ -106,97 +92,145 @@ export const image = createDecoratorGroup('property', 'image', ImageCheck, [
 	'minHeight',
 	'maxWidth',
 	'maxHeight',
-] as const);
+] as const;
 
-export const array = createDecoratorGroup('property', 'array', ArrayCheck, [
+const arrayMethods = [
 	'notEmpty',
 	'minLength',
 	'maxLength',
 	'noDuplicates',
-] as const);
+] as const;
 
-export const item = {
+const objectRules = createDecoratorGroup('property', 'object', ObjectCheck, objectMethods);
+const itemObjectRules = createDecoratorGroup('item', 'object', ObjectCheck, objectMethods);
+
+export const object: {
+	notEmpty: (...args: unknown[]) => PropertyDecorator;
+	noExtraFields: (...args: unknown[]) => PropertyDecorator;
+	matchesType: typeof matchesType;
+} = {
+	...objectRules,
+	matchesType,
+};
+
+export const string: {
+	minLength: (...args: unknown[]) => PropertyDecorator;
+	maxLength: (...args: unknown[]) => PropertyDecorator;
+	pattern: (...args: unknown[]) => PropertyDecorator;
+	oneOf: (...args: unknown[]) => PropertyDecorator;
+	startsWith: (...args: unknown[]) => PropertyDecorator;
+	endsWith: (...args: unknown[]) => PropertyDecorator;
+	contains: (...args: unknown[]) => PropertyDecorator;
+	isBase64: (...args: unknown[]) => PropertyDecorator;
+	isSHA256: (...args: unknown[]) => PropertyDecorator;
+	isMD5: (...args: unknown[]) => PropertyDecorator;
+	isUUID: (...args: unknown[]) => PropertyDecorator;
+	isHexadecimal: (...args: unknown[]) => PropertyDecorator;
+	isAlphanumeric: (...args: unknown[]) => PropertyDecorator;
+	isAscii: (...args: unknown[]) => PropertyDecorator;
+	hasMultibyte: (...args: unknown[]) => PropertyDecorator;
+	hasUpperCase: (...args: unknown[]) => PropertyDecorator;
+	hasLowerCase: (...args: unknown[]) => PropertyDecorator;
+	hasDigit: (...args: unknown[]) => PropertyDecorator;
+	hasSpecialCharacter: (...args: unknown[]) => PropertyDecorator;
+	noSpecialCharacters: (...args: unknown[]) => PropertyDecorator;
+	noSpaces: (...args: unknown[]) => PropertyDecorator;
+	maxWords: (...args: unknown[]) => PropertyDecorator;
+} = createDecoratorGroup('property', 'string', StringCheck, stringMethods);
+
+export const stringRules = string;
+
+export const number: {
+	integer: (...args: unknown[]) => PropertyDecorator;
+	minPrecision: (...args: unknown[]) => PropertyDecorator;
+	positive: (...args: unknown[]) => PropertyDecorator;
+	negative: (...args: unknown[]) => PropertyDecorator;
+	nonNegative: (...args: unknown[]) => PropertyDecorator;
+	greaterThan: (...args: unknown[]) => PropertyDecorator;
+	lessThan: (...args: unknown[]) => PropertyDecorator;
+	atLeast: (...args: unknown[]) => PropertyDecorator;
+	atMost: (...args: unknown[]) => PropertyDecorator;
+} = createDecoratorGroup('property', 'number', NumberCheck, numberMethods);
+
+export const numberRules = number;
+
+export const date: {
+	after: (...args: unknown[]) => PropertyDecorator;
+	before: (...args: unknown[]) => PropertyDecorator;
+	sameDay: (...args: unknown[]) => PropertyDecorator;
+	sameMonth: (...args: unknown[]) => PropertyDecorator;
+	sameYear: (...args: unknown[]) => PropertyDecorator;
+	withinMinutes: (...args: unknown[]) => PropertyDecorator;
+	withinHours: (...args: unknown[]) => PropertyDecorator;
+	withinDays: (...args: unknown[]) => PropertyDecorator;
+	withinMonths: (...args: unknown[]) => PropertyDecorator;
+} = createDecoratorGroup('property', 'date', DateCheck, dateMethods);
+
+export const dateRules = date;
+
+export const email: {
+	host: (...args: unknown[]) => PropertyDecorator;
+	tld: (...args: unknown[]) => PropertyDecorator;
+} = createDecoratorGroup('property', 'email', EmailCheck, emailMethods);
+
+export const url: {
+	host: (...args: unknown[]) => PropertyDecorator;
+	tld: (...args: unknown[]) => PropertyDecorator;
+	protocol: (...args: unknown[]) => PropertyDecorator;
+	port: (...args: unknown[]) => PropertyDecorator;
+} = createDecoratorGroup('property', 'url', UrlCheck, urlMethods);
+
+export const file: {
+	mimeType: (...args: unknown[]) => PropertyDecorator;
+	notEmpty: (...args: unknown[]) => PropertyDecorator;
+	minSize: (...args: unknown[]) => PropertyDecorator;
+	maxSize: (...args: unknown[]) => PropertyDecorator;
+} = createDecoratorGroup('property', 'file', FileCheck, fileMethods);
+
+export const image: {
+	mimeType: (...args: unknown[]) => PropertyDecorator;
+	notEmpty: (...args: unknown[]) => PropertyDecorator;
+	minSize: (...args: unknown[]) => PropertyDecorator;
+	maxSize: (...args: unknown[]) => PropertyDecorator;
+	isImage: (...args: unknown[]) => PropertyDecorator;
+	minWidth: (...args: unknown[]) => PropertyDecorator;
+	minHeight: (...args: unknown[]) => PropertyDecorator;
+	maxWidth: (...args: unknown[]) => PropertyDecorator;
+	maxHeight: (...args: unknown[]) => PropertyDecorator;
+} = createDecoratorGroup('property', 'image', ImageCheck, imageMethods);
+
+export const array: {
+	notEmpty: (...args: unknown[]) => PropertyDecorator;
+	minLength: (...args: unknown[]) => PropertyDecorator;
+	maxLength: (...args: unknown[]) => PropertyDecorator;
+	noDuplicates: (...args: unknown[]) => PropertyDecorator;
+} = createDecoratorGroup('property', 'array', ArrayCheck, arrayMethods);
+
+export const item: {
+	object: {
+		notEmpty: (...args: unknown[]) => PropertyDecorator;
+		noExtraFields: (...args: unknown[]) => PropertyDecorator;
+		matchesType: typeof items.matchesType;
+	};
+	string: typeof string;
+	number: typeof number;
+	date: typeof date;
+	email: typeof email;
+	url: typeof url;
+	file: typeof file;
+	image: typeof image;
+	array: typeof array;
+} = {
 	object: {
 		...itemObjectRules,
 		matchesType: items.matchesType,
 	},
-	string: createDecoratorGroup('item', 'string', StringCheck, [
-		'minLength',
-		'maxLength',
-		'pattern',
-		'oneOf',
-		'startsWith',
-		'endsWith',
-		'contains',
-		'isBase64',
-		'isSHA256',
-		'isMD5',
-		'isUUID',
-		'isHexadecimal',
-		'isAlphanumeric',
-		'isAscii',
-		'hasMultibyte',
-		'hasUpperCase',
-		'hasLowerCase',
-		'hasDigit',
-		'hasSpecialCharacter',
-		'noSpecialCharacters',
-		'noSpaces',
-		'maxWords',
-	] as const),
-	number: createDecoratorGroup('item', 'number', NumberCheck, [
-		'integer',
-		'minPrecision',
-		'positive',
-		'negative',
-		'nonNegative',
-		'greaterThan',
-		'lessThan',
-		'atLeast',
-		'atMost',
-	] as const),
-	date: createDecoratorGroup('item', 'date', DateCheck, [
-		'after',
-		'before',
-		'sameDay',
-		'sameMonth',
-		'sameYear',
-		'withinMinutes',
-		'withinHours',
-		'withinDays',
-		'withinMonths',
-	] as const),
-	email: createDecoratorGroup('item', 'email', EmailCheck, [
-		'host',
-		'tld',
-	] as const),
-	url: createDecoratorGroup('item', 'url', UrlCheck, [
-		'host',
-		'tld',
-		'protocol',
-		'port',
-	] as const),
-	file: createDecoratorGroup('item', 'file', FileCheck, [
-		'mimeType',
-		'notEmpty',
-		'minSize',
-		'maxSize',
-	] as const),
-	image: createDecoratorGroup('item', 'image', ImageCheck, [
-		'mimeType',
-		'notEmpty',
-		'minSize',
-		'maxSize',
-		'isImage',
-		'minWidth',
-		'minHeight',
-		'maxWidth',
-		'maxHeight',
-	] as const),
-	array: createDecoratorGroup('item', 'array', ArrayCheck, [
-		'notEmpty',
-		'minLength',
-		'maxLength',
-		'noDuplicates',
-	] as const),
+	string: createDecoratorGroup('item', 'string', StringCheck, stringMethods),
+	number: createDecoratorGroup('item', 'number', NumberCheck, numberMethods),
+	date: createDecoratorGroup('item', 'date', DateCheck, dateMethods),
+	email: createDecoratorGroup('item', 'email', EmailCheck, emailMethods),
+	url: createDecoratorGroup('item', 'url', UrlCheck, urlMethods),
+	file: createDecoratorGroup('item', 'file', FileCheck, fileMethods),
+	image: createDecoratorGroup('item', 'image', ImageCheck, imageMethods),
+	array: createDecoratorGroup('item', 'array', ArrayCheck, arrayMethods),
 };

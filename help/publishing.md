@@ -1,10 +1,16 @@
+---
+title: Publishing
+group: Maintenance
+category: Release Process
+---
+
 # Publishing
 
 ## Pre-publish checklist
 
 1. Update `package.json` metadata and the npm package name.
 2. Confirm the README reflects the current validation API.
-3. Confirm [docs/checks.md](checks.md) matches the exported classes and types.
+3. Confirm [help/checks.md](checks.md) matches the exported classes and types.
 4. Run `npm run lint`.
 5. Run `npm test`.
 6. Run `npm run build`.

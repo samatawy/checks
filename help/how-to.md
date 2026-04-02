@@ -1,3 +1,9 @@
+---
+title: How-To
+group: Guides
+category: Common Tasks
+---
+
 # How To
 
 This guide covers common tasks you are likely to perform with the validation API.

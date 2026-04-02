@@ -1,3 +1,9 @@
+---
+title: Checks API
+group: Reference
+category: API
+---
+
 # Checks API
 
 This package provides a fluent validation API built around a small set of composable check classes.

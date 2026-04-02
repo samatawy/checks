@@ -3,13 +3,27 @@
     "entryPoints": [
         "src/index.ts"
     ],
+    "projectDocuments": [
+        "help/how-to-section.md",
+        "help/reference-section.md",
+        "help/maintenance-section.md"
+    ],
     "tsconfig": "tsconfig.json",
     "out": "docs",
-    "readme": "README.md",
+    "readme": "help/index.md",
     "cleanOutputDir": true,
     "excludePrivate": true,
     "excludeInternal": true,
+    "searchInDocuments": true,
+    "navigation": {
+        "includeCategories": true,
+        "includeGroups": true,
+        "includeFolders": true,
+        "excludeReferences": false
+    },
     "sort": [
+        "documents-first",
         "source-order"
-    ]
+    ],
+    "sortEntryPoints": false
 }

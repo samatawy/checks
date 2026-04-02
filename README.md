@@ -20,7 +20,7 @@ The package builds to both ESM and CommonJS, ships declaration files, and suppor
 - [help/development.md](help/development.md)
 - [help/publishing.md](help/publishing.md)
 
-- Generated API reference:
+- Generate local API reference:
 - Run `npm run docs` to generate the API reference in `docs/`.
 - The generated entry page is `docs/index.html`.
 - The generated module overview is `docs/modules.html`.
