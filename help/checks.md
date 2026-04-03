@@ -197,6 +197,8 @@ For object and array checks:
 - `result({ language })` returns the merged nested result tree
 - `result({ flattened: true, language })` returns flattened `hints`, `warnings`, and `errors`
 - `result({ nested: true, language })` returns an input-shaped projection under `input`
+- `result({ validated: 'partial', language })` returns a cloned validated value with invalid descendants removed and valid siblings preserved
+- `result({ validated: 'strict', language })` returns a cloned validated value where any invalid descendant removes the whole parent branch
 - `result({ raw: true, nested: true, flattened: true, language })` returns all projections at once
 
 For value-level checks:
@@ -210,14 +212,22 @@ Example:
 const output = check.result({
   raw: true,
   nested: true,
+  validated: 'partial',
   flattened: true,
   language: 'en'
 }) as any;
 
 console.log(output.raw);
 console.log(output.input);
+console.log(output.validated);
 console.log(output.errors);
 ```
+
+Notes:
+
+- `validated` uses the current normalized input value, so coercions or mutations performed by checks are reflected in the output
+- `'partial'` is the default mode to prefer when you want to keep valid object fields or array items even if siblings fail
+- `'strict'` is useful when a parent object or array should be considered unusable as soon as one descendant is invalid
 
 ## Result types
 

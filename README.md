@@ -100,6 +100,8 @@ For object and array checks:
 - `result({ language })` returns the merged nested result tree
 - `result({ flattened: true, language })` returns flattened `hints`, `warnings`, and `errors`
 - `result({ nested: true, language })` returns an input-shaped projection under `input`
+- `result({ validated: 'partial', language })` returns a cloned validated value with invalid descendants removed while valid siblings stay
+- `result({ validated: 'strict', language })` returns a cloned validated value where any invalid descendant removes the whole parent branch
 - `result({ raw: true, nested: true, flattened: true, language })` returns all projections at once
 
 For value-level checks such as `FieldCheck`, `StringCheck`, or `NumberCheck`, `result({ language })` returns the finalized single result.
@@ -110,16 +112,20 @@ Example:
 const output = check.result({
   raw: true,
   nested: true,
+  validated: 'partial',
   flattened: true,
   language: 'en'
 });
 
 console.log(output.raw);
 console.log(output.input);
+console.log(output.validated);
 console.log(output.errors);
 ```
 
 Use `result()` with no options when you want the current internal result state while building advanced flows. For application-facing output, prefer explicit result options.
+
+`validated` is a runtime filtered clone of the normalized input. It is useful for keeping only the parts of a payload that passed validation, but it does not infer a compile-time object type from the fluent rules.
 
 ## Public API
 

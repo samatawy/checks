@@ -193,6 +193,8 @@ const check = await ObjectCheck.for({
 console.log(check.result({ language: 'en' }));
 console.log(check.result({ flattened: true, language: 'en' }));
 console.log(check.result({ nested: true, language: 'en' }));
+console.log(check.result({ validated: 'partial', language: 'en' }));
+console.log(check.result({ validated: 'strict', language: 'en' }));
 console.log(check.result({ raw: true, nested: true, flattened: true, language: 'en' }));
 ```
 
@@ -201,7 +203,11 @@ Use these options as a rule of thumb:
 - `language` for the merged nested result tree
 - `flattened: true` when you only need message arrays such as `errors`
 - `nested: true` when you want an input-shaped projection under `input`
+- `validated: 'partial'` when you want a cloned value with invalid fields or items removed while valid siblings stay
+- `validated: 'strict'` when any invalid descendant should remove the whole parent branch from the validated output
 - `raw: true` when you also want the merged internal result tree exposed under `raw`
+
+`validated` is built from the normalized input value after coercions such as `trim()` or tolerant boolean and number parsing. It is intended as a runtime-safe filtered clone, not as inferred compile-time typing.
 
 ## Use Coded Results Only When Needed
 
