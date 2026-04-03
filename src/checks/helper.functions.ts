@@ -433,6 +433,148 @@ function nestFields(source: any, set: ResultSet): any {
     return fieldMap;
 }
 
+function validValues(input: any, set: IResult, mode: 'partial' | 'strict'): any {
+    const cloned = cloneValue(input);
+    const pruned = pruneInvalidValues(cloned, set, mode);
+
+    return pruned.removed ? undefined : pruned.value;
+}
+
+function cloneValue(value: any): any {
+    if (Array.isArray(value)) {
+        return value.map(item => cloneValue(item));
+    }
+
+    if (value instanceof Date) {
+        return new Date(value.getTime());
+    }
+
+    if (value && typeof value === 'object') {
+        const cloned: Record<string, any> = {};
+        for (const [key, child] of Object.entries(value)) {
+            cloned[key] = cloneValue(child);
+        }
+        return cloned;
+    }
+
+    return value;
+}
+
+function pruneInvalidValues(value: any, result: IResult | undefined, mode: 'partial' | 'strict'): { removed: boolean, value?: any } {
+    if (!defined(result)) {
+        return { removed: false, value };
+    }
+
+    if (result.valid === false && !(result as ResultSet).results?.length) {
+        return { removed: true };
+    }
+
+    const children = (result as ResultSet).results ?? [];
+    if (children.length === 0) {
+        return { removed: false, value };
+    }
+
+    if (Array.isArray(value)) {
+        const next = [...value];
+        const removals = new Set<number>();
+        let foundInvalidDescendant = false;
+        let foundMissingInvalidDescendant = false;
+
+        for (const child of children) {
+            if (!defined(child.field)) {
+                if (child.valid === false) {
+                    foundInvalidDescendant = true;
+                }
+                continue;
+            }
+
+            const index = typeof child.field === 'number' ? child.field : Number(child.field);
+            if (!Number.isInteger(index) || index < 0 || index >= next.length) {
+                if (child.valid === false) {
+                    foundInvalidDescendant = true;
+                    foundMissingInvalidDescendant = true;
+                }
+                continue;
+            }
+
+            const pruned = pruneInvalidValues(next[index], child, mode);
+            if (pruned.removed) {
+                removals.add(index);
+                foundInvalidDescendant = true;
+            } else {
+                next[index] = pruned.value;
+                if (child.valid === false) {
+                    foundInvalidDescendant = true;
+                }
+            }
+        }
+
+        if (mode === 'strict' && (foundInvalidDescendant || result.valid === false)) {
+            return { removed: true };
+        }
+
+        if (mode === 'partial' && result.valid === false && foundMissingInvalidDescendant) {
+            return { removed: true };
+        }
+
+        if (removals.size > 0) {
+            return {
+                removed: false,
+                value: next.filter((_, index) => !removals.has(index)),
+            };
+        }
+
+        return { removed: false, value: next };
+    }
+
+    if (value && typeof value === 'object') {
+        const next: Record<string, any> = { ...value };
+        let foundInvalidDescendant = false;
+        let foundMissingInvalidDescendant = false;
+
+        for (const child of children) {
+            if (!defined(child.field)) {
+                if (child.valid === false) {
+                    foundInvalidDescendant = true;
+                }
+                continue;
+            }
+
+            const key = String(child.field);
+            if (!Object.prototype.hasOwnProperty.call(next, key)) {
+                if (child.valid === false) {
+                    foundInvalidDescendant = true;
+                    foundMissingInvalidDescendant = true;
+                }
+                continue;
+            }
+
+            const pruned = pruneInvalidValues(next[key], child, mode);
+            if (pruned.removed) {
+                delete next[key];
+                foundInvalidDescendant = true;
+            } else {
+                next[key] = pruned.value;
+                if (child.valid === false) {
+                    foundInvalidDescendant = true;
+                }
+            }
+        }
+
+        if (mode === 'strict' && (foundInvalidDescendant || result.valid === false)) {
+            return { removed: true };
+        }
+
+        if (mode === 'partial' && result.valid === false && foundMissingInvalidDescendant) {
+            return { removed: true };
+        }
+
+        return { removed: false, value: next };
+    }
+
+    return { removed: false, value };
+}
+
 /**
  * Find nested objects with the same value of 'field' and merge them,
  * merge hint, warn and err values into arrays if necessary, 
@@ -506,14 +648,16 @@ export function finalizeResult(out: IResult, options?: ResultOptions): IResult {
 
 export function collectResults(input: any, out: ResultSet, options?: ResultOptions): ResultSet {
     const merged = finalizeResult(mergeFields(out), options) as ResultSet;
-    const formatOnly = options?.raw || options?.nested || options?.flattened;
+    const formatOnly = options?.raw || options?.nested || options?.validated || options?.flattened;
+    const nested = options?.nested ? nestFields(input, merged) : undefined;
 
     let final: any = {};
     if (!options || Object.keys(options).length === 0 || !formatOnly) {
         final = { ...merged };
     } else {
         if (options.raw) final = { ...final, raw: merged };
-        if (options.nested) final = { ...final, input: nestFields(input, merged) };
+        if (options.nested && defined(nested)) final = { ...final, input: nested };
+        if (options.validated) final = { ...final, validated: validValues(input, merged, options.validated) };
         if (options.flattened) final = { ...final, ...extractMessages(merged) };
     }
     return final;

@@ -191,6 +191,20 @@ export class ObjectCheck implements Check {
 
         if (unknown_keys.length > 0) {
             this.errorMessage(prefix + ` has extra fields: ${unknown_keys.join(', ')}`, options);
+
+            const extraResults = unknown_keys.map(key => {
+                const message = defined(this.key)
+                    ? `Field ${this.key}.${key} is not allowed`
+                    : `Field ${key} is not allowed`;
+
+                return {
+                    ...buildErrorMessage(message, options),
+                    field: key,
+                };
+            });
+
+            this.out.results = [...(this.out.results ?? []), ...extraResults];
+            this.out.valid = false;
         }
         this.check_extra_fields = false;
         return this;

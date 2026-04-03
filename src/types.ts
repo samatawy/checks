@@ -158,6 +158,9 @@ export interface ResultOptions {
     /** Returns results grouped by field where supported. */
     nested?: boolean;
 
+    /** Returns the validated input value using either partial or strict pruning. */
+    validated?: 'partial' | 'strict';
+
     /** Returns flattened top-level hint, warning, and error arrays. */
     flattened?: boolean;
 }
