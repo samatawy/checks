@@ -28,6 +28,10 @@ Common methods:
 - `conditional(name, condition, options?)` requires a field only when the predicate returns `true`
 - `noExtraFields(options?)` flags undeclared keys in the final object result
 - `check(fn)` applies nested rules and aggregates results asynchronously
+- `allOf(fn)` applies a nested group of object rules where all returned checks must pass
+- `anyOf(branches)` applies alternative object branches where at least one branch must pass
+- `oneOf(branches)` applies alternative object branches where exactly one branch must pass
+- `not(fn, options?)` applies a negated object branch that must fail
 - `isTrue(fn, options?)` applies a custom object-level predicate and supports async predicates
 - `result(options?)` returns the current result or a formatted final result depending on the options you pass
 
@@ -50,6 +54,40 @@ const check = await ObjectCheck.for(input)
 const result = check.result({ language: 'en' });
 ```
 
+Composition example:
+
+```ts
+import { ObjectCheck } from '@samatawy/checks';
+
+const input = {
+  profile: {
+    name: '  Ada  ',
+    age: '37'
+  }
+};
+
+const check = await ObjectCheck.for(input)
+  .check(root => [
+    root.required('profile').object().anyOf([
+      profile => [
+        profile.required('name').string().trim().minLength(3)
+      ],
+      profile => [
+        profile.required('age').number({ tolerant: true }).greaterThan(17)
+      ]
+    ])
+  ]);
+
+const result = check.result({ language: 'en' });
+```
+
+Notes:
+
+- `allOf(fn)` keeps the same callback shape as `check(fn)`
+- `anyOf(...)` and `oneOf(...)` accept an array of branch functions, not a single callback
+- valid `anyOf(...)` and `oneOf(...)` branches are replayed on the real object, so normal mutations such as `trim()` or tolerant parsing affect the original input consistently
+- `not(...)` evaluates its branch on isolated data and never replays mutations onto the original input
+
 ### `FieldCheck`
 
 `FieldCheck` bridges from an object field to a specific value type.
@@ -57,6 +95,11 @@ const result = check.result({ language: 'en' });
 Common methods:
 
 - `required(options?)`
+- `allOf(fn)` applies a group of field rules where all returned checks must pass
+- `anyOf(branches)` applies alternative field branches where at least one branch must pass
+- `oneOf(branches)` applies alternative field branches where exactly one branch must pass
+- `not(fn, options?)` applies a negated field branch that must fail
+- `equals(value, options?)` compares the field value using strict equality by default and supports lax matching with `tolerant: true`
 - `object()`
 - `array()`
 - `file()`
@@ -76,6 +119,26 @@ Notes:
 - `url()` returns `UrlCheck`
 - the other branching methods return synchronous check instances
 
+Field composition example:
+
+```ts
+import { ObjectCheck } from '@samatawy/checks';
+
+const input = {
+  value: '37'
+};
+
+const check = await ObjectCheck.for(input)
+  .check(root => [
+    root.required('value').anyOf([
+      field => [field.number({ tolerant: true }).greaterThan(10)],
+      field => [field.string().minLength(5)]
+    ])
+  ]);
+
+const result = check.result({ language: 'en' });
+```
+
 ### `ArrayCheck`
 
 Use `ArrayCheck` for array-specific validation.
@@ -89,6 +152,10 @@ Common methods:
 - `maxLength(length, options?)`
 - `noDuplicates(key?, options?)` rejects duplicate primitive values, duplicate repeated object references, or duplicate object values by a selected object key
 - `check(fn)` applies array-level checks and synthetic child results asynchronously
+- `allOf(fn)` applies a group of array rules where all returned checks must pass
+- `anyOf(branches)` applies alternative array branches where at least one branch must pass
+- `oneOf(branches)` applies alternative array branches where exactly one branch must pass
+- `not(fn, options?)` applies a negated array branch that must fail
 - `checkEach(fn)` validates each item using `ArrayItemCheck` and supports promised checks
 - `isTrue(fn, options?)` applies a custom predicate to the array value and supports async predicates
 - `isTrueEach(fn, options?)` runs a custom predicate on every item and supports async predicates
@@ -112,6 +179,28 @@ const check = await ObjectCheck.for(input)
 const result = check.result({ flattened: true, language: 'en' });
 ```
 
+Composition example:
+
+```ts
+import { ObjectCheck } from '@samatawy/checks';
+
+const input = {
+  tags: ['  Ada  ', '  Bob  ']
+};
+
+const check = await ObjectCheck.for(input)
+  .check(root => [
+    root.required('tags').array().anyOf([
+      tags => [
+        tags.checkEach(item => [item.string().trim().minLength(2)])
+      ],
+      tags => [tags.maxLength(1)]
+    ])
+  ]);
+
+const result = check.result({ language: 'en' });
+```
+
 ### `ArrayItemCheck`
 
 Represents one element in an array.
@@ -127,6 +216,33 @@ Common methods:
 - `number()`
 - `date()`
 - `boolean()`
+- `allOf(fn)` applies a group of item rules where all returned checks must pass
+- `anyOf(branches)` applies alternative item branches where at least one branch must pass
+- `oneOf(branches)` applies alternative item branches where exactly one branch must pass
+- `not(fn, options?)` applies a negated item branch that must fail
+- `equals(value, options?)` compares the current item value using strict equality by default and supports lax matching with `tolerant: true`
+
+Item composition example:
+
+```ts
+import { ObjectCheck } from '@samatawy/checks';
+
+const input = {
+  values: ['  Ada  ']
+};
+
+const check = await ObjectCheck.for(input)
+  .check(root => [
+    root.required('values').array().checkEach(item => [
+      item.anyOf([
+        entry => [entry.string().trim().minLength(2)],
+        entry => [entry.number().greaterThan(10)]
+      ])
+    ])
+  ]);
+
+const result = check.result({ language: 'en' });
+```
 
 ### `FileCheck`
 
@@ -195,6 +311,7 @@ Selected methods:
 For object and array checks:
 
 - `result({ language })` returns the merged nested result tree
+- `result({ language, catalog })` resolves coded messages with an explicit result catalog instead of `ResultCatalog.global`
 - `result({ flattened: true, language })` returns flattened `hints`, `warnings`, and `errors`
 - `result({ nested: true, language })` returns an input-shaped projection under `input`
 - `result({ validated: 'partial', language })` returns a cloned validated value with invalid descendants removed and valid siblings preserved
@@ -225,6 +342,7 @@ console.log(output.errors);
 
 Notes:
 
+- `catalog` lets final result formatting resolve coded messages from a specific `ResultCatalog`; without it, the package uses `ResultCatalog.global`
 - `validated` uses the current normalized input value, so coercions or mutations performed by checks are reflected in the output
 - `'partial'` is the default mode to prefer when you want to keep valid object fields or array items even if siblings fail
 - `'strict'` is useful when a parent object or array should be considered unusable as soon as one descendant is invalid
@@ -300,6 +418,7 @@ interface ResultOptions {
   catalog?: IResultCatalog;
   raw?: boolean;
   nested?: boolean;
+  validated?: 'partial' | 'strict';
   flattened?: boolean;
 }
 ```

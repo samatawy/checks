@@ -253,6 +253,58 @@ export class ObjectCheck implements Check {
     }
 
     /**
+     * Alias for {@link check} using JSON Schema-style naming.
+     *
+     * All returned checks must pass for the composed result to stay valid.
+     */
+    public async allOf(func: (checker: ObjectCheck) => (Check | Promise<Check>)[]): Promise<this> {
+        return this.check(func);
+    }
+
+    /**
+     * Evaluates alternative branches and succeeds when at least one branch is valid.
+     *
+     * Each branch function is evaluated in isolation using cloned object state.
+     * Valid branches are then replayed on the current checker so mutations behave
+     * the same way as normal non-branch checks.
+     */
+    public async anyOf(branches: Array<(checker: ObjectCheck) => (Check | Promise<Check>)[]>): Promise<this> {
+        return this.composeAlternatives('anyOf', branches);
+    }
+
+    /**
+     * Evaluates alternative branches and succeeds only when exactly one branch is valid.
+     *
+     * Each branch function is evaluated in isolation using cloned object state.
+     * The single winning branch is then replayed on the current checker so
+     * mutations behave the same way as normal non-branch checks.
+     */
+    public async oneOf(branches: Array<(checker: ObjectCheck) => (Check | Promise<Check>)[]>): Promise<this> {
+        return this.composeAlternatives('oneOf', branches);
+    }
+
+    /**
+     * Inverts a composed object branch and fails when that branch is valid.
+     *
+     * The negated branch is evaluated in isolation and is never replayed onto
+     * the current checker, so mutations inside the branch do not affect the
+     * original input.
+     */
+    public async not(
+        func: (checker: ObjectCheck) => (Check | Promise<Check>)[],
+        options?: CheckOptions,
+    ): Promise<this> {
+        const checker = this.createAlternativeChecker();
+        await checker.rules(func(checker));
+
+        if (checker.result().valid) {
+            this.errorMessage('Negated branch must not be valid.', options);
+        }
+
+        return this;
+    }
+
+    /**
     * Validates the current object value against a decorated class definition.
      *
      * This merges the decorated-class result into the current checker so it can
@@ -300,6 +352,110 @@ export class ObjectCheck implements Check {
 
     protected errorMessage(err: string, options?: CheckOptions): void {
         this.out = appendError(this.out, err, options);
+    }
+
+    private async composeAlternatives(
+        mode: 'anyOf' | 'oneOf',
+        branches: Array<(checker: ObjectCheck) => (Check | Promise<Check>)[]>,
+    ): Promise<this> {
+        if (branches.length === 0) {
+            return this;
+        }
+
+        const evaluated: Array<{
+            branch: (checker: ObjectCheck) => (Check | Promise<Check>)[],
+            result: IResult,
+        }> = [];
+
+        for (const branch of branches) {
+            const checker = this.createAlternativeChecker();
+            await checker.rules(branch(checker));
+            evaluated.push({ branch, result: checker.result() });
+        }
+
+        const validBranches = evaluated.filter(entry => entry.result.valid);
+
+        if (mode === 'anyOf') {
+            if (validBranches.length === 0) {
+                this.errorMessage('At least one anyOf branch must be valid.');
+                for (const branch of evaluated) {
+                    this.mergeBranchResult(branch.result);
+                }
+                return this;
+            }
+
+            for (const branch of validBranches) {
+                await this.rules(branch.branch(this));
+            }
+            return this;
+        }
+
+        if (validBranches.length !== 1) {
+            this.errorMessage('Exactly one oneOf branch must be valid.');
+
+            if (validBranches.length === 0) {
+                for (const branch of evaluated) {
+                    this.mergeBranchResult(branch.result);
+                }
+            }
+
+            return this;
+        }
+
+        await this.rules(validBranches[0]!.branch(this));
+        return this;
+    }
+
+    private createAlternativeChecker(): ObjectCheck {
+        const checker = new ObjectCheck(null, this.cloneAlternativeValue(this.data));
+        checker.key = this.key;
+        checker.out = defined(this.key) ? { field: this.key, valid: true } : { valid: true };
+        return checker;
+    }
+
+    private cloneAlternativeValue<T>(value: T): T {
+        if (Array.isArray(value)) {
+            return value.map(item => this.cloneAlternativeValue(item)) as T;
+        }
+
+        if (value instanceof Date) {
+            return new Date(value.getTime()) as T;
+        }
+
+        if (defined(value) && typeof value === 'object') {
+            const cloned: Record<string, unknown> = {};
+            for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+                cloned[key] = this.cloneAlternativeValue(child);
+            }
+            return cloned as T;
+        }
+
+        return value;
+    }
+
+    private mergeBranchResult(result: IResult): void {
+        if (defined(result.hint)) {
+            this.out.hint = this.mergeMessageValue(this.out.hint, result.hint);
+        }
+        if (defined(result.warn)) {
+            this.out.warn = this.mergeMessageValue(this.out.warn, result.warn);
+        }
+        if (defined(result.err)) {
+            this.out.err = this.mergeMessageValue(this.out.err, result.err);
+            this.out.valid = false;
+        }
+        if (defined(result.code) && !defined(this.out.code)) {
+            this.out.code = result.code;
+        }
+        if ((result as ResultSet).results?.length) {
+            this.out.results = [...(this.out.results ?? []), ...((result as ResultSet).results ?? [])];
+        }
+        if (!result.valid && !(result as ResultSet).results?.length && (defined(result.hint) || defined(result.warn) || defined(result.err))) {
+            this.out.results = [...(this.out.results ?? []), result];
+        }
+        if (!result.valid) {
+            this.out.valid = false;
+        }
     }
 
     private mergeDecoratedResult(result: ResultSet): void {

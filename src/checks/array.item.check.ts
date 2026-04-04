@@ -1,4 +1,4 @@
-import type { CheckOptions } from '../types';
+import type { Check, CheckOptions, EqualityCheckOptions, TolerantCheckOptions } from '../types';
 import type { DecoratedValidationOptions } from '../decorators/decorator.factory';
 import { appendError } from './helper.functions';
 import { NumberCheck } from './number.check';
@@ -39,7 +39,7 @@ export class ArrayItemCheck extends ValueCheck {
     }
 
     public conditional(name: string, condition: (data: any) => boolean, options?: CheckOptions): FieldCheck {
-        if (condition(this.data)) {
+        if (condition(this.item)) {
             return new FieldCheck(name, this.item).required(options);
         } else {
             return new FieldCheck(name, this.item);
@@ -47,27 +47,90 @@ export class ArrayItemCheck extends ValueCheck {
     }
 
     public array(): ArrayCheck {
-        return new ArrayCheck(this.key, this.item).inherit(this.out);
+        return new ArrayCheck(this.key, this.data).inherit(this.out);
     }
 
     public string(): StringCheck {
-        return new StringCheck(this.key, this.item).inherit(this.out);
+        return new StringCheck(this.key, this.data).inherit(this.out);
     }
 
-    public number(): NumberCheck {
-        return new NumberCheck(this.key, this.item).inherit(this.out);
+    public number(options?: TolerantCheckOptions): NumberCheck {
+        return new NumberCheck(this.key, this.data, options).inherit(this.out);
     }
 
     public date(): DateCheck {
-        return new DateCheck(this.key, this.item).inherit(this.out);
+        return new DateCheck(this.key, this.data).inherit(this.out);
     }
 
     public boolean(): ArrayItemCheck {
         if (!this.has_value) return this;
 
-        if (typeof this.item !== 'boolean') {
+        if (typeof this.data[this.key] !== 'boolean') {
             this.out = appendError(this.out, `Item ${this.key} must be a boolean`);
         }
         return this;
+    }
+
+    public equals(expected: unknown, options?: EqualityCheckOptions): this {
+        if (!this.has_value) return this;
+
+        if (!this.equalityMatches(this.data[this.key], expected, options)) {
+            this.errorMessage(`Item ${this.key} must equal ${JSON.stringify(expected)}`, options);
+        }
+
+        return this;
+    }
+
+    /**
+     * Runs a group of item-level checks where all returned checks must pass.
+     *
+     * All returned checks must pass for the composed result to stay valid.
+     *
+     * @example
+     * ```ts
+     * const checker = await ObjectCheck.for({ values: ['Ada'] }).check(root => [
+     *   root.required('values').array().checkEach(item => [
+     *     item.allOf(entry => [entry.string().minLength(2)])
+     *   ])
+     * ]);
+     * ```
+     */
+    public async allOf(func: (checker: ArrayItemCheck) => (Check | Promise<Check>)[]): Promise<this> {
+        await this.rules(func(this));
+        return this;
+    }
+
+    /**
+     * Evaluates alternative item branches and succeeds when at least one branch is valid.
+     *
+     * Each branch function is evaluated in isolation using cloned parent array data.
+     * Valid branches are then replayed on the current checker so mutations behave
+     * the same way as normal non-branch checks.
+     *
+     * @example
+     * ```ts
+     * const checker = await ObjectCheck.for({ values: ['  Ada  '] }).check(root => [
+     *   root.required('values').array().checkEach(item => [
+     *     item.anyOf([
+     *       entry => [entry.string().trim().minLength(2)],
+     *       entry => [entry.number().greaterThan(10)]
+     *     ])
+     *   ])
+     * ]);
+     * ```
+     */
+    public async anyOf(branches: Array<(checker: ArrayItemCheck) => (Check | Promise<Check>)[]>): Promise<this> {
+        return this.composeAlternatives('anyOf', branches);
+    }
+
+    /**
+     * Evaluates alternative item branches and succeeds only when exactly one branch is valid.
+     *
+     * Each branch function is evaluated in isolation using cloned parent array data.
+     * The single winning branch is then replayed on the current checker so
+     * mutations behave the same way as normal non-branch checks.
+     */
+    public async oneOf(branches: Array<(checker: ArrayItemCheck) => (Check | Promise<Check>)[]>): Promise<this> {
+        return this.composeAlternatives('oneOf', branches);
     }
 }

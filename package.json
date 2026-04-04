@@ -1,6 +1,6 @@
 {
     "name": "@samatawy/checks",
-    "version": "0.1.6",
+    "version": "0.2.0",
     "description": "Fluent TypeScript validation checks for objects, arrays, files, images, etc.",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -41,12 +41,14 @@
         "library",
         "json",
         "validation",
+        "json",
         "schema",
+        "jsonschema",
         "decorators",
         "checks",
         "factory"
     ],
-    "author": "Sam Atawy",
+    "author": "Sam Atawy <sam.atawy@gmail.com>",
     "license": "MIT",
     "repository": {
         "type": "git",
@@ -55,7 +57,7 @@
     "bugs": {
         "url": "https://github.com/samatawy/checks/issues"
     },
-    "homepage": "https://github.com/samatawy/checks#readme",
+    "homepage": "https://samatawy.github.io/checks/",
     "devDependencies": {
         "@types/node": "^24.3.1",
         "@types/probe-image-size": "^7.2.5",

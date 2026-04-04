@@ -1,14 +1,12 @@
 ---
-title: How-To
+title: Basic Checks
 group: Guides
 category: Common Tasks
 ---
 
-# How To
+# Basic Checks
 
-This guide covers common tasks you are likely to perform with the validation API.
-
-Each example includes the import statement, a complete usage snippet, and the preferred `result(...)` call for the scenario.
+This guide covers the most common validation recipes you are likely to use first.
 
 ## Install The Right Dependencies
 
@@ -174,51 +172,6 @@ const check = await ObjectCheck.for({
 const result = check.result({ flattened: true, language: 'en' });
 console.log(result.errors);
 ```
-
-## Choose A Result Shape
-
-Use `result(options?)` to select the output you want.
-
-```ts
-import { ObjectCheck } from '@samatawy/checks';
-
-const check = await ObjectCheck.for({
-  profile: {},
-  tags: []
-}).check(input => [
-  input.required('profile').object().notEmpty(),
-  input.required('tags').array().notEmpty()
-]);
-
-console.log(check.result({ language: 'en' }));
-console.log(check.result({ flattened: true, language: 'en' }));
-console.log(check.result({ nested: true, language: 'en' }));
-console.log(check.result({ validated: 'partial', language: 'en' }));
-console.log(check.result({ validated: 'strict', language: 'en' }));
-console.log(check.result({ raw: true, nested: true, flattened: true, language: 'en' }));
-```
-
-Use these options as a rule of thumb:
-
-- `language` for the merged nested result tree
-- `flattened: true` when you only need message arrays such as `errors`
-- `nested: true` when you want an input-shaped projection under `input`
-- `validated: 'partial'` when you want a cloned value with invalid fields or items removed while valid siblings stay
-- `validated: 'strict'` when any invalid descendant should remove the whole parent branch from the validated output
-- `raw: true` when you also want the merged internal result tree exposed under `raw`
-
-`validated` is built from the normalized input value after coercions such as `trim()` or tolerant boolean and number parsing. It is intended as a runtime-safe filtered clone, not as inferred compile-time typing.
-
-## Use Coded Results Only When Needed
-
-If you need stable codes and translation catalogs, read [coded-results.md](coded-results.md).
-
-That page covers:
-
-- `ResultCatalog.global`
-- separate `ResultCatalog` instances
-- `code` on results
-- fallback behavior when a translation is missing
 
 ## Pick The Right Entry Point
 

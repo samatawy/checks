@@ -1,4 +1,4 @@
-import type { CheckOptions, StringCheckOptions } from '../types';
+import type { CheckOptions, EqualityCheckOptions, StringCheckOptions } from '../types';
 import { ValueCheck } from './value.check';
 
 export abstract class StringBaseCheck extends ValueCheck {
@@ -53,6 +53,16 @@ export abstract class StringBaseCheck extends ValueCheck {
         if (!values_str.includes(this_str)) {
             this.errorMessage(`Field ${this.key} must be one of the following values: ${values.join(', ')}`, options);
         }
+        return this;
+    }
+
+    public equals(expected: unknown, options?: EqualityCheckOptions): this {
+        if (!this.valid_type) return this;
+
+        if (!this.equalityMatches(this.data[this.key], expected, options)) {
+            this.errorMessage(`Field ${this.key} must equal ${JSON.stringify(expected)}`, options);
+        }
+
         return this;
     }
 

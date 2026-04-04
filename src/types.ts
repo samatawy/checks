@@ -142,6 +142,15 @@ export interface StringCheckOptions extends CheckOptions {
 }
 
 /**
+ * Options for equality-style checks.
+ */
+export interface EqualityCheckOptions extends TolerantCheckOptions {
+
+    /** Controls case-sensitive versus case-insensitive matching. */
+    case?: 'sensitive' | 'insensitive';
+}
+
+/**
  * Controls how a check formats and returns its result.
  */
 export interface ResultOptions {

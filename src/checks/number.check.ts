@@ -1,4 +1,4 @@
-import type { CheckOptions, TolerantCheckOptions } from '../types';
+import type { CheckOptions, EqualityCheckOptions, TolerantCheckOptions } from '../types';
 import { ValueCheck } from './value.check';
 
 export class NumberCheck extends ValueCheck {
@@ -53,6 +53,16 @@ export class NumberCheck extends ValueCheck {
             }
         }
         return parsed;
+    }
+
+    public equals(expected: unknown, options?: EqualityCheckOptions): this {
+        if (!this.valid_type) return this;
+
+        if (!this.equalityMatches(this.value, expected, options)) {
+            this.errorMessage(`Field ${this.key} must equal ${JSON.stringify(expected)}`, options);
+        }
+
+        return this;
     }
 
     public integer(options?: CheckOptions): this {

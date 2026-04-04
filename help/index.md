@@ -9,7 +9,7 @@ This package exposes a fluent validation API for working with objects, arrays, f
 The generated docs site is organized into three top-level sections:
 
 - [How-To](how-to-section.md) for recipes, examples, decorated classes, and object hydration
-- [Reference](reference-section.md) for the validation API and coded-result behavior
+- [Reference](reference-section.md) for the validation API, coded-result behavior, and standards comparison notes
 - [Maintenance](maintenance-section.md) for development and publishing workflows
 
 ## Package overview

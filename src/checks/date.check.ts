@@ -1,4 +1,4 @@
-import type { CheckOptions } from '../types';
+import type { CheckOptions, EqualityCheckOptions } from '../types';
 import { ValueCheck } from './value.check';
 
 export class DateCheck extends ValueCheck {
@@ -46,6 +46,27 @@ export class DateCheck extends ValueCheck {
         } else {
             return this.safeParseDate(this.data[value]);
         }
+    }
+
+    public equals(expected: unknown, options?: EqualityCheckOptions): this {
+        if (!(this.date instanceof Date) || isNaN(this.date.getTime())) return this;
+
+        if (!(expected instanceof Date) && typeof expected !== 'number' && typeof expected !== 'string') {
+            this.errorMessage(`Field ${this.key} must equal ${JSON.stringify(expected)}`, options);
+            return this;
+        }
+
+        const otherDate = this.getDate(expected);
+        if (otherDate === null) {
+            this.errorMessage(`Value ${expected} is not a valid date`, options);
+            return this;
+        }
+
+        if (this.date.getTime() !== otherDate.getTime()) {
+            this.errorMessage(`Field ${this.key} must equal ${JSON.stringify(expected)}`, options);
+        }
+
+        return this;
     }
 
     public after(value: Date | string | number, options?: CheckOptions): this {
