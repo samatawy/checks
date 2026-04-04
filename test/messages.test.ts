@@ -250,7 +250,7 @@ describe('global check message catalog', () => {
     const check = await ObjectCheck.for(input).notEmpty().noExtraFields().check(person => [
       person.required('name').string().minLength(5, { err: 'Name is too short' }),
       person.optional('name').string().maxLength(2, { err: 'Name is too long' }),
-      person.optional('gender').string().oneOf(['male', 'female', 'm', 'f'], { case: 'insensitive' }),
+      person.optional('gender').string().equalsOneOf(['male', 'female', 'm', 'f'], { case: 'insensitive' }),
       person.optional('age').number().greaterThan(0).atMost(150),
       person.conditional('age', data => data.gender === 'male' || data.gender === 'm', { err: 'Age is required for males' }),
       person.optional('salary').number().greaterThan('tax', { err: 'Salary must be greater than tax' }),

@@ -1,6 +1,6 @@
 {
     "name": "@samatawy/checks",
-    "version": "0.2.0",
+    "version": "0.2.2",
     "description": "Fluent TypeScript validation checks for objects, arrays, files, images, etc.",
     "type": "module",
     "main": "./dist/index.cjs",

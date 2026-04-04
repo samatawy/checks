@@ -1,6 +1,6 @@
 import type { Check, CheckOptions, IResult, ResultSet, ResultOptions } from '../types';
-import type { DecoratedValidationOptions } from '../decorators/decorator.factory';
-import { validateDecoratedClass } from '../decorators/decorator.factory';
+import type { ClassValidationOptions } from '../decorators/decorator.factory';
+import { validateClass } from '../decorators/decorator.factory';
 import { ArrayCheck } from './array.check';
 import { FieldCheck } from './field.check';
 import { defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
@@ -305,9 +305,9 @@ export class ObjectCheck implements Check {
     }
 
     /**
-    * Validates the current object value against a decorated class definition.
+    * Validates the current object value against a class definition.
      *
-     * This merges the decorated-class result into the current checker so it can
+     * This merges the class-validation result into the current checker so it can
      * be composed with fluent object rules.
      *
      * @example
@@ -317,9 +317,9 @@ export class ObjectCheck implements Check {
      */
     public async matchesType<T>(
         type: abstract new (...args: any[]) => T,
-        options?: DecoratedValidationOptions,
+        options?: ClassValidationOptions,
     ): Promise<this> {
-        const decorated = await validateDecoratedClass(this.data, type, options);
+        const decorated = await validateClass(this.data, type, options);
         this.mergeDecoratedResult(decorated.result() as ResultSet);
         return this;
     }

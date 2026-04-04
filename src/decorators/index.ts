@@ -4,13 +4,14 @@ export {
 	matchesType,
 	type,
 	items,
-	validateDecoratedClass,
+	validateClass,
 } from './decorator.factory';
 
 export {
 	object,
 	string,
 	number,
+	boolean,
 	date,
 	email,
 	url,
@@ -21,5 +22,5 @@ export {
 } from './check.decorators';
 
 export type {
-	DecoratedValidationOptions,
+	ClassValidationOptions,
 } from './decorator.factory';

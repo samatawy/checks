@@ -37,7 +37,7 @@ Examples of rough equivalents:
 - JSON Schema `required` maps to `required(name)`
 - JSON Schema `minLength` and `maxLength` map to string checks of the same intent
 - JSON Schema `pattern` maps to `string().pattern(...)`
-- JSON Schema `enum` maps roughly to `string().oneOf(...)` or similar value checks
+- JSON Schema `enum` maps roughly to `string().equalsOneOf(...)` or similar value checks
 - JSON Schema `minimum` and `maximum` map roughly to `atLeast(...)` and `atMost(...)`
 - JSON Schema `additionalProperties: false` maps roughly to `noExtraFields()`
 - JSON Schema `allOf`, `anyOf`, `oneOf`, and `not` map roughly to fluent composition helpers such as `ObjectCheck.allOf(...)`, `ObjectCheck.anyOf(...)`, `ObjectCheck.oneOf(...)`, and `ObjectCheck.not(...)`

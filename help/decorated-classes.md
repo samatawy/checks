@@ -15,23 +15,24 @@ Use this approach when you want validation rules to live next to DTO-like classe
 The package root exports the decorator API directly:
 
 - `required()` and `optional()` for property presence
-- `matchesType(ClassType)` for applying a decorated class to an object property
+- `matchesType(ClassType, options?)` for applying a decorated class to an object property
 - `type.*()` for property type entry points
 - `items.*()` for array item type entry points
-- grouped rule decorators such as `object`, `string`, `number`, `date`, `email`, `url`, `file`, `image`, `array`, and `item`
-- `validateDecoratedClass(input, ClassType)` for validating a plain input object against a decorated class
+- grouped rule decorators such as `object`, `string`, `number`, `boolean`, `date`, `email`, `url`, `file`, `image`, `array`, and `item`
+- `validateClass(input, ClassType, options?)` for validating a plain input object against a class using decorators, inferred defaults, or both
 
-## Validate A Decorated Class Directly
+## Validate A Class Directly
 
-Use `validateDecoratedClass(...)` when the decorated class is the main validation definition.
+Use `validateClass(...)` when the class is the main validation definition. By default it uses hybrid mode: explicit decorators first, then inferred checks from initialized class fields that still have no explicit rules.
 
 ```ts
 import {
+  boolean,
   required,
   type,
   string,
   number,
-  validateDecoratedClass,
+  validateClass,
 } from '@samatawy/checks';
 
 class PersonDto {
@@ -45,11 +46,16 @@ class PersonDto {
   @number.atLeast(0)
   @number.atMost(130)
   age!: number;
+
+  @type.boolean()
+  @boolean.equals(true)
+  active!: boolean;
 }
 
-const check = await validateDecoratedClass({
+const check = await validateClass({
   name: 'Ada',
   age: 37,
+  active: true,
 }, PersonDto, {
   noExtraFields: true,
 });
@@ -59,9 +65,11 @@ console.log(result.valid);
 console.log(result.results);
 ```
 
-## Validate A Decorated Class Through ObjectCheck
+If you want strict decorator-only behavior, pass `{ skip: 'inference' }`. If you want loose inference-only behavior, pass `{ skip: 'decorators' }`.
 
-Use `matchesType(...)` when you want to combine decorated-class validation with the existing fluent object API.
+## Validate A Class Through ObjectCheck
+
+Use `matchesType(...)` when you want to combine class validation with the existing fluent object API.
 
 ```ts
 import {
@@ -88,7 +96,7 @@ const result = check.result({ nested: true, language: 'en' });
 console.log(result);
 ```
 
-This is useful when you want a decorated class to define the main shape, but still want to add extra fluent rules before returning the result.
+This is useful when you want a class definition to drive the main shape, but still want to add extra fluent rules before returning the result.
 
 ```ts
 const check = await ObjectCheck.for(payload)
@@ -96,9 +104,9 @@ const check = await ObjectCheck.for(payload)
   .matchesType(PersonDto, { noExtraFields: true });
 ```
 
-## Validate A Nested Field With A Decorated Class
+## Validate A Nested Field With A Class Definition
 
-Use `field.matchesType(...)` when a field itself should be validated against a decorated class.
+Use `field.matchesType(...)` when a field itself should be validated against a class definition.
 
 ```ts
 import {
@@ -127,7 +135,7 @@ const result = check.result({ nested: true, language: 'en' });
 console.log(result);
 ```
 
-When the field belongs to another decorated class, use `@matchesType(...)` or `@type.object()` with `@object.matchesType(...)`. The nested class can still define its own field rules.
+When the field belongs to another decorated class, use `@matchesType(...)` or `@type.object()` with `@object.matchesType(...)`. The nested class can still define its own field rules, and both forms accept optional nested `validateClass(...)` options such as `{ noExtraFields: true }`.
 
 ```ts
 import {
@@ -137,7 +145,7 @@ import {
   required,
   type,
   string,
-  validateDecoratedClass,
+  validateClass,
 } from '@samatawy/checks';
 
 class AddressDto {
@@ -164,11 +172,11 @@ class PersonDto {
   name!: string;
 
   @required()
-  @matchesType(AddressDto)
+  @matchesType(AddressDto, { noExtraFields: true })
   address!: AddressDto;
 }
 
-const check = await validateDecoratedClass({
+const check = await validateClass({
   name: 'Ada',
   address: {
     city: 'Cairo',
@@ -187,7 +195,7 @@ That is the decorator equivalent of saying “this field must be an object that 
 If you only need object-level rules without another decorated class, use `@type.object()` with `@object.*()`.
 
 ```ts
-import { object, required, type, validateDecoratedClass } from '@samatawy/checks';
+import { object, required, type, validateClass } from '@samatawy/checks';
 
 class PayloadDto {
   @required()
@@ -196,7 +204,7 @@ class PayloadDto {
   metadata!: Record<string, unknown>;
 }
 
-const check = await validateDecoratedClass({
+const check = await validateClass({
   metadata: {},
 }, PayloadDto);
 
@@ -205,7 +213,7 @@ console.log(check.result({ nested: true, language: 'en' }));
 
 ## Validate A Nested Object With Inline Field Rules
 
-If you do not want a separate decorated class, use the fluent object API on the field itself.
+If you do not want a separate class definition, use the fluent object API on the field itself.
 
 ```ts
 import { ObjectCheck } from '@samatawy/checks';
@@ -236,18 +244,18 @@ Use it when a property must be treated as an object before additional object-spe
 
 In practice, object validation usually looks like one of these:
 
-- `@matchesType(ClassType)` when the whole property should follow another decorated class
-- `@type.object()` with `@object.matchesType(ClassType)` when you want the object intent and the nested class rule to be explicit together
+- `@matchesType(ClassType, options?)` when the whole property should follow another decorated class
+- `@type.object()` with `@object.matchesType(ClassType, options?)` when you want the object intent and the nested class rule to be explicit together
 - `@type.object()` with `@object.notEmpty()` or `@object.noExtraFields()` when you want object-level rules without another decorated class
-- `field.object().check(...)` when the nested rules are local and you do not want a reusable decorated class
+- `field.object().check(...)` when the nested rules are local and you do not want a reusable class definition
 
 So `@type.object()` is the object type entry point, while `@matchesType(...)` and `@object.*()` describe what that object must satisfy.
 
-Further checks (e.g. for typed fields in an object), use the fluid API. 
+Further checks such as typed field rules inside that object still use the fluent API.
 
-## Validate Array Items With A Decorated Class
+## Validate Array Items With A Class Definition
 
-Use `item.matchesType(...)` or array decorators when each element in an array should follow the same decorated definition.
+Use `item.matchesType(...)` or array decorators when each element in an array should follow the same class definition.
 
 ```ts
 import {
@@ -285,7 +293,7 @@ import {
   required,
   type,
   string,
-  validateDecoratedClass,
+  validateClass,
 } from '@samatawy/checks';
 
 class ChildDto {
@@ -300,11 +308,11 @@ class FamilyDto {
   @type.array()
   @array.minLength(1)
   @items.object()
-  @item.object.matchesType(ChildDto)
+  @item.object.matchesType(ChildDto, { noExtraFields: true })
   children!: ChildDto[];
 }
 
-const check = await validateDecoratedClass({
+const check = await validateClass({
   children: [
     { name: 'A' },
     { name: 'B' },
@@ -327,7 +335,7 @@ import {
   array,
   items,
   item,
-  validateDecoratedClass,
+  validateClass,
 } from '@samatawy/checks';
 
 class PersonDto {
@@ -339,7 +347,7 @@ class PersonDto {
   tags!: string[];
 }
 
-const check = await validateDecoratedClass({
+const check = await validateClass({
   tags: ['alpha', 'beta'],
 }, PersonDto);
 
@@ -353,7 +361,7 @@ Specialized validators work the same way as the fluent API. Pick the correct `ty
 Email example:
 
 ```ts
-import { type, email, validateDecoratedClass } from '@samatawy/checks';
+import { type, email, validateClass } from '@samatawy/checks';
 
 class AccountDto {
   @type.email()
@@ -361,7 +369,7 @@ class AccountDto {
   emailAddress!: string;
 }
 
-const check = await validateDecoratedClass({
+const check = await validateClass({
   emailAddress: 'user@example.com',
 }, AccountDto);
 ```
@@ -369,7 +377,7 @@ const check = await validateDecoratedClass({
 File example:
 
 ```ts
-import { type, file, validateDecoratedClass } from '@samatawy/checks';
+import { type, file, validateClass } from '@samatawy/checks';
 
 class UploadDto {
   @type.file()
@@ -378,7 +386,7 @@ class UploadDto {
   document!: Uint8Array;
 }
 
-const check = await validateDecoratedClass({
+const check = await validateClass({
   document: uploadedBuffer,
 }, UploadDto);
 ```
@@ -386,7 +394,7 @@ const check = await validateDecoratedClass({
 Image example:
 
 ```ts
-import { type, image, validateDecoratedClass } from '@samatawy/checks';
+import { type, image, validateClass } from '@samatawy/checks';
 
 class AvatarDto {
   @type.image()
@@ -396,7 +404,7 @@ class AvatarDto {
   avatar!: Uint8Array;
 }
 
-const check = await validateDecoratedClass({
+const check = await validateClass({
   avatar: uploadedBuffer,
 }, AvatarDto);
 ```

@@ -1,5 +1,5 @@
 import type { Check, CheckOptions, EqualityCheckOptions, TolerantCheckOptions } from '../types';
-import type { DecoratedValidationOptions } from '../decorators/decorator.factory';
+import type { ClassValidationOptions } from '../decorators/decorator.factory';
 import { appendError } from "./helper.functions";
 
 import { NumberCheck } from './number.check';
@@ -34,7 +34,7 @@ export class FieldCheck extends ValueCheck {
 
     public async matchesType<T>(
         type: abstract new (...args: any[]) => T,
-        options?: DecoratedValidationOptions,
+        options?: ClassValidationOptions,
     ): Promise<ObjectCheck> {
         return this.object().matchesType(type, options);
     }

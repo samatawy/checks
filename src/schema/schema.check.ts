@@ -7,11 +7,11 @@ import { ArrayCheck } from '../checks/array.check';
 import { ArrayItemCheck } from '../checks/array.item.check';
 import { buildErrorMessage, defined } from '../checks/helper.functions';
 
-type JsonSchemaTypeName = 'object' | 'array' | 'string' | 'number' | 'integer' | 'boolean' | 'null';
+export type JsonSchemaTypeName = 'object' | 'array' | 'string' | 'number' | 'integer' | 'boolean' | 'null';
 
-type JsonSchemaType = JsonSchemaTypeName | JsonSchemaTypeName[];
+export type JsonSchemaType = JsonSchemaTypeName | JsonSchemaTypeName[];
 
-interface JsonSchema {
+export interface JsonSchema {
     $schema?: string;
     $id?: string;
     title?: string;
@@ -63,7 +63,7 @@ interface JsonSchema {
     unevaluatedItems?: boolean | JsonSchema;
 }
 
-type SchemaSource = JsonSchema | string;
+export type SchemaSource = JsonSchema | string;
 
 class StaticCheck implements Check {
     constructor(private readonly payload: IResult) {}
@@ -442,7 +442,7 @@ export class SchemaCheck {
         }
         if (schema.enum) {
             this.ensureStringEnum(schema.enum, path);
-            check.oneOf(schema.enum as string[]);
+            check.equalsOneOf(schema.enum as string[]);
         }
         if (defined(schema.const)) {
             check.equals(schema.const);
@@ -467,7 +467,7 @@ export class SchemaCheck {
         }
         if (schema.enum) {
             this.ensureStringEnum(schema.enum, path);
-            check.oneOf(schema.enum as string[]);
+            check.equalsOneOf(schema.enum as string[]);
         }
         if (defined(schema.const)) {
             check.equals(schema.const, {

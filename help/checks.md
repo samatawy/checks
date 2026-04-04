@@ -14,6 +14,48 @@ If you need stable codes or translated result text, see [coded-results.md](coded
 
 ## Main classes
 
+### `validateClass(...)`
+
+Use `validateClass(input, ClassType, options?)` when a class definition should drive validation directly.
+
+By default, it uses hybrid behavior:
+
+- explicit decorators are applied first
+- initialized class fields can still contribute inferred checks when a property has no explicit decorator shape yet
+
+Type-only property declarations such as `name!: string` or `age?: number` do not create runtime instance properties in JavaScript, so inference cannot see them unless decorators registered metadata for them. A default value such as `name = ''` or `active = false` does create a runtime property, which is why inference currently follows initialized fields.
+
+Example:
+
+```ts
+import { required, string, type, validateClass } from '@samatawy/checks';
+
+class PersonDto {
+  @required()
+  @type.string()
+  @string.minLength(2)
+  name!: string;
+
+  active = false;
+}
+
+const check = await validateClass({
+  name: 'Ada',
+  active: true,
+}, PersonDto, {
+  noExtraFields: true,
+});
+
+const result = check.result({ language: 'en' });
+```
+
+Notes:
+
+- pass `{ skip: 'inference' }` for decorator-only behavior
+- pass `{ skip: 'decorators' }` for inference-only behavior
+- inference only sees properties that exist on a constructed instance at runtime, which in practice means initialized class fields or nested object instances created by those initializers
+- nested `matchesType(...)` calls also accept the same options shape
+
 ### `ObjectCheck`
 
 Use `ObjectCheck` when the input itself is an object or when a field should contain an object.
@@ -285,12 +327,14 @@ Methods:
 
 `NumberCheck` and `DateCheck` expose numeric and date comparison helpers. `ValueCheck` is the shared base for value-level fluent behavior and is usually not needed directly in application code.
 
+Composition helpers such as `allOf(...)`, `anyOf(...)`, `oneOf(...)`, and `not(...)` are intentionally documented on `ObjectCheck`, `FieldCheck`, `ArrayCheck`, and `ArrayItemCheck`, where branching still happens before a final fixed type is chosen.
+
 Selected methods:
 
 - `StringCheck.trim()`
 - `StringCheck.minLength(length, options?)`
 - `StringCheck.maxLength(length, options?)`
-- `StringCheck.oneOf(values, options?)`
+- `StringCheck.equalsOneOf(values, options?)`
 - `StringCheck.pattern(regex, options?)`
 - `StringCheck.email(options?)`
 - `StringCheck.url(options?)`
@@ -422,6 +466,25 @@ interface ResultOptions {
   flattened?: boolean;
 }
 ```
+
+### `ClassValidationOptions`
+
+Controls how `validateClass(...)` and `matchesType(...)` source their rules.
+
+```ts
+interface ClassValidationOptions {
+  noExtraFields?: boolean;
+  noExtraFieldsOptions?: CheckOptions;
+  result?: ResultOptions;
+  skip?: 'decorators' | 'inference';
+}
+```
+
+Notes:
+
+- omit `skip` to use hybrid behavior
+- use `skip: 'inference'` to require explicit decorators only
+- use `skip: 'decorators'` to ignore decorator metadata and rely on inferred checks from runtime instance properties, which usually means initialized class fields
 
 ## Installation notes
 

@@ -32,6 +32,7 @@ import {
   required,
   string,
   type,
+  validateClass,
 } from '@samatawy/checks';
 
 class PersonDto {
@@ -43,7 +44,7 @@ class PersonDto {
   private constructor(private readonly personName: string) {}
 
   static async validateInput(input: unknown): Promise<ObjectCheck> {
-    return ObjectCheck.for(input).matchesType(PersonDto);
+    return validateClass(input, PersonDto);
   }
 
   static fromValidInput(input: any): PersonDto {

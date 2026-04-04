@@ -7,6 +7,7 @@ import { FileCheck } from '../checks/file.check';
 import { ImageCheck } from '../checks/image.check';
 import { ArrayCheck } from '../checks/array.check';
 import { ObjectCheck } from '../checks/object.check';
+import { FieldCheck } from '../checks/field.check';
 import { createDecoratorGroup, items, matchesType } from './decorator.factory';
 
 const objectMethods = [
@@ -15,10 +16,12 @@ const objectMethods = [
 ] as const;
 
 const stringMethods = [
+	'trim',
 	'minLength',
 	'maxLength',
 	'pattern',
-	'oneOf',
+	'equals',
+	'equalsOneOf',
 	'startsWith',
 	'endsWith',
 	'contains',
@@ -40,6 +43,7 @@ const stringMethods = [
 ] as const;
 
 const numberMethods = [
+	'equals',
 	'integer',
 	'minPrecision',
 	'positive',
@@ -52,6 +56,7 @@ const numberMethods = [
 ] as const;
 
 const dateMethods = [
+	'equals',
 	'after',
 	'before',
 	'sameDay',
@@ -94,6 +99,10 @@ const imageMethods = [
 	'maxHeight',
 ] as const;
 
+const booleanMethods = [
+	'equals',
+] as const;
+
 const arrayMethods = [
 	'notEmpty',
 	'minLength',
@@ -114,10 +123,12 @@ export const object: {
 };
 
 export const string: {
+	trim: (...args: unknown[]) => PropertyDecorator;
 	minLength: (...args: unknown[]) => PropertyDecorator;
 	maxLength: (...args: unknown[]) => PropertyDecorator;
 	pattern: (...args: unknown[]) => PropertyDecorator;
-	oneOf: (...args: unknown[]) => PropertyDecorator;
+	equals: (...args: unknown[]) => PropertyDecorator;
+	equalsOneOf: (...args: unknown[]) => PropertyDecorator;
 	startsWith: (...args: unknown[]) => PropertyDecorator;
 	endsWith: (...args: unknown[]) => PropertyDecorator;
 	contains: (...args: unknown[]) => PropertyDecorator;
@@ -141,6 +152,7 @@ export const string: {
 export const stringRules = string;
 
 export const number: {
+	equals: (...args: unknown[]) => PropertyDecorator;
 	integer: (...args: unknown[]) => PropertyDecorator;
 	minPrecision: (...args: unknown[]) => PropertyDecorator;
 	positive: (...args: unknown[]) => PropertyDecorator;
@@ -155,6 +167,7 @@ export const number: {
 export const numberRules = number;
 
 export const date: {
+	equals: (...args: unknown[]) => PropertyDecorator;
 	after: (...args: unknown[]) => PropertyDecorator;
 	before: (...args: unknown[]) => PropertyDecorator;
 	sameDay: (...args: unknown[]) => PropertyDecorator;
@@ -167,6 +180,12 @@ export const date: {
 } = createDecoratorGroup('property', 'date', DateCheck, dateMethods);
 
 export const dateRules = date;
+
+export const boolean: {
+	equals: (...args: unknown[]) => PropertyDecorator;
+} = createDecoratorGroup('property', 'boolean', FieldCheck, booleanMethods);
+
+export const booleanRules = boolean;
 
 export const email: {
 	host: (...args: unknown[]) => PropertyDecorator;
@@ -214,6 +233,7 @@ export const item: {
 	};
 	string: typeof string;
 	number: typeof number;
+	boolean: typeof boolean;
 	date: typeof date;
 	email: typeof email;
 	url: typeof url;
@@ -227,6 +247,7 @@ export const item: {
 	},
 	string: createDecoratorGroup('item', 'string', StringCheck, stringMethods),
 	number: createDecoratorGroup('item', 'number', NumberCheck, numberMethods),
+	boolean: createDecoratorGroup('item', 'boolean', FieldCheck, booleanMethods),
 	date: createDecoratorGroup('item', 'date', DateCheck, dateMethods),
 	email: createDecoratorGroup('item', 'email', EmailCheck, emailMethods),
 	url: createDecoratorGroup('item', 'url', UrlCheck, urlMethods),

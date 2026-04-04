@@ -44,7 +44,7 @@ export abstract class StringBaseCheck extends ValueCheck {
         return this;
     }
 
-    public oneOf(values: string[], options?: StringCheckOptions): this {
+    public equalsOneOf(values: string[], options?: StringCheckOptions): this {
         if (!this.valid_type) return this;
 
         const this_str = options?.case === 'insensitive' ? this.data[this.key].toLowerCase() : this.data[this.key];

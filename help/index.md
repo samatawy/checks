@@ -29,3 +29,5 @@ The public API is exported from [src/index.ts](../src/index.ts) and includes:
 2. Use [How-To](how-to-section.md) for common tasks and end-to-end examples.
 3. Read [Reference](reference-section.md) when you need API details or coded-result behavior.
 4. Review [Maintenance](maintenance-section.md) before extending or publishing the package.
+
+If you are specifically looking for schema-driven validation, start with [schema-check.md](schema-check.md) in the How-To section.
