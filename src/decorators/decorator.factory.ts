@@ -2,7 +2,7 @@ import { ObjectCheck } from '../checks/object.check';
 import { ArrayCheck } from '../checks/array.check';
 import { ArrayItemCheck } from '../checks/array.item.check';
 import { FieldCheck } from '../checks/field.check';
-import type { Check, CheckOptions, ResultOptions, TolerantCheckOptions } from '../types';
+import type { ArrayContainsOptions, Check, CheckOptions, ResultOptions, TolerantCheckOptions } from '../types';
 
 type ClassConstructor<T = unknown> = abstract new (...args: any[]) => T;
 type CheckerPrototype = { prototype: object };
@@ -44,6 +44,8 @@ interface MethodRule {
 
 interface ItemMetadata {
 	entrypoint?: EntryPointConfig;
+	mode?: 'each' | 'contains';
+	containsOptions?: ArrayContainsOptions;
 	nested?: {
 		type: ClassConstructor;
 		options?: ClassValidationOptions;
@@ -162,6 +164,14 @@ export const items = {
 	},
 };
 
+export function containsItems(options?: ArrayContainsOptions): PropertyDecorator {
+	return function (target: object, propertyKey: string | symbol): void {
+		const metadata = ensureItemMetadata(target, propertyKey);
+		metadata.mode = 'contains';
+		metadata.containsOptions = options ? { ...options } : undefined;
+	};
+}
+
 export const stringField = type.string;
 export const numberField = type.number;
 export const booleanField = type.boolean;
@@ -274,6 +284,11 @@ async function applyArrayItemRules(
 	metadata: ItemMetadata,
 	options: ClassValidationOptions,
 ): Promise<ArrayCheck> {
+	if (metadata.mode === 'contains') {
+		await arrayCheck.contains(itemChecker => [applyItemRules(itemChecker, metadata, options)], metadata.containsOptions);
+		return arrayCheck;
+	}
+
 	await arrayCheck.checkEach(itemChecker => [applyItemRules(itemChecker, metadata, options)]);
 	return arrayCheck;
 }
@@ -520,6 +535,8 @@ function clonePropertyMetadata(metadata: PropertyMetadata): PropertyMetadata {
 function cloneItemMetadata(metadata: ItemMetadata): ItemMetadata {
 	return {
 		entrypoint: metadata.entrypoint ? { ...metadata.entrypoint } : undefined,
+		mode: metadata.mode,
+		containsOptions: metadata.containsOptions ? { ...metadata.containsOptions } : undefined,
 		nested: metadata.nested ? cloneNestedMetadata(metadata.nested) : undefined,
 		rules: [...metadata.rules],
 	};
@@ -575,6 +592,8 @@ function hasExplicitItemShape(metadata?: ItemMetadata): boolean {
 
 	return metadata.nested !== undefined
 		|| metadata.entrypoint !== undefined
+		|| metadata.mode !== undefined
+		|| metadata.containsOptions !== undefined
 		|| metadata.rules.length > 0;
 }
 

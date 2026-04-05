@@ -255,7 +255,11 @@ Further checks such as typed field rules inside that object still use the fluent
 
 ## Validate Array Items With A Class Definition
 
-Use `item.matchesType(...)` or array decorators when each element in an array should follow the same class definition.
+Use `ArrayCheck.matchesType(...)`, `item.matchesType(...)`, or array decorators when each element in an array should follow the same class definition.
+
+For the normal `ChildDto[]` case, prefer `ArrayCheck.matchesType(...)`, `@array.matchesType(...)`, or the explicit `@items.object()` with `@item.object.matchesType(...)` form.
+
+`item.array.matchesType(...)` is narrower: it is only for nested arrays where one item inside the outer array is itself another array, and each element inside that inner array must match the class definition.
 
 ```ts
 import {
@@ -275,15 +279,13 @@ class ChildDto {
 const check = await ArrayCheck.for([
   { name: 'A' },
   { name: 'B' },
-]).checkEach(item => [
-  item.matchesType(ChildDto),
-]);
+]).matchesType(ChildDto);
 
 const result = check.result({ raw: true, flattened: true, language: 'en' }) as any;
 console.log(result.raw.results);
 ```
 
-For an array property inside a decorated class, use `@items.object()` with `@item.object.matchesType(...)` when each element should match another decorated class.
+For an array property inside a decorated class, use `@array.matchesType(...)` as the shortest form, or `@items.object()` with `@item.object.matchesType(...)` when you want the item entry point to stay explicit.
 
 ```ts
 import {
@@ -307,8 +309,7 @@ class FamilyDto {
   @required()
   @type.array()
   @array.minLength(1)
-  @items.object()
-  @item.object.matchesType(ChildDto, { noExtraFields: true })
+  @array.matchesType(ChildDto, { noExtraFields: true })
   children!: ChildDto[];
 }
 
@@ -323,6 +324,21 @@ const check = await validateClass({
 
 console.log(check.result({ nested: true, language: 'en' }));
 ```
+
+The explicit item form still works and is equivalent when you prefer to show the array item shape directly:
+
+```ts
+class FamilyDto {
+  @required()
+  @type.array()
+  @array.minLength(1)
+  @items.object()
+  @item.object.matchesType(ChildDto, { noExtraFields: true })
+  children!: ChildDto[];
+}
+```
+
+If you are validating nested arrays such as `ChildDto[][]`, that is the case where `@item.array.matchesType(...)` becomes meaningful: the outer property is an array, each item is another array, and each element inside that inner array must match the decorated class.
 
 ## Use Decorators For Array Item Rules
 
@@ -353,6 +369,37 @@ const check = await validateClass({
 
 console.log(check.result({ language: 'en' }));
 ```
+
+If the array only needs some bounded number of matching items instead of validating every item, use `@array.contains(...)` together with the same `@items.*()` and `@item.*()` decorators.
+
+```ts
+import {
+  array,
+  item,
+  items,
+  required,
+  type,
+  validateClass,
+} from '@samatawy/checks';
+
+class PersonDto {
+  @required()
+  @type.array()
+  @array.contains({ minCount: 1, maxCount: 2 })
+  @items.string()
+  @item.string.trim()
+  @item.string.minLength(2)
+  tags!: string[];
+}
+
+const check = await validateClass({
+  tags: [' x ', '  Ada  '],
+}, PersonDto);
+
+console.log(check.result({ language: 'en' }));
+```
+
+In that form, the item decorators describe the matching item shape, and `@array.contains(...)` decides how many items must satisfy it.
 
 ## Use Specialized Decorator Groups
 

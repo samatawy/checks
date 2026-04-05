@@ -27,6 +27,9 @@ export interface JsonSchema {
     items?: JsonSchema | JsonSchema[];
     minItems?: number;
     maxItems?: number;
+    contains?: JsonSchema;
+    minContains?: number;
+    maxContains?: number;
 
     minLength?: number;
     maxLength?: number;
@@ -55,7 +58,6 @@ export interface JsonSchema {
     if?: JsonSchema;
     then?: JsonSchema;
     else?: JsonSchema;
-    contains?: JsonSchema;
     prefixItems?: JsonSchema[];
     dependentRequired?: Record<string, string[]>;
     dependentSchemas?: Record<string, JsonSchema>;
@@ -66,7 +68,7 @@ export interface JsonSchema {
 export type SchemaSource = JsonSchema | string;
 
 class StaticCheck implements Check {
-    constructor(private readonly payload: IResult) {}
+    constructor(private readonly payload: IResult) { }
 
     public result(options?: ResultOptions): IResult {
         return options && Object.keys(options).length > 0 ? { ...this.payload } : this.payload;
@@ -89,20 +91,42 @@ const PASS_CHECK = new StaticCheck({ valid: true });
  * `$ref`, `if/then/else`, tuple arrays, or pattern-based property schemas.
  */
 export class SchemaCheck {
+
     private readonly source: SchemaSource;
 
+    private lastCheck?: ObjectCheck;
+
+    /**
+     * Creates a SchemaCheck instance from a JSON Schema object or a file path to a JSON Schema.
+     * @param source The JSON Schema object or file path to create the SchemaCheck from.
+     */
     constructor(source: SchemaSource) {
         this.source = source;
     }
 
+    /**
+     * Creates a SchemaCheck instance from a JSON Schema object or a file path to a JSON Schema.
+     * @param schema The JSON Schema object to create the SchemaCheck from.
+     * @returns A new instance of SchemaCheck.
+     */
     public static from(schema: JsonSchema): SchemaCheck {
         return new SchemaCheck(schema);
     }
 
+    /**
+     * Creates a SchemaCheck instance from a JSON Schema file path.
+     * @param filePath The file path to the JSON Schema.
+     * @returns A new instance of SchemaCheck.
+     */
     public static fromFile(filePath: string): SchemaCheck {
         return new SchemaCheck(filePath);
     }
 
+    /**
+     * Performs a check against the provided input using the schema.
+     * @param input The input value to be validated against the schema.
+     * @returns A promise that resolves to an ObjectCheck instance.
+     */
     public async check(input: unknown): Promise<ObjectCheck> {
         const schema = await this.loadSchema();
         this.assertSupportedSchema(schema, []);
@@ -112,10 +136,31 @@ export class SchemaCheck {
         }
 
         const check = ObjectCheck.for(input);
-        return this.applyObjectSchema(check, input, schema, []);
+        this.lastCheck = await this.applyObjectSchema(check, input, schema, []);
+        return this.lastCheck;
     }
 
-    public async result(input: unknown, options?: ResultOptions): Promise<IResult> {
+    /**
+     * Retrieves the result of the last performed check.
+     * @param options Optional result options to customize the validation result.
+     * @returns The result of the last check, or an error if no check has been performed.
+     */
+    public result(options?: ResultOptions): IResult {
+        if (this.lastCheck) {
+            return this.lastCheck.result(options);
+        } else {
+            return { valid: false, err: 'No check has been performed yet' };
+        }
+    }
+
+    /**
+     * Shorthand for performing a check and immediately retrieving the result, useful for simple validations or testing.
+     * 
+     * @param input The input value to be validated against the schema.
+     * @param options Optional result options to customize the validation result.
+     * @returns A promise that resolves to the validation result.
+     */
+    public async checkResult(input: unknown, options?: ResultOptions): Promise<IResult> {
         const check = await this.check(input);
         return check.result(options);
     }
@@ -270,7 +315,13 @@ export class SchemaCheck {
             check.maxLength(schema.maxItems);
         }
 
-        if (!Array.isArray(value) || !schema.items) {
+        if (!Array.isArray(value)) {
+            return check;
+        }
+
+        await this.applyContainsSchema(check, value, schema, path);
+
+        if (!schema.items) {
             return check;
         }
 
@@ -361,6 +412,26 @@ export class SchemaCheck {
         }
 
         return item;
+    }
+
+    private async applyContainsSchema(
+        check: ArrayCheck,
+        value: unknown[],
+        schema: JsonSchema,
+        path: string[],
+    ): Promise<void> {
+        if (!defined(schema.contains)) {
+            return;
+        }
+
+        await check.contains(item => [
+            this.applyArrayItemSchema(item, schema.contains!, [...path, 'contains']),
+        ], {
+            minCount: schema.minContains,
+            maxCount: schema.maxContains,
+            minErr: this.buildContainsMessage(path, defined(schema.minContains) ? schema.minContains : 1),
+            maxErr: defined(schema.maxContains) ? this.buildMaxContainsMessage(path, schema.maxContains) : undefined,
+        });
     }
 
     private buildFieldBaseCheck(
@@ -648,6 +719,28 @@ export class SchemaCheck {
         return new StaticCheck(payload);
     }
 
+    private assertValidContainsBounds(schema: JsonSchema, path: string[]): void {
+        if (defined(schema.minContains) && !Number.isInteger(schema.minContains)) {
+            throw new Error(`Keyword "minContains" must be an integer at ${this.pathLabel(path)}.`);
+        }
+
+        if (defined(schema.maxContains) && !Number.isInteger(schema.maxContains)) {
+            throw new Error(`Keyword "maxContains" must be an integer at ${this.pathLabel(path)}.`);
+        }
+
+        if ((schema.minContains ?? 0) < 0) {
+            throw new Error(`Keyword "minContains" must be at least 0 at ${this.pathLabel(path)}.`);
+        }
+
+        if ((schema.maxContains ?? 0) < 0) {
+            throw new Error(`Keyword "maxContains" must be at least 0 at ${this.pathLabel(path)}.`);
+        }
+
+        if (defined(schema.minContains) && defined(schema.maxContains) && schema.minContains! > schema.maxContains!) {
+            throw new Error(`Keyword "minContains" must not exceed "maxContains" at ${this.pathLabel(path)}.`);
+        }
+    }
+
     private assertSupportedSchema(schema: JsonSchema, path: string[]): void {
         const unsupportedKeys = [
             '$ref',
@@ -658,7 +751,6 @@ export class SchemaCheck {
             'if',
             'then',
             'else',
-            'contains',
             'prefixItems',
             'dependentRequired',
             'dependentSchemas',
@@ -678,6 +770,22 @@ export class SchemaCheck {
 
         if (schema.items && !Array.isArray(schema.items)) {
             this.assertSupportedSchema(schema.items, [...path, 'items']);
+        }
+
+        if (defined(schema.minContains) && !defined(schema.contains)) {
+            throw new Error(`Keyword "minContains" requires "contains" at ${this.pathLabel(path)}.`);
+        }
+
+        if (defined(schema.maxContains) && !defined(schema.contains)) {
+            throw new Error(`Keyword "maxContains" requires "contains" at ${this.pathLabel(path)}.`);
+        }
+
+        if (defined(schema.contains) || defined(schema.minContains) || defined(schema.maxContains)) {
+            this.assertValidContainsBounds(schema, path);
+        }
+
+        if (schema.contains) {
+            this.assertSupportedSchema(schema.contains, [...path, 'contains']);
         }
 
         for (const [index, nested] of (schema.allOf ?? []).entries()) {
@@ -707,6 +815,30 @@ export class SchemaCheck {
         }
 
         return `${this.pathLabel(path)} must not match the excluded schema`;
+    }
+
+    private buildContainsMessage(path: string[], minimumMatches: number): string {
+        if (path.length === 0) {
+            return minimumMatches === 1
+                ? 'Input must contain at least one item matching the required schema'
+                : `Input must contain at least ${minimumMatches} items matching the required schema`;
+        }
+
+        return minimumMatches === 1
+            ? `${this.pathLabel(path)} must contain at least one item matching the required schema`
+            : `${this.pathLabel(path)} must contain at least ${minimumMatches} items matching the required schema`;
+    }
+
+    private buildMaxContainsMessage(path: string[], maximumMatches: number): string {
+        if (path.length === 0) {
+            return maximumMatches === 1
+                ? 'Input must contain at most one item matching the required schema'
+                : `Input must contain at most ${maximumMatches} items matching the required schema`;
+        }
+
+        return maximumMatches === 1
+            ? `${this.pathLabel(path)} must contain at most one item matching the required schema`
+            : `${this.pathLabel(path)} must contain at most ${maximumMatches} items matching the required schema`;
     }
 
     private allowsNull(schema: JsonSchema): boolean {

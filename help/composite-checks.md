@@ -34,6 +34,27 @@ const check = await ObjectCheck.for({
 
 If you do not need JSON-Schema-style naming for an “all checks must pass” group, plain `check(...)` is still the most direct tool on objects and arrays. `checkEach(...)` remains the array-item entry point when you need to validate each item individually.
 
+## Use contains On Arrays
+
+Use `contains(...)` when an array is valid as long as some bounded number of items match one nested item rule.
+
+```ts
+import { ObjectCheck } from '@samatawy/checks';
+
+const check = await ObjectCheck.for({
+  tags: [' x ', '  Ada  ']
+}).check(root => [
+  root.required('tags').array().contains(item => [
+    item.string().trim().minLength(2)
+  ], {
+    minCount: 1,
+    maxCount: 2
+  })
+]);
+```
+
+Unlike `checkEach(...)`, non-matching items do not emit their own errors. `contains(...)` only reports an aggregate failure when too few or too many items satisfy the nested checks.
+
 ## Use anyOf On Objects
 
 Use `anyOf(...)` when more than one rule shape is acceptable and at least one branch may pass.

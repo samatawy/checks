@@ -1,4 +1,5 @@
-import type { Check, CheckOptions, IResult, ResultSet, ResultOptions } from '../types';
+import type { ArrayContainsOptions, Check, CheckOptions, IResult, ResultSet, ResultOptions } from '../types';
+import type { ClassValidationOptions } from '../decorators/decorator.factory';
 import { ArrayItemCheck } from './array.item.check';
 import { defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
 import { collectResults } from './helper.functions';
@@ -240,6 +241,70 @@ export class ArrayCheck implements Check {
         return this;
     }
 
+    /**
+     * Validates each array item against a decorated class definition.
+     *
+     * This is shorthand for `checkEach(item => [item.matchesType(...)])`.
+     */
+    public async matchesType<T>(
+        type: abstract new (...args: any[]) => T,
+        options?: ClassValidationOptions,
+    ): Promise<this> {
+        await this.checkEach(item => [item.matchesType(type, options)]);
+        return this;
+    }
+
+    /**
+     * Succeeds when a bounded number of array items satisfy the provided item-level checks.
+     *
+     * Matching items are evaluated in isolation first. When the overall contains
+     * condition is valid, the matching item checks are replayed on the real array
+     * so mutations such as `trim()` or tolerant parsing still affect the input.
+     * Non-matching item errors are not merged into the final result.
+     */
+    public async contains(
+        func: (checker: ArrayItemCheck) => (Check | Promise<Check>)[],
+        options?: ArrayContainsOptions,
+    ): Promise<this> {
+        if (!this.is_array) return this;
+
+        const minimumMatches = options?.minCount ?? 1;
+        const maximumMatches = options?.maxCount;
+
+        this.assertContainsBounds(minimumMatches, maximumMatches);
+
+        const matchingIndexes: number[] = [];
+
+        for (let index = 0; index < this.data.length; index++) {
+            if (await this.matchesContainsBranch(index, func)) {
+                matchingIndexes.push(index);
+            }
+        }
+
+        if (matchingIndexes.length < minimumMatches) {
+            this.errorMessage(
+                this.buildContainsMessage(minimumMatches),
+                this.toContainsCheckOptions(options, options?.minErr ?? options?.err),
+            );
+            return this;
+        }
+
+        if (defined(maximumMatches) && matchingIndexes.length > maximumMatches) {
+            this.errorMessage(
+                this.buildMaxContainsMessage(maximumMatches),
+                this.toContainsCheckOptions(options, options?.maxErr ?? options?.err),
+            );
+            return this;
+        }
+
+        for (const index of matchingIndexes) {
+            const itemCheck = new ArrayItemCheck(index, this.data);
+            await this.rulesEach(index, func(itemCheck));
+        }
+
+        return this;
+    }
+
     public async isTrue(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<this> {
         if (!this.has_value) return this;
 
@@ -270,6 +335,75 @@ export class ArrayCheck implements Check {
 
     protected errorMessage(err: string, options?: CheckOptions): void {
         this.out = appendError(this.out, err, options);
+    }
+
+    private async matchesContainsBranch(
+        index: number,
+        func: (checker: ArrayItemCheck) => (Check | Promise<Check>)[],
+    ): Promise<boolean> {
+        const itemCheck = new ArrayItemCheck(index, this.cloneAlternativeValue(this.data));
+
+        for (const fieldCheck of func(itemCheck)) {
+            const check = isPromise(fieldCheck) ? await fieldCheck : fieldCheck;
+
+            if (!check.result().valid) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private assertContainsBounds(minimumMatches: number, maximumMatches?: number): void {
+        if (!Number.isInteger(minimumMatches)) {
+            throw new Error('Array contains minimum match count must be an integer.');
+        }
+
+        if (defined(maximumMatches) && !Number.isInteger(maximumMatches)) {
+            throw new Error('Array contains maximum match count must be an integer.');
+        }
+
+        if (minimumMatches < 0) {
+            throw new Error('Array contains minimum match count must be at least 0.');
+        }
+
+        if (defined(maximumMatches) && maximumMatches < 0) {
+            throw new Error('Array contains maximum match count must be at least 0.');
+        }
+
+        if (defined(maximumMatches) && minimumMatches > maximumMatches) {
+            throw new Error('Array contains minimum match count must not exceed the maximum match count.');
+        }
+    }
+
+    private buildContainsMessage(minimumMatches: number): string {
+        const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
+
+        return minimumMatches === 1
+            ? `${prefix} must contain at least one item matching the required checks.`
+            : `${prefix} must contain at least ${minimumMatches} items matching the required checks.`;
+    }
+
+    private buildMaxContainsMessage(maximumMatches: number): string {
+        const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
+
+        return maximumMatches === 1
+            ? `${prefix} must contain at most one item matching the required checks.`
+            : `${prefix} must contain at most ${maximumMatches} items matching the required checks.`;
+    }
+
+    private toContainsCheckOptions(options?: ArrayContainsOptions, err?: string | string[]): CheckOptions | undefined {
+        if (!options && !defined(err)) {
+            return undefined;
+        }
+
+        return {
+            hint: options?.hint,
+            warn: options?.warn,
+            err,
+            code: options?.code,
+            catalog: options?.catalog,
+        };
     }
 
     private async composeAlternatives(

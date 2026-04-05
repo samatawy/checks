@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ArrayCheck,
+  array,
   item,
   items,
   matchesType,
@@ -198,5 +200,74 @@ describe('decorator rule coverage', () => {
 
     expect(valid.result().valid).toBe(true);
     expect(invalid.result().valid).toBe(false);
+  });
+
+  it('supports ArrayCheck.matchesType as a shorthand for item class validation', async () => {
+    class ChildDto {
+      name!: string;
+    }
+
+    applyPropertyDecorators(ChildDto.prototype, 'name', [
+      required(),
+      type.string(),
+    ]);
+
+    const valid = await ArrayCheck.for([{ name: 'A' }]).matchesType(ChildDto, { noExtraFields: true });
+    const invalid = await ArrayCheck.for([{ name: 'A', extra: true }]).matchesType(ChildDto, { noExtraFields: true });
+
+    expect(valid.result().valid).toBe(true);
+    expect(invalid.result().valid).toBe(false);
+  });
+
+  it('supports array.matchesType decorators as shorthand for decorated array items', async () => {
+    class ChildDto {
+      name!: string;
+    }
+
+    class FamilyDto {
+      children!: ChildDto[];
+    }
+
+    applyPropertyDecorators(ChildDto.prototype, 'name', [
+      required(),
+      type.string(),
+    ]);
+
+    applyPropertyDecorators(FamilyDto.prototype, 'children', [
+      required(),
+      type.array(),
+      array.matchesType(ChildDto, { noExtraFields: true }),
+    ]);
+
+    const valid = await validateClass({ children: [{ name: 'A' }] }, FamilyDto);
+    const invalid = await validateClass({ children: [{ name: 'A', extra: true }] }, FamilyDto);
+
+    expect(valid.result().valid).toBe(true);
+    expect(invalid.result().valid).toBe(false);
+  });
+
+  it('supports array contains decorators with item rules', async () => {
+    class Payload {
+      tags!: string[];
+    }
+
+    applyPropertyDecorators(Payload.prototype, 'tags', [
+      required(),
+      type.array(),
+      array.contains({ minCount: 1, maxCount: 2 }),
+      items.string(),
+      item.string.trim(),
+      item.string.minLength(2),
+    ]);
+
+    const validInput = { tags: [' x ', '  Ada  '] };
+    const valid = await validateClass(validInput, Payload);
+    const invalid = await validateClass({ tags: [' aa ', ' bb ', ' cc ' ] }, Payload);
+
+    expect(valid.result().valid).toBe(true);
+    expect(validInput.tags).toEqual([' x ', 'Ada']);
+    expect((invalid.result({ flattened: true }) as any).errors).toContain(
+      'Field tags must contain at most 2 items matching the required checks.',
+    );
   });
 });

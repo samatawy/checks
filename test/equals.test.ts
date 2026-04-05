@@ -98,8 +98,8 @@ describe('SchemaCheck const support', () => {
       }
     };
 
-    const valid = await SchemaCheck.from(schema).result({ role: 'admin' });
-    const invalid = await SchemaCheck.from(schema).result({ role: 'user' }, { flattened: true });
+    const valid = await SchemaCheck.from(schema).checkResult({ role: 'admin' });
+    const invalid = await SchemaCheck.from(schema).checkResult({ role: 'user' }, { flattened: true });
 
     expect(valid.valid).toBe(true);
     expect((invalid as any).errors).toContain('Field role must equal "admin"');
@@ -117,8 +117,8 @@ describe('SchemaCheck const support', () => {
       }
     };
 
-    const valid = await SchemaCheck.from(schema).result({ count: 3 });
-    const invalid = await SchemaCheck.from(schema).result({ count: 4 }, { flattened: true });
+    const valid = await SchemaCheck.from(schema).checkResult({ count: 3 });
+    const invalid = await SchemaCheck.from(schema).checkResult({ count: 4 }, { flattened: true });
 
     expect(valid.valid).toBe(true);
     expect((invalid as any).errors).toContain('Field count must equal 3');

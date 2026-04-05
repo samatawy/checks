@@ -10,6 +10,12 @@ Use `SchemaCheck` when you already have a JSON-Schema-like object or JSON file a
 
 `SchemaCheck` is intentionally limited to a reviewable subset. It currently expects the root schema to describe an object.
 
+The current API has three separate steps:
+
+- `check(input)` builds and runs the underlying `ObjectCheck`
+- `result(options?)` reads the last cached result after `check(...)` or `checkResult(...)`
+- `checkResult(input, options?)` runs the schema and returns the formatted result directly
+
 ## Validate Against An Inline Schema Object
 
 ```ts
@@ -30,7 +36,9 @@ const schema = {
   }
 };
 
-const result = await SchemaCheck.from(schema).result({
+const schemaCheck = SchemaCheck.from(schema);
+
+const result = await schemaCheck.checkResult({
   name: 'Ada',
   age: 37
 }, {
@@ -42,12 +50,16 @@ console.log(result.valid);
 
 Use `SchemaCheck.from(schema)` when the schema already exists as a TypeScript object in your application.
 
+If you need the underlying fluent validator, call `await schemaCheck.check(input)` instead and work with the returned `ObjectCheck`.
+
 ## Validate Against A JSON File
 
 ```ts
 import { SchemaCheck } from '@samatawy/checks';
 
-const result = await SchemaCheck.fromFile('./person.schema.json').result({
+const schemaCheck = SchemaCheck.fromFile('./person.schema.json');
+
+const result = await schemaCheck.checkResult({
   name: 'Ada',
   age: 37
 }, {
@@ -65,7 +77,7 @@ Use `SchemaCheck.fromFile(path)` when the schema lives in a JSON file on disk.
 The most common supported keywords are:
 
 - object structure: `type`, `properties`, `required`, `additionalProperties: false`
-- arrays: `items`, `minItems`, `maxItems`
+- arrays: `items`, `minItems`, `maxItems`, `contains`, `minContains`, `maxContains`
 - strings: `minLength`, `maxLength`, `pattern`, `format`, `enum`, `const`
 - numbers: `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum`, `multipleOf`
 - composition: `allOf`, `anyOf`, `oneOf`, `not`
@@ -90,7 +102,7 @@ const schema = {
   }
 };
 
-const result = await SchemaCheck.from(schema).result({
+const result = await SchemaCheck.from(schema).checkResult({
   tags: ['ab', 'cd']
 }, {
   validated: 'partial',
@@ -121,7 +133,7 @@ const schema = {
   }
 };
 
-const result = await SchemaCheck.from(schema).result({
+const result = await SchemaCheck.from(schema).checkResult({
   value: 'ok'
 }, {
   language: 'en'
@@ -132,12 +144,45 @@ console.log(result.valid);
 
 Use `anyOf`, `oneOf`, and `not` when you want the schema to express alternatives or exclusions in the same way the fluent API now can.
 
-## Read The Result The Same Way As Other Checks
+## About `contains` And Related Array Keywords
 
-`SchemaCheck.result(input, options?)` accepts the same result options as the fluent validators.
+In JSON Schema, `contains` is a keyword, not a method. It means an array is valid when at least one item matches the nested subschema.
+
+Example intent:
+
+```json
+{
+  "type": "array",
+  "contains": {
+    "type": "string",
+    "minLength": 3
+  }
+}
+```
+
+That schema means the array must contain at least one string item whose length is 3 or more.
+
+The closely related keywords are:
+
+- `minContains`: the minimum number of array items that must match the `contains` subschema
+- `maxContains`: the maximum number of array items that may match the `contains` subschema
+- `prefixItems`: positional or tuple-style validation where item 0, item 1, and so on can each have a different schema
+- `unevaluatedItems`: rules for array items that were not already covered by `items`, `prefixItems`, or composition branches
+
+These keywords are useful when array validation depends on matching counts or on the position of items, not just on applying one schema to every item.
+
+`SchemaCheck` now supports `contains`, `minContains`, and `maxContains`.
+
+`SchemaCheck` still does not implement `prefixItems` or `unevaluatedItems`. If one of those keywords appears in the input schema, `SchemaCheck` throws an unsupported-keyword error instead of partially interpreting it.
+
+## Choose Between `checkResult()` And `result()`
+
+`SchemaCheck.result(options?)` and `SchemaCheck.checkResult(input, options?)` accept the same result options as the fluent validators.
 
 ```ts
-const output = await SchemaCheck.from(schema).result(input, {
+const schemaCheck = SchemaCheck.from(schema);
+
+const output = await schemaCheck.checkResult(input, {
   flattened: true,
   validated: 'partial',
   language: 'en'
@@ -145,6 +190,19 @@ const output = await SchemaCheck.from(schema).result(input, {
 
 console.log(output.errors);
 console.log(output.validated);
+```
+
+If you already called `check(input)` or `checkResult(input, options?)`, you can read the cached result again without re-running validation:
+
+```ts
+await schemaCheck.check(input);
+
+const output = schemaCheck.result({
+  flattened: true,
+  language: 'en'
+});
+
+console.log(output.errors);
 ```
 
 That means you can still choose nested results, flattened messages, or validated output depending on the caller.
@@ -158,6 +216,7 @@ Important current limits include:
 - the root schema must describe an object
 - `$ref`, `$defs`, and related reference features are not supported
 - `if` / `then` / `else` are not supported
+- array keywords such as `prefixItems` and `unevaluatedItems` are not supported
 - tuple arrays such as `prefixItems` are not supported
 - pattern-based property keywords such as `patternProperties` are not supported
 

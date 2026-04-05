@@ -16,8 +16,8 @@ describe('SchemaCheck composition', () => {
       }
     };
 
-    const valid = await SchemaCheck.from(schema).result({ role: 'user' });
-    const invalid = await SchemaCheck.from(schema).result({ role: 'admin' }, { flattened: true });
+    const valid = await SchemaCheck.from(schema).checkResult({ role: 'user' });
+    const invalid = await SchemaCheck.from(schema).checkResult({ role: 'admin' }, { flattened: true });
 
     expect(valid.valid).toBe(true);
     expect((invalid as any).errors).toContain('Input must not match the excluded schema');
@@ -38,8 +38,8 @@ describe('SchemaCheck composition', () => {
       }
     };
 
-    const valid = await SchemaCheck.from(schema).result({ value: 'allowed' });
-    const invalid = await SchemaCheck.from(schema).result({ value: 'blocked' }, { flattened: true });
+    const valid = await SchemaCheck.from(schema).checkResult({ value: 'allowed' });
+    const invalid = await SchemaCheck.from(schema).checkResult({ value: 'blocked' }, { flattened: true });
 
     expect(valid.valid).toBe(true);
     expect((invalid as any).errors).toContain('value must not match the excluded schema');
@@ -64,8 +64,8 @@ describe('SchemaCheck composition', () => {
       ]
     };
 
-    const valid = await SchemaCheck.from(schema).result({ name: 'Ada', age: 37 });
-    const invalid = await SchemaCheck.from(schema).result({ name: 'A', age: 12 }, { flattened: true });
+    const valid = await SchemaCheck.from(schema).checkResult({ name: 'Ada', age: 37 });
+    const invalid = await SchemaCheck.from(schema).checkResult({ name: 'A', age: 12 }, { flattened: true });
 
     expect(valid.valid).toBe(true);
     expect((invalid as any).errors).toContain('Field name must be at least 2 characters long');
@@ -86,8 +86,8 @@ describe('SchemaCheck composition', () => {
       }
     };
 
-    const valid = await SchemaCheck.from(schema).result({ value: 'Ada' });
-    const invalid = await SchemaCheck.from(schema).result({ value: 'ba' }, { flattened: true });
+    const valid = await SchemaCheck.from(schema).checkResult({ value: 'Ada' });
+    const invalid = await SchemaCheck.from(schema).checkResult({ value: 'ba' }, { flattened: true });
 
     expect(valid.valid).toBe(true);
     expect((invalid as any).errors).toContain('Field value does not match the required pattern');
@@ -107,9 +107,9 @@ describe('SchemaCheck composition', () => {
       }
     };
 
-    const validString = await SchemaCheck.from(schema).result({ value: 'ok' });
-    const validNumber = await SchemaCheck.from(schema).result({ value: 12 });
-    const invalid = await SchemaCheck.from(schema).result({ value: 1 }, { flattened: true });
+    const validString = await SchemaCheck.from(schema).checkResult({ value: 'ok' });
+    const validNumber = await SchemaCheck.from(schema).checkResult({ value: 12 });
+    const invalid = await SchemaCheck.from(schema).checkResult({ value: 1 }, { flattened: true });
 
     expect(validString.valid).toBe(true);
     expect(validNumber.valid).toBe(true);
@@ -135,8 +135,8 @@ describe('SchemaCheck composition', () => {
       ]
     };
 
-    const valid = await SchemaCheck.from(schema).result({ email: 'user@example.com' });
-    const invalid = await SchemaCheck.from(schema).result({ email: 'user@example.com', phone: '0123456789' }, { flattened: true });
+    const valid = await SchemaCheck.from(schema).checkResult({ email: 'user@example.com' });
+    const invalid = await SchemaCheck.from(schema).checkResult({ email: 'user@example.com', phone: '0123456789' }, { flattened: true });
 
     expect(valid.valid).toBe(true);
     expect((invalid as any).errors).toContain('Exactly one oneOf branch must be valid.');
@@ -159,9 +159,125 @@ describe('SchemaCheck composition', () => {
       }
     };
 
-    const valid = await SchemaCheck.from(schema).result({ tags: ['ab', 'cd'] });
+    const valid = await SchemaCheck.from(schema).checkResult({ tags: ['ab', 'cd'] });
 
     expect(valid.valid).toBe(true);
+  });
+
+  it('supports contains on an array schema', async () => {
+    const schema: SchemaInput = {
+      type: 'object',
+      required: ['tags'],
+      properties: {
+        tags: {
+          type: 'array',
+          contains: {
+            type: 'string',
+            minLength: 2
+          }
+        }
+      }
+    };
+
+    const valid = await SchemaCheck.from(schema).checkResult({ tags: ['a', 'bc'] });
+    const invalid = await SchemaCheck.from(schema).checkResult({ tags: ['a', 'b'] }, { flattened: true });
+
+    expect(valid.valid).toBe(true);
+    expect((invalid as any).errors).toContain('tags must contain at least one item matching the required schema');
+  });
+
+  it('supports minContains on an array schema', async () => {
+    const schema: SchemaInput = {
+      type: 'object',
+      required: ['values'],
+      properties: {
+        values: {
+          type: 'array',
+          contains: {
+            type: 'number',
+            minimum: 10
+          },
+          minContains: 2
+        }
+      }
+    };
+
+    const valid = await SchemaCheck.from(schema).checkResult({ values: [10, 12, 3] });
+    const invalid = await SchemaCheck.from(schema).checkResult({ values: [10, 3, 4] }, { flattened: true });
+
+    expect(valid.valid).toBe(true);
+    expect((invalid as any).errors).toContain('values must contain at least 2 items matching the required schema');
+  });
+
+  it('supports maxContains on an array schema', async () => {
+    const schema: SchemaInput = {
+      type: 'object',
+      required: ['values'],
+      properties: {
+        values: {
+          type: 'array',
+          contains: {
+            type: 'number',
+            minimum: 10
+          },
+          maxContains: 1
+        }
+      }
+    };
+
+    const valid = await SchemaCheck.from(schema).checkResult({ values: [10, 2, 3] });
+    const invalid = await SchemaCheck.from(schema).checkResult({ values: [10, 12, 3] }, { flattened: true });
+
+    expect(valid.valid).toBe(true);
+    expect((invalid as any).errors).toContain('values must contain at most one item matching the required schema');
+  });
+
+  it('supports minContains and maxContains together', async () => {
+    const schema: SchemaInput = {
+      type: 'object',
+      required: ['values'],
+      properties: {
+        values: {
+          type: 'array',
+          contains: {
+            type: 'number',
+            minimum: 10
+          },
+          minContains: 1,
+          maxContains: 2
+        }
+      }
+    };
+
+    const valid = await SchemaCheck.from(schema).checkResult({ values: [10, 12, 3] });
+    const tooFew = await SchemaCheck.from(schema).checkResult({ values: [1, 2, 3] }, { flattened: true });
+    const tooMany = await SchemaCheck.from(schema).checkResult({ values: [10, 12, 14] }, { flattened: true });
+
+    expect(valid.valid).toBe(true);
+    expect((tooFew as any).errors).toContain('values must contain at least one item matching the required schema');
+    expect((tooMany as any).errors).toContain('values must contain at most 2 items matching the required schema');
+  });
+
+  it('requires contains when using minContains or maxContains', async () => {
+    await expect(SchemaCheck.from({
+      type: 'object',
+      properties: {
+        values: {
+          type: 'array',
+          minContains: 1
+        }
+      }
+    }).check({ values: [] })).rejects.toThrow('Keyword "minContains" requires "contains" at values.');
+
+    await expect(SchemaCheck.from({
+      type: 'object',
+      properties: {
+        values: {
+          type: 'array',
+          maxContains: 1
+        }
+      }
+    }).check({ values: [] })).rejects.toThrow('Keyword "maxContains" requires "contains" at values.');
   });
 
   it('supports oneOf on array item schemas', async () => {
@@ -181,9 +297,37 @@ describe('SchemaCheck composition', () => {
       }
     };
 
-    const invalid = await SchemaCheck.from(schema).result({ values: [50] }, { flattened: true });
+    const invalid = await SchemaCheck.from(schema).checkResult({ values: [50] }, { flattened: true });
 
     expect(invalid.valid).toBe(false);
     expect((invalid as any).errors).toContain('Exactly one oneOf branch must be valid.');
+  });
+
+  it('stores the last check result for result()', async () => {
+    const schema: SchemaInput = {
+      type: 'object',
+      required: ['name'],
+      properties: {
+        name: {
+          type: 'string',
+          minLength: 2
+        }
+      }
+    };
+
+    const schemaCheck = SchemaCheck.from(schema);
+
+    await schemaCheck.check({ name: 'A' });
+
+    const cached = schemaCheck.result({ flattened: true }) as any;
+
+    expect(cached.valid).toBe(false);
+    expect(cached.errors).toContain('Field name must be at least 2 characters long');
+  });
+
+  it('returns a default error from result() before any check runs', () => {
+    const schemaCheck = SchemaCheck.from({ type: 'object' });
+
+    expect(schemaCheck.result()).toEqual({ valid: false, err: 'No check has been performed yet' });
   });
 });

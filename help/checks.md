@@ -193,12 +193,14 @@ Common methods:
 - `minLength(length, options?)`
 - `maxLength(length, options?)`
 - `noDuplicates(key?, options?)` rejects duplicate primitive values, duplicate repeated object references, or duplicate object values by a selected object key
+- `matchesType(ClassType, options?)` validates each array element against one decorated class definition
 - `check(fn)` applies array-level checks and synthetic child results asynchronously
 - `allOf(fn)` applies a group of array rules where all returned checks must pass
 - `anyOf(branches)` applies alternative array branches where at least one branch must pass
 - `oneOf(branches)` applies alternative array branches where exactly one branch must pass
 - `not(fn, options?)` applies a negated array branch that must fail
 - `checkEach(fn)` validates each item using `ArrayItemCheck` and supports promised checks
+- `contains(fn, options?)` succeeds when a bounded number of items match one nested item rule without reporting non-matching item errors individually
 - `isTrue(fn, options?)` applies a custom predicate to the array value and supports async predicates
 - `isTrueEach(fn, options?)` runs a custom predicate on every item and supports async predicates
 - `result(options?)` returns the current result or a formatted final result depending on the options you pass
@@ -242,6 +244,12 @@ const check = await ObjectCheck.for(input)
 
 const result = check.result({ language: 'en' });
 ```
+
+Notes:
+
+- `contains(...)` is the array-level “some items must match” helper; use it instead of `checkEach(...)` when non-matching items are expected and should not each produce their own error
+- `matchesType(...)` on `ArrayCheck` is shorthand for `checkEach(item => [item.matchesType(...)])`
+- `item.array().matchesType(...)` refers to a nested-array case where the current item value is itself an array and each nested element must match the class definition
 
 ### `ArrayItemCheck`
 

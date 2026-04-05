@@ -2,3 +2,4 @@ dist
 docs
 coverage
 node_modules
+*.tgz

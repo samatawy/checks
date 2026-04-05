@@ -76,6 +76,67 @@ describe('object composition', () => {
     expect(input.values[0]).toBe('Ada');
   });
 
+  it('replays matching array contains item mutations without replaying non-matches', async () => {
+    const input = {
+      tags: [' x ', '  Ada  ']
+    };
+
+    const check = await ObjectCheck.for(input).check(root => [
+      root.required('tags').array().contains(item => [
+        item.string().trim().minLength(2)
+      ])
+    ]);
+
+    expect(check.result().valid).toBe(true);
+    expect(input.tags).toEqual([' x ', 'Ada']);
+  });
+
+  it('fails array contains with one aggregate error when no items match', async () => {
+    const check = await ObjectCheck.for({
+      tags: [' a ', ' b ']
+    }).check(root => [
+      root.required('tags').array().contains(item => [
+        item.string().trim().minLength(2)
+      ])
+    ]);
+
+    const result = check.result({ flattened: true }) as any;
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('Field tags must contain at least one item matching the required checks.');
+    expect(result.errors).not.toContain('Field 0 must be at least 2 characters long');
+    expect(result.errors).not.toContain('Field 1 must be at least 2 characters long');
+  });
+
+  it('supports array contains min and max bounds together', async () => {
+    const valid = await ObjectCheck.for({
+      values: [10, 12, 3]
+    }).check(root => [
+      root.required('values').array().contains(item => [
+        item.number().atLeast(10)
+      ], {
+        minCount: 1,
+        maxCount: 2
+      })
+    ]);
+
+    const tooMany = await ObjectCheck.for({
+      values: [10, 12, 14]
+    }).check(root => [
+      root.required('values').array().contains(item => [
+        item.number().atLeast(10)
+      ], {
+        minCount: 1,
+        maxCount: 2
+      })
+    ]);
+
+    expect(valid.result().valid).toBe(true);
+    expect((tooMany.result({ flattened: true }) as any).errors).toContain(
+      'Field values must contain at most 2 items matching the required checks.',
+    );
+  });
+
   it('fails FieldCheck oneOf when multiple branches are valid', async () => {
     const check = await ObjectCheck.for({
       value: '37'

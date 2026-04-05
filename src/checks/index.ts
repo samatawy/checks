@@ -14,6 +14,7 @@ export { ImageCheck } from './image.check';
 export type {
     Check,
     CheckOptions,
+    ArrayContainsOptions,
     EqualityCheckOptions,
     IResult,
     ResultSet,

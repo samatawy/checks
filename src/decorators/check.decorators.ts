@@ -8,7 +8,8 @@ import { ImageCheck } from '../checks/image.check';
 import { ArrayCheck } from '../checks/array.check';
 import { ObjectCheck } from '../checks/object.check';
 import { FieldCheck } from '../checks/field.check';
-import { createDecoratorGroup, items, matchesType } from './decorator.factory';
+import type { ArrayContainsOptions } from '../types';
+import { containsItems, createDecoratorGroup, items, matchesType } from './decorator.factory';
 
 const objectMethods = [
 	'notEmpty',
@@ -108,10 +109,12 @@ const arrayMethods = [
 	'minLength',
 	'maxLength',
 	'noDuplicates',
+	'matchesType',
 ] as const;
 
 const objectRules = createDecoratorGroup('property', 'object', ObjectCheck, objectMethods);
 const itemObjectRules = createDecoratorGroup('item', 'object', ObjectCheck, objectMethods);
+const arrayRules = createDecoratorGroup('property', 'array', ArrayCheck, arrayMethods);
 
 export const object: {
 	notEmpty: (...args: unknown[]) => PropertyDecorator;
@@ -223,7 +226,12 @@ export const array: {
 	minLength: (...args: unknown[]) => PropertyDecorator;
 	maxLength: (...args: unknown[]) => PropertyDecorator;
 	noDuplicates: (...args: unknown[]) => PropertyDecorator;
-} = createDecoratorGroup('property', 'array', ArrayCheck, arrayMethods);
+	matchesType: typeof matchesType;
+	contains: (options?: ArrayContainsOptions) => PropertyDecorator;
+} = {
+	...arrayRules,
+	contains: containsItems,
+};
 
 export const item: {
 	object: {
@@ -239,7 +247,13 @@ export const item: {
 	url: typeof url;
 	file: typeof file;
 	image: typeof image;
-	array: typeof array;
+	array: {
+		notEmpty: (...args: unknown[]) => PropertyDecorator;
+		minLength: (...args: unknown[]) => PropertyDecorator;
+		maxLength: (...args: unknown[]) => PropertyDecorator;
+		noDuplicates: (...args: unknown[]) => PropertyDecorator;
+		matchesType: typeof matchesType;
+	};
 } = {
 	object: {
 		...itemObjectRules,

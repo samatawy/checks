@@ -122,6 +122,24 @@ export interface CheckOptions {
 }
 
 /**
+ * Options for array contains-style matching.
+ */
+export interface ArrayContainsOptions extends CheckOptions {
+
+    /** Minimum number of array items that must satisfy the nested item checks. Defaults to 1. */
+    minCount?: number;
+
+    /** Maximum number of array items that may satisfy the nested item checks. */
+    maxCount?: number;
+
+    /** Optional custom error used when too few items match. */
+    minErr?: string | string[];
+
+    /** Optional custom error used when too many items match. */
+    maxErr?: string | string[];
+}
+
+/**
  * Options for checks that can accept a more permissive input mode.
  */
 export interface TolerantCheckOptions extends CheckOptions {

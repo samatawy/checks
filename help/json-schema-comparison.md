@@ -68,9 +68,20 @@ Notable gaps include:
 - no `dependentRequired` or `dependentSchemas`
 - no `patternProperties`, `propertyNames`, or `unevaluatedProperties`
 - no tuple-style array schemas such as `prefixItems`
-- no `contains`, `minContains`, or `maxContains`
+- no `unevaluatedItems` support for array items left over after other item rules
 - no direct support for standard annotation keywords such as `title`, `description`, `default`, `examples`, `readOnly`, or `writeOnly`
 - no standards-compatible export that another JSON Schema tool can consume
+
+For clarity on the array-specific keywords:
+
+- JSON Schema `contains` means at least one array item must match a nested schema
+- `minContains` and `maxContains` refine that by constraining how many items may match
+- `prefixItems` is for tuple-style arrays where each position has its own schema
+- `unevaluatedItems` governs leftover items that were not already consumed by other array keywords
+
+`SchemaCheck` now supports `contains`, `minContains`, and `maxContains` within its supported array subset.
+
+`prefixItems` and `unevaluatedItems` are still valid JSON Schema concepts that `SchemaCheck` currently rejects rather than attempting a partial translation into the fluent API.
 
 Current limitation of the composition support:
 
