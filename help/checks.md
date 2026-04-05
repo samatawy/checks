@@ -162,6 +162,8 @@ Notes:
 - `email()` returns `EmailCheck`
 - `url()` returns `UrlCheck`
 - `uuid()` returns `UUIDCheck`
+- `uuid(options?)` accepts the same UUID version filter supported by `UUIDCheck.version(...)`
+- `ulid()` returns `UUIDCheck` in ULID mode
 - the other branching methods return synchronous check instances
 
 Field composition example:
@@ -345,12 +347,30 @@ Selected methods:
 - `StringCheck.trim()`
 - `StringCheck.minLength(length, options?)`
 - `StringCheck.maxLength(length, options?)`
+- `StringCheck.equals(value, options?)`
 - `StringCheck.equalsOneOf(values, options?)`
+- `StringCheck.startsWith(prefix, options?)`
+- `StringCheck.endsWith(suffix, options?)`
+- `StringCheck.contains(substring, options?)`
 - `StringCheck.pattern(regex, options?)`
-- `StringCheck.uuid()`
-- `StringCheck.ulid()`
+- `StringCheck.uuid(options?)`
+- `StringCheck.ulid(options?)`
 - `StringCheck.email(options?)`
 - `StringCheck.url(options?)`
+- `StringCheck.isBase64(options?)`
+- `StringCheck.isSHA256(options?)`
+- `StringCheck.isMD5(options?)`
+- `StringCheck.isHexadecimal(options?)`
+- `StringCheck.isAlphanumeric(options?)`
+- `StringCheck.isAscii(options?)`
+- `StringCheck.hasMultibyte(options?)`
+- `StringCheck.hasUpperCase(minCount?, options?)`
+- `StringCheck.hasLowerCase(minCount?, options?)`
+- `StringCheck.hasDigit(minCount?, options?)`
+- `StringCheck.hasSpecialCharacter(minCount?, options?)`
+- `StringCheck.noSpecialCharacters(chars?, options?)`
+- `StringCheck.noSpaces(options?)`
+- `StringCheck.maxWords(count, options?)`
 - `UUIDCheck.version(version, options?)`
 - `UUIDCheck.isULID(options?)`
 - `NumberCheck.integer(options?)`
@@ -363,9 +383,9 @@ Selected methods:
 - `ValueCheck.isTrue(fn, options?)`
 - `ValueCheck.result(options?)`
 
-`uuid()` validates immediately as soon as you enter the UUID checker, like `email()` and `url()`. Use `uuid({ version })` when you want the shortcut form, or `uuid().version(4)` / `uuid().version([4, 7])` when you want to narrow an already-valid UUID to one version or a small allowed set.
+`uuid()` validates immediately as soon as you enter the UUID checker, like `email()` and `url()`. Use `field.uuid({ version })` or `string().uuid({ version })` when you want the shortcut form, or `uuid().version(4)` / `uuid().version([4, 7])` when you want to narrow an already-valid UUID to one version or a small allowed set.
 
-Use `ulid()` when the value must be a ULID. Like `uuid()`, it validates immediately when you enter the specialized checker.
+Use `ulid()` when the value must be a ULID. Like `uuid()`, it validates immediately when you enter the specialized checker, so `field.ulid()` and `string().ulid()` already perform the base ULID validity check.
 
 ## Getting results
 
