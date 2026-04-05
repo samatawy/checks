@@ -13,6 +13,8 @@ export {
 	number,
 	boolean,
 	date,
+	uuid,
+	ulid,
 	email,
 	url,
 	file,

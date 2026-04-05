@@ -1,7 +1,8 @@
-import type { CheckOptions } from '../types';
+import type { CheckOptions, UUIDCheckOptions } from '../types';
 import { StringBaseCheck } from './string.base.check';
 import { EmailCheck } from './email.check';
 import { UrlCheck } from './url.check';
+import { UUIDCheck } from './uuid.check';
 
 export class StringCheck extends StringBaseCheck {
 
@@ -15,6 +16,14 @@ export class StringCheck extends StringBaseCheck {
 
     public url(options?: CheckOptions): UrlCheck {
         return new UrlCheck(this.key!, this.data);
+    }
+
+    public uuid(options?: UUIDCheckOptions): UUIDCheck {
+        return new UUIDCheck(this.key!, this.data, 'uuid', options).inherit(this.out);
+    }
+
+    public ulid(options?: CheckOptions): UUIDCheck {
+        return new UUIDCheck(this.key!, this.data, 'ulid', options).inherit(this.out);
     }
 
     public isBase64(options?: CheckOptions): this {
@@ -40,15 +49,6 @@ export class StringCheck extends StringBaseCheck {
 
         if (!/^[A-Fa-f0-9]{32}$/.test(this.data[this.key])) {
             this.errorMessage(`Field ${this.key} must be a valid MD5 hash`, options);
-        }
-        return this;
-    }
-
-    public isUUID(options?: CheckOptions): this {
-        if (!this.valid_type) return this;
-
-        if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(this.data[this.key])) {
-            this.errorMessage(`Field ${this.key} must be a valid UUID`, options);
         }
         return this;
     }
@@ -157,4 +157,5 @@ export class StringCheck extends StringBaseCheck {
         }
         return this;
     }
+
 }

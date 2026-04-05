@@ -23,6 +23,8 @@ type EntryPoint =
 	| 'number'
 	| 'boolean'
 	| 'date'
+	| 'uuid'
+	| 'ulid'
 	| 'email'
 	| 'url'
 	| 'file'
@@ -108,6 +110,12 @@ export const type = {
 	date(): PropertyDecorator {
 		return setPropertyEntryPoint('date');
 	},
+	uuid(): PropertyDecorator {
+		return setPropertyEntryPoint('uuid');
+	},
+	ulid(): PropertyDecorator {
+		return setPropertyEntryPoint('ulid');
+	},
 	email(): PropertyDecorator {
 		return setPropertyEntryPoint('email');
 	},
@@ -140,6 +148,12 @@ export const items = {
 	},
 	date(): PropertyDecorator {
 		return setItemEntryPoint('date');
+	},
+	uuid(): PropertyDecorator {
+		return setItemEntryPoint('uuid');
+	},
+	ulid(): PropertyDecorator {
+		return setItemEntryPoint('ulid');
 	},
 	email(): PropertyDecorator {
 		return setItemEntryPoint('email');
@@ -354,6 +368,10 @@ async function resolvePropertyEntryPoint(base: any, entrypoint: EntryPointConfig
 			return base.boolean(entrypoint.options);
 		case 'date':
 			return base.date();
+		case 'uuid':
+			return base.uuid();
+		case 'ulid':
+			return base.ulid();
 		case 'email':
 			return base.email();
 		case 'url':
@@ -379,6 +397,16 @@ async function resolveItemEntryPoint(base: any, entrypoint: EntryPointConfig): P
 			return base.boolean(entrypoint.options);
 		case 'date':
 			return base.date();
+		case 'uuid':
+			if (typeof base.uuid === 'function') {
+				return base.uuid();
+			}
+			return base.string().uuid();
+		case 'ulid':
+			if (typeof base.ulid === 'function') {
+				return base.ulid();
+			}
+			return base.string().ulid();
 		case 'email':
 			if (typeof base.email === 'function') {
 				return base.email();

@@ -151,6 +151,8 @@ Common methods:
 - `url()`
 - `number()`
 - `date()`
+- `uuid()`
+- `ulid()`
 - `boolean()`
 
 Notes:
@@ -159,6 +161,7 @@ Notes:
 - `image()` returns `Promise<ImageCheck>`
 - `email()` returns `EmailCheck`
 - `url()` returns `UrlCheck`
+- `uuid()` returns `UUIDCheck`
 - the other branching methods return synchronous check instances
 
 Field composition example:
@@ -344,8 +347,12 @@ Selected methods:
 - `StringCheck.maxLength(length, options?)`
 - `StringCheck.equalsOneOf(values, options?)`
 - `StringCheck.pattern(regex, options?)`
+- `StringCheck.uuid()`
+- `StringCheck.ulid()`
 - `StringCheck.email(options?)`
 - `StringCheck.url(options?)`
+- `UUIDCheck.version(version, options?)`
+- `UUIDCheck.isULID(options?)`
 - `NumberCheck.integer(options?)`
 - `NumberCheck.greaterThan(value, options?)`
 - `NumberCheck.atLeast(value, options?)`
@@ -355,6 +362,10 @@ Selected methods:
 - `DateCheck.sameDay(value, options?)`
 - `ValueCheck.isTrue(fn, options?)`
 - `ValueCheck.result(options?)`
+
+`uuid()` validates immediately as soon as you enter the UUID checker, like `email()` and `url()`. Use `uuid({ version })` when you want the shortcut form, or `uuid().version(4)` / `uuid().version([4, 7])` when you want to narrow an already-valid UUID to one version or a small allowed set.
+
+Use `ulid()` when the value must be a ULID. Like `uuid()`, it validates immediately when you enter the specialized checker.
 
 ## Getting results
 

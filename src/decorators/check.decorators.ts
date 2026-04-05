@@ -1,6 +1,7 @@
 import { StringCheck } from '../checks/string.check';
 import { NumberCheck } from '../checks/number.check';
 import { DateCheck } from '../checks/date.check';
+import { UUIDCheck } from '../checks/uuid.check';
 import { EmailCheck } from '../checks/email.check';
 import { UrlCheck } from '../checks/url.check';
 import { FileCheck } from '../checks/file.check';
@@ -29,7 +30,6 @@ const stringMethods = [
 	'isBase64',
 	'isSHA256',
 	'isMD5',
-	'isUUID',
 	'isHexadecimal',
 	'isAlphanumeric',
 	'isAscii',
@@ -67,6 +67,10 @@ const dateMethods = [
 	'withinHours',
 	'withinDays',
 	'withinMonths',
+] as const;
+
+const uuidMethods = [
+	'version',
 ] as const;
 
 const emailMethods = [
@@ -138,7 +142,6 @@ export const string: {
 	isBase64: (...args: unknown[]) => PropertyDecorator;
 	isSHA256: (...args: unknown[]) => PropertyDecorator;
 	isMD5: (...args: unknown[]) => PropertyDecorator;
-	isUUID: (...args: unknown[]) => PropertyDecorator;
 	isHexadecimal: (...args: unknown[]) => PropertyDecorator;
 	isAlphanumeric: (...args: unknown[]) => PropertyDecorator;
 	isAscii: (...args: unknown[]) => PropertyDecorator;
@@ -183,6 +186,14 @@ export const date: {
 } = createDecoratorGroup('property', 'date', DateCheck, dateMethods);
 
 export const dateRules = date;
+
+export const uuid: {
+	version: (...args: unknown[]) => PropertyDecorator;
+} = createDecoratorGroup('property', 'uuid', UUIDCheck, uuidMethods);
+
+export const ulid: {
+	isULID: (...args: unknown[]) => PropertyDecorator;
+} = createDecoratorGroup('property', 'ulid', UUIDCheck, ['isULID'] as const);
 
 export const boolean: {
 	equals: (...args: unknown[]) => PropertyDecorator;
@@ -243,6 +254,8 @@ export const item: {
 	number: typeof number;
 	boolean: typeof boolean;
 	date: typeof date;
+	uuid: typeof uuid;
+	ulid: typeof ulid;
 	email: typeof email;
 	url: typeof url;
 	file: typeof file;
@@ -263,6 +276,8 @@ export const item: {
 	number: createDecoratorGroup('item', 'number', NumberCheck, numberMethods),
 	boolean: createDecoratorGroup('item', 'boolean', FieldCheck, booleanMethods),
 	date: createDecoratorGroup('item', 'date', DateCheck, dateMethods),
+	uuid: createDecoratorGroup('item', 'uuid', UUIDCheck, uuidMethods),
+	ulid: createDecoratorGroup('item', 'ulid', UUIDCheck, ['isULID'] as const),
 	email: createDecoratorGroup('item', 'email', EmailCheck, emailMethods),
 	url: createDecoratorGroup('item', 'url', UrlCheck, urlMethods),
 	file: createDecoratorGroup('item', 'file', FileCheck, fileMethods),

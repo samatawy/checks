@@ -12,6 +12,8 @@ import {
   number,
   boolean,
   date,
+  uuid,
+  ulid,
   validateClass,
 } from '../src';
 
@@ -91,6 +93,41 @@ describe('decorator rule coverage', () => {
     const check = await validateClass({ createdAt: '2024-01-01T00:00:00.000Z' }, Payload);
 
     expect(check.result().valid).toBe(true);
+  });
+
+  it('supports uuid and ulid specialized decorators', async () => {
+    class Payload {
+      id!: string;
+      traceId!: string;
+    }
+
+    applyPropertyDecorators(Payload.prototype, 'id', [
+      required(),
+      type.uuid(),
+      uuid.version(4),
+    ]);
+
+    applyPropertyDecorators(Payload.prototype, 'traceId', [
+      required(),
+      type.ulid(),
+      ulid.isULID(),
+    ]);
+
+    const valid = await validateClass({
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      traceId: '01ARZ3NDEKTSV4RRFFQ69G5FAV',
+    }, Payload);
+
+    const invalid = await validateClass({
+      id: '018f23c0-9f4a-7b2d-8c12-5f1d2c3b4a5e',
+      traceId: '550e8400-e29b-41d4-a716-446655440000',
+    }, Payload);
+
+    expect(valid.result().valid).toBe(true);
+    expect((invalid.result({ flattened: true }) as any).errors).toEqual(expect.arrayContaining([
+      'Field id must be a valid UUIDv4',
+      'Field traceId must be a valid ULID',
+    ]));
   });
 
   it('uses hybrid mode by default for undecorated initialized fields', async () => {
@@ -262,7 +299,7 @@ describe('decorator rule coverage', () => {
 
     const validInput = { tags: [' x ', '  Ada  '] };
     const valid = await validateClass(validInput, Payload);
-    const invalid = await validateClass({ tags: [' aa ', ' bb ', ' cc ' ] }, Payload);
+    const invalid = await validateClass({ tags: [' aa ', ' bb ', ' cc '] }, Payload);
 
     expect(valid.result().valid).toBe(true);
     expect(validInput.tags).toEqual([' x ', 'Ada']);

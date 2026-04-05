@@ -18,7 +18,7 @@ The package root exports the decorator API directly:
 - `matchesType(ClassType, options?)` for applying a decorated class to an object property
 - `type.*()` for property type entry points
 - `items.*()` for array item type entry points
-- grouped rule decorators such as `object`, `string`, `number`, `boolean`, `date`, `email`, `url`, `file`, `image`, `array`, and `item`
+- grouped rule decorators such as `object`, `string`, `number`, `boolean`, `date`, `uuid`, `ulid`, `email`, `url`, `file`, `image`, `array`, and `item`
 - `validateClass(input, ClassType, options?)` for validating a plain input object against a class using decorators, inferred defaults, or both
 
 ## Validate A Class Directly
@@ -404,6 +404,24 @@ In that form, the item decorators describe the matching item shape, and `@array.
 ## Use Specialized Decorator Groups
 
 Specialized validators work the same way as the fluent API. Pick the correct `type.*()` entry point and then apply the matching decorator group.
+
+UUID and ULID example:
+
+```ts
+import { type, uuid, ulid, validateClass } from '@samatawy/checks';
+
+class IdentifiersDto {
+  @type.uuid()
+  @uuid.version(4)
+  id!: string;
+
+  @type.ulid()
+  @ulid.isULID()
+  traceId!: string;
+}
+```
+
+`@type.uuid()` and `@type.ulid()` validate immediately when you enter those specialized checkers, so the grouped decorators only add extra constraints such as UUID version filtering.
 
 Email example:
 

@@ -160,6 +160,20 @@ export interface StringCheckOptions extends CheckOptions {
 }
 
 /**
+ * Supported UUID versions for string validation.
+ */
+export type UUIDVersion = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+
+/**
+ * Options for UUID string validation.
+ */
+export interface UUIDCheckOptions extends CheckOptions {
+
+    /** Restricts the UUID to one version or a set of allowed versions. */
+    version?: UUIDVersion | UUIDVersion[];
+}
+
+/**
  * Options for equality-style checks.
  */
 export interface EqualityCheckOptions extends TolerantCheckOptions {

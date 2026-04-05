@@ -1,4 +1,4 @@
-import type { Check, CheckOptions, EqualityCheckOptions, TolerantCheckOptions } from '../types';
+import type { Check, CheckOptions, EqualityCheckOptions, TolerantCheckOptions, UUIDCheckOptions } from '../types';
 import type { ClassValidationOptions } from '../decorators/decorator.factory';
 import { appendError } from "./helper.functions";
 
@@ -6,6 +6,7 @@ import { NumberCheck } from './number.check';
 import { StringCheck } from './string.check';
 import { EmailCheck } from './email.check';
 import { UrlCheck } from './url.check';
+import { UUIDCheck } from './uuid.check';
 import { ValueCheck } from './value.check';
 import { DateCheck } from './date.check';
 import { ObjectCheck } from './object.check';
@@ -61,6 +62,14 @@ export class FieldCheck extends ValueCheck {
 
     public url(): UrlCheck {
         return new UrlCheck(this.key, this.data).inherit(this.out);
+    }
+
+    public uuid(options?: UUIDCheckOptions): UUIDCheck {
+        return new UUIDCheck(this.key, this.data, 'uuid', options).inherit(this.out);
+    }
+
+    public ulid(options?: CheckOptions): UUIDCheck {
+        return new UUIDCheck(this.key, this.data, 'ulid', options).inherit(this.out);
     }
 
     public number(options?: TolerantCheckOptions): NumberCheck {

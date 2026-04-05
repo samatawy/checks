@@ -5,6 +5,7 @@ export { FieldCheck } from './field.check';
 export { NumberCheck } from './number.check';
 export { ObjectCheck } from './object.check';
 export { StringCheck } from './string.check';
+export { UUIDCheck } from './uuid.check';
 export { EmailCheck } from './email.check';
 export { UrlCheck } from './url.check';
 export { ValueCheck } from './value.check';
