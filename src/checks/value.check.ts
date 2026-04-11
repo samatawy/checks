@@ -1,4 +1,4 @@
-import { appendError, defined, finalizeResult, isPromise } from './helper.functions';
+import { appendError, deepEqual, defined, finalizeResult, isPromise } from './helper.functions';
 import type { Check, CheckOptions, EqualityCheckOptions, IResult, ResultOptions, ResultSet } from '../types';
 
 export abstract class ValueCheck implements Check {
@@ -7,6 +7,8 @@ export abstract class ValueCheck implements Check {
 
     protected data: any;
 
+    protected oldData: any;
+
     protected has_value: boolean;
 
     protected out: IResult;
@@ -14,12 +16,18 @@ export abstract class ValueCheck implements Check {
     constructor(key: string | number, data: any) {
         this.key = key;
         this.data = data;
+        this.oldData = undefined;
         if (this.data) {
             this.has_value = this.data[this.key] !== null && this.data[this.key] !== undefined;
         } else {
             this.has_value = false;
         }
         this.out = { field: `${this.key}`, valid: true };
+    }
+
+    public updating(oldData: any): this {
+        this.oldData = oldData;
+        return this;
     }
 
     public inherit(priors: IResult): this {
@@ -63,8 +71,46 @@ export abstract class ValueCheck implements Check {
         return this;
     }
 
+    public async canUpdate(
+        func: (oldValue: unknown, newValue: unknown) => boolean | Promise<boolean>,
+        options?: CheckOptions,
+    ): Promise<this> {
+        if (!this.has_value) return this;
+
+        const oldValue = defined(this.oldData) ? this.oldData?.[this.key] : undefined;
+        const newValue = defined(this.data) ? this.data[this.key] : undefined;
+        const result = func(oldValue, newValue);
+        const valid = isPromise(result) ? await result : result;
+
+        if (!valid) {
+            this.errorMessage(`${this.updateTarget()} cannot be updated from ${JSON.stringify(oldValue)} to ${JSON.stringify(newValue)}`, options);
+        }
+
+        return this;
+    }
+
+    public immutable(options?: CheckOptions): this {
+        if (!this.has_value) return this;
+
+        const oldValue = defined(this.oldData) ? this.oldData?.[this.key] : undefined;
+        const newValue = defined(this.data) ? this.data[this.key] : undefined;
+
+        if (defined(oldValue) && !deepEqual(oldValue, newValue)) {
+            this.errorMessage(
+                `${this.updateTarget()} is immutable and cannot be updated from ${JSON.stringify(oldValue)} to ${JSON.stringify(newValue)}`,
+                options,
+            );
+        }
+
+        return this;
+    }
+
     protected errorMessage(err: string, options?: CheckOptions) {
         this.out = appendError(this.out, err, options);
+    }
+
+    protected updateTarget(): string {
+        return `Field ${this.key}`;
     }
 
     protected normalizeEqualityValues(
@@ -93,7 +139,7 @@ export abstract class ValueCheck implements Check {
             ? normalized.actual == normalized.expected
             : normalized.actual === normalized.expected;
     }
-    
+
     protected async rules(field_checks: (Check | Promise<Check>)[]): Promise<this> {
         for (const field_check of field_checks) {
             const check = isPromise(field_check) ? await field_check : field_check;
@@ -182,7 +228,8 @@ export abstract class ValueCheck implements Check {
 
     protected createAlternativeChecker(): this {
         const ValueCheckClass = this.constructor as new (key: string | number, data: any) => this;
-        return new ValueCheckClass(this.key, this.cloneAlternativeValue(this.data));
+        return new ValueCheckClass(this.key, this.cloneAlternativeValue(this.data))
+            .updating(this.cloneAlternativeValue(this.oldData));
     }
 
     protected cloneAlternativeValue<T>(value: T): T {

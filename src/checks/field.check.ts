@@ -30,7 +30,9 @@ export class FieldCheck extends ValueCheck {
     }
 
     public object(): ObjectCheck {
-        return new ObjectCheck(this.key, this.data).inherit(this.out);
+        return new ObjectCheck(this.key, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public async matchesType<T>(
@@ -41,7 +43,9 @@ export class FieldCheck extends ValueCheck {
     }
 
     public array(): ArrayCheck {
-        return new ArrayCheck(this.key, this.data).inherit(this.out);
+        return new ArrayCheck(this.key, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public async file(): Promise<FileCheck> {
@@ -53,31 +57,45 @@ export class FieldCheck extends ValueCheck {
     }
 
     public string(): StringCheck {
-        return new StringCheck(this.key, this.data).inherit(this.out);
+        return new StringCheck(this.key, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public email(): EmailCheck {
-        return new EmailCheck(this.key, this.data).inherit(this.out);
+        return new EmailCheck(this.key, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public url(): UrlCheck {
-        return new UrlCheck(this.key, this.data).inherit(this.out);
+        return new UrlCheck(this.key, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public uuid(options?: UUIDCheckOptions): UUIDCheck {
-        return new UUIDCheck(this.key, this.data, 'uuid', options).inherit(this.out);
+        return new UUIDCheck(this.key, this.data, 'uuid', options)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public ulid(options?: CheckOptions): UUIDCheck {
-        return new UUIDCheck(this.key, this.data, 'ulid', options).inherit(this.out);
+        return new UUIDCheck(this.key, this.data, 'ulid', options)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public number(options?: TolerantCheckOptions): NumberCheck {
-        return new NumberCheck(this.key, this.data, options).inherit(this.out);
+        return new NumberCheck(this.key, this.data, options)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public date(): DateCheck {
-        return new DateCheck(this.key, this.data).inherit(this.out);
+        return new DateCheck(this.key, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public boolean(options?: TolerantCheckOptions): FieldCheck {

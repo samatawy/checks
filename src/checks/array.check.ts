@@ -1,7 +1,7 @@
 import type { ArrayContainsOptions, Check, CheckOptions, IResult, ResultSet, ResultOptions } from '../types';
 import type { ClassValidationOptions } from '../decorators/decorator.factory';
 import { ArrayItemCheck } from './array.item.check';
-import { defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
+import { deepEqual, defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
 import { collectResults } from './helper.functions';
 
 
@@ -10,6 +10,8 @@ export class ArrayCheck implements Check {
     protected key: string | number | null | undefined;
 
     protected data: any;
+
+    protected oldData: any;
 
     protected has_value: boolean;
 
@@ -24,20 +26,32 @@ export class ArrayCheck implements Check {
     constructor(key: string | number | null | undefined, data: any) {
 
         this.key = key;
-        if (key && data) {
+        if (defined(key) && defined(data)) {
             this.data = data[key];
-        } else if (data) {
+        } else if (defined(data)) {
             this.data = data;
         } else {
             this.data = null;
         }
         this.out = defined(this.key) ? { field: this.key, valid: true } : { valid: true };
+        this.oldData = undefined;
 
         this.has_value = this.data !== null && this.data !== undefined;
         this.is_array = Array.isArray(this.data);
         if (this.has_value) {
             this.array();
         }
+    }
+
+    public updating(oldData: any): this {
+        if (defined(this.key) && defined(oldData)) {
+            this.oldData = oldData[this.key];
+        } else if (defined(oldData)) {
+            this.oldData = oldData;
+        } else {
+            this.oldData = undefined;
+        }
+        return this;
     }
 
     public notEmpty(options?: CheckOptions): this {
@@ -233,7 +247,7 @@ export class ArrayCheck implements Check {
     public async checkEach(func: (checker: ArrayItemCheck) => (Check | Promise<Check>)[]): Promise<this> {
         if (this.is_array) {
             for (let i = 0; i < this.data.length; i++) {
-                const item_check = new ArrayItemCheck(i, this.data);
+                const item_check = new ArrayItemCheck(i, this.data).updating(this.oldData);
                 const field_checks = func(item_check);
                 await this.rulesEach(i, field_checks);
             }
@@ -298,7 +312,7 @@ export class ArrayCheck implements Check {
         }
 
         for (const index of matchingIndexes) {
-            const itemCheck = new ArrayItemCheck(index, this.data);
+            const itemCheck = new ArrayItemCheck(index, this.data).updating(this.oldData);
             await this.rulesEach(index, func(itemCheck));
         }
 
@@ -313,6 +327,83 @@ export class ArrayCheck implements Check {
         if (!valid) {
             this.errorMessage('Custom check failed', options);
         }
+        return this;
+    }
+
+    public async canUpdate(
+        func: (oldValue: unknown, newValue: unknown) => boolean | Promise<boolean>,
+        options?: CheckOptions,
+    ): Promise<this> {
+        if (!this.has_value) return this;
+
+        const result = func(this.oldData, this.data);
+        const valid = isPromise(result) ? await result : result;
+
+        if (!valid) {
+            const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
+            this.errorMessage(`${prefix} cannot be updated from ${JSON.stringify(this.oldData)} to ${JSON.stringify(this.data)}`, options);
+        }
+
+        return this;
+    }
+
+    public async canAdd(
+        func: (array: unknown[], item: unknown) => boolean | Promise<boolean>,
+        options?: CheckOptions,
+    ): Promise<this> {
+        if (!this.has_value || !this.is_array) return this;
+
+        const currentArray = this.data as unknown[];
+        const previousArray = Array.isArray(this.oldData) ? this.oldData as unknown[] : [];
+        const addedItems = this.diffArrayItems(currentArray, previousArray);
+
+        for (const item of addedItems) {
+            const result = func(currentArray, item);
+            const valid = isPromise(result) ? await result : result;
+
+            if (!valid) {
+                const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
+                this.errorMessage(`${prefix} cannot add item ${JSON.stringify(item)}`, options);
+            }
+        }
+
+        return this;
+    }
+
+    public async canDelete(
+        func: (array: unknown[], item: unknown) => boolean | Promise<boolean>,
+        options?: CheckOptions,
+    ): Promise<this> {
+        if (!this.has_value || !this.is_array) return this;
+
+        const currentArray = this.data as unknown[];
+        const previousArray = Array.isArray(this.oldData) ? this.oldData as unknown[] : [];
+        const deletedItems = this.diffArrayItems(previousArray, currentArray);
+
+        for (const item of deletedItems) {
+            const result = func(previousArray, item);
+            const valid = isPromise(result) ? await result : result;
+
+            if (!valid) {
+                const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
+                this.errorMessage(`${prefix} cannot delete item ${JSON.stringify(item)}`, options);
+            }
+        }
+
+        return this;
+    }
+
+    public immutable(options?: CheckOptions): this {
+        if (!this.has_value) return this;
+
+        if (defined(this.oldData) && !deepEqual(this.oldData, this.data)) {
+            const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
+            this.errorMessage(
+                `${prefix} is immutable and cannot be updated from ${JSON.stringify(this.oldData)} to ${JSON.stringify(this.data)}`,
+                options,
+            );
+        }
+
         return this;
     }
 
@@ -341,7 +432,8 @@ export class ArrayCheck implements Check {
         index: number,
         func: (checker: ArrayItemCheck) => (Check | Promise<Check>)[],
     ): Promise<boolean> {
-        const itemCheck = new ArrayItemCheck(index, this.cloneAlternativeValue(this.data));
+        const itemCheck = new ArrayItemCheck(index, this.cloneAlternativeValue(this.data))
+            .updating(this.cloneAlternativeValue(this.oldData));
 
         for (const fieldCheck of func(itemCheck)) {
             const check = isPromise(fieldCheck) ? await fieldCheck : fieldCheck;
@@ -462,6 +554,7 @@ export class ArrayCheck implements Check {
         const checker = new ArrayCheck(null, this.cloneAlternativeValue(this.data));
         checker.key = this.key;
         checker.out = defined(this.key) ? { field: this.key, valid: true } : { valid: true };
+        checker.updating(this.cloneAlternativeValue(this.oldData));
         return checker;
     }
 
@@ -530,6 +623,24 @@ export class ArrayCheck implements Check {
         }
 
         return Array.isArray(value) ? [...value] : [value];
+    }
+
+    private diffArrayItems(source: unknown[], baseline: unknown[]): unknown[] {
+        const remaining = [...baseline];
+        const diff: unknown[] = [];
+
+        for (const item of source) {
+            const matchIndex = remaining.findIndex(candidate => deepEqual(candidate, item));
+
+            if (matchIndex === -1) {
+                diff.push(item);
+                continue;
+            }
+
+            remaining.splice(matchIndex, 1);
+        }
+
+        return diff;
     }
 
     public inherit(priors: IResult): this {

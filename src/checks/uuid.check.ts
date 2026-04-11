@@ -101,6 +101,7 @@ export class UUIDCheck extends StringBaseCheck {
             mode?: UUIDCheckMode,
         ) => this;
 
-        return new ValueCheckClass(this.key, this.cloneAlternativeValue(this.data), this.mode);
+        return new ValueCheckClass(this.key, this.cloneAlternativeValue(this.data), this.mode)
+            .updating(this.cloneAlternativeValue(this.oldData));
     }
 }

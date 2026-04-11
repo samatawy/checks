@@ -20,7 +20,9 @@ export class ArrayItemCheck extends ValueCheck {
     }
 
     public object(): ObjectCheck {
-        return new ObjectCheck(this.key, this.data).inherit(this.out);
+        return new ObjectCheck(this.key, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public async matchesType<T>(
@@ -31,35 +33,49 @@ export class ArrayItemCheck extends ValueCheck {
     }
 
     public required(name: string, options?: CheckOptions): FieldCheck {
-        return new FieldCheck(name, this.item).required(options);
+        return new FieldCheck(name, this.item)
+            .updating(this.oldData?.[this.key])
+            .required(options);
     }
 
     public optional(name: string): FieldCheck {
-        return new FieldCheck(name, this.item);
+        return new FieldCheck(name, this.item)
+            .updating(this.oldData?.[this.key]);
     }
 
     public conditional(name: string, condition: (data: any) => boolean, options?: CheckOptions): FieldCheck {
         if (condition(this.item)) {
-            return new FieldCheck(name, this.item).required(options);
+            return new FieldCheck(name, this.item)
+                .updating(this.oldData?.[this.key])
+                .required(options);
         } else {
-            return new FieldCheck(name, this.item);
+            return new FieldCheck(name, this.item)
+                .updating(this.oldData?.[this.key]);
         }
     }
 
     public array(): ArrayCheck {
-        return new ArrayCheck(this.key, this.data).inherit(this.out);
+        return new ArrayCheck(this.key, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public string(): StringCheck {
-        return new StringCheck(this.key, this.data).inherit(this.out);
+        return new StringCheck(this.key, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public number(options?: TolerantCheckOptions): NumberCheck {
-        return new NumberCheck(this.key, this.data, options).inherit(this.out);
+        return new NumberCheck(this.key, this.data, options)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public date(): DateCheck {
-        return new DateCheck(this.key, this.data).inherit(this.out);
+        return new DateCheck(this.key, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public boolean(): ArrayItemCheck {
@@ -79,6 +95,10 @@ export class ArrayItemCheck extends ValueCheck {
         }
 
         return this;
+    }
+
+    protected updateTarget(): string {
+        return `Item ${this.key}`;
     }
 
     /**

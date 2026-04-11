@@ -3,7 +3,7 @@ import type { ClassValidationOptions } from '../decorators/decorator.factory';
 import { validateClass } from '../decorators/decorator.factory';
 import { ArrayCheck } from './array.check';
 import { FieldCheck } from './field.check';
-import { defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
+import { deepEqual, defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
 import { collectResults } from './helper.functions';
 
 /**
@@ -26,6 +26,8 @@ export class ObjectCheck implements Check {
     protected key: string | number | null | undefined;
 
     protected data: any;
+
+    protected oldData: any;
 
     protected has_value: boolean;
 
@@ -74,6 +76,17 @@ export class ObjectCheck implements Check {
         if (this.has_value) {
             this.object();
         }
+    }
+
+    updating(oldData: any): this {
+        if (defined(this.key) && defined(oldData)) {
+            this.oldData = oldData[this.key];
+        } else if (defined(oldData)) {
+            this.oldData = oldData;
+        } else {
+            this.oldData = undefined;
+        }
+        return this;
     }
 
     /**
@@ -128,7 +141,9 @@ export class ObjectCheck implements Check {
      */
     public required(name: string, options?: CheckOptions): FieldCheck {
         this.known_keys.add(name);
-        return new FieldCheck(name, this.data).required(options);
+        return new FieldCheck(name, this.data)
+            .updating(this.oldData)
+            .required(options);
     }
 
     /**
@@ -141,7 +156,7 @@ export class ObjectCheck implements Check {
      */
     public optional(name: string): FieldCheck {
         this.known_keys.add(name);
-        return new FieldCheck(name, this.data);
+        return new FieldCheck(name, this.data).updating(this.oldData);
     }
 
     /**
@@ -158,9 +173,11 @@ export class ObjectCheck implements Check {
     public conditional(name: string, condition: (data: any) => boolean, options?: CheckOptions): FieldCheck {
         this.known_keys.add(name);
         if (condition(this.data)) {
-            return new FieldCheck(name, this.data).required(options);
+            return new FieldCheck(name, this.data)
+                .updating(this.oldData)
+                .required(options);
         } else {
-            return new FieldCheck(name, this.data);
+            return new FieldCheck(name, this.data).updating(this.oldData);
         }
     }
 
@@ -350,6 +367,37 @@ export class ObjectCheck implements Check {
         return this;
     }
 
+    public async canUpdate(
+        func: (oldValue: unknown, newValue: unknown) => boolean | Promise<boolean>,
+        options?: CheckOptions,
+    ): Promise<this> {
+        if (!this.has_value) return this;
+
+        const result = func(this.oldData, this.data);
+        const valid = isPromise(result) ? await result : result;
+
+        if (!valid) {
+            const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
+            this.errorMessage(`${prefix} cannot be updated from ${JSON.stringify(this.oldData)} to ${JSON.stringify(this.data)}`, options);
+        }
+
+        return this;
+    }
+
+    public immutable(options?: CheckOptions): this {
+        if (!this.has_value) return this;
+
+        if (defined(this.oldData) && !deepEqual(this.oldData, this.data)) {
+            const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
+            this.errorMessage(
+                `${prefix} is immutable and cannot be updated from ${JSON.stringify(this.oldData)} to ${JSON.stringify(this.data)}`,
+                options,
+            );
+        }
+
+        return this;
+    }
+
     protected errorMessage(err: string, options?: CheckOptions): void {
         this.out = appendError(this.out, err, options);
     }
@@ -410,6 +458,7 @@ export class ObjectCheck implements Check {
         const checker = new ObjectCheck(null, this.cloneAlternativeValue(this.data));
         checker.key = this.key;
         checker.out = defined(this.key) ? { field: this.key, valid: true } : { valid: true };
+        checker.updating(this.cloneAlternativeValue(this.oldData));
         return checker;
     }
 

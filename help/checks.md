@@ -75,6 +75,8 @@ Common methods:
 - `oneOf(branches)` applies alternative object branches where exactly one branch must pass
 - `not(fn, options?)` applies a negated object branch that must fail
 - `isTrue(fn, options?)` applies a custom object-level predicate and supports async predicates
+- `canUpdate(fn, options?)` applies a custom old-value/new-value predicate against the current object value when that value is present in the current input
+- `immutable(options?)` rejects changes when `updating(...)` supplied a previously defined object value and the current input also supplies that value
 - `result(options?)` returns the current result or a formatted final result depending on the options you pass
 
 Example:
@@ -130,6 +132,34 @@ Notes:
 - valid `anyOf(...)` and `oneOf(...)` branches are replayed on the real object, so normal mutations such as `trim()` or tolerant parsing affect the original input consistently
 - `not(...)` evaluates its branch on isolated data and never replays mutations onto the original input
 
+Update predicate example:
+
+```ts
+import { ObjectCheck } from '@samatawy/checks';
+
+const current = {
+  name: 'Ada',
+  role: 'editor'
+};
+
+const previous = {
+  name: 'Ada',
+  role: 'admin'
+};
+
+const check = await ObjectCheck.for(current)
+  .updating(previous)
+  .check(root => [
+    root.optional('role').string().canUpdate((oldValue, newValue) => {
+      return !(oldValue === 'admin' && newValue !== 'admin');
+    }, {
+      err: 'Role cannot be downgraded from admin'
+    })
+  ]);
+
+const result = check.result({ flattened: true });
+```
+
 ### `FieldCheck`
 
 `FieldCheck` bridges from an object field to a specific value type.
@@ -142,6 +172,8 @@ Common methods:
 - `oneOf(branches)` applies alternative field branches where exactly one branch must pass
 - `not(fn, options?)` applies a negated field branch that must fail
 - `equals(value, options?)` compares the field value using strict equality by default and supports lax matching with `tolerant: true`
+- `canUpdate(fn, options?)` applies a custom old-value/new-value predicate for the field value when that field is present in the current input
+- `immutable(options?)` rejects changes when `updating(...)` supplied a previously defined field value and the current input also supplies that field
 - `object()`
 - `array()`
 - `file()`
@@ -207,6 +239,10 @@ Common methods:
 - `checkEach(fn)` validates each item using `ArrayItemCheck` and supports promised checks
 - `contains(fn, options?)` succeeds when a bounded number of items match one nested item rule without reporting non-matching item errors individually
 - `isTrue(fn, options?)` applies a custom predicate to the array value and supports async predicates
+- `canUpdate(fn, options?)` applies a custom old-value/new-value predicate against the current array value when that value is present in the current input
+- `canAdd(fn, options?)` applies a predicate to each item added by the current array update
+- `canDelete(fn, options?)` applies a predicate to each item removed by the current array update
+- `immutable(options?)` rejects changes when `updating(...)` supplied a previously defined array value and the current input also supplies that value
 - `isTrueEach(fn, options?)` runs a custom predicate on every item and supports async predicates
 - `result(options?)` returns the current result or a formatted final result depending on the options you pass
 
@@ -255,6 +291,29 @@ Notes:
 - `contains(...)` is the array-level “some items must match” helper; use it instead of `checkEach(...)` when non-matching items are expected and should not each produce their own error
 - `matchesType(...)` on `ArrayCheck` is shorthand for `checkEach(item => [item.matchesType(...)])`
 - `item.array().matchesType(...)` refers to a nested-array case where the current item value is itself an array and each nested element must match the class definition
+- `canAdd(...)` compares the current array value against the previous array from `updating(...)` and runs once for each added item
+- `canDelete(...)` compares the current array value against the previous array from `updating(...)` and runs once for each deleted item
+- `immutable(...)` only checks values that are present in the current input; omitted fields in patch-style updates are ignored, and initial set is still allowed when no previous value was supplied through `updating(...)`
+
+Array update example:
+
+```ts
+import { ObjectCheck } from '@samatawy/checks';
+
+const check = await ObjectCheck.for({ tags: ['admin', 'editor'] })
+  .updating({ tags: ['editor', 'viewer'] })
+  .check(root => [
+    root.required('tags').array()
+      .canAdd((array, item) => item !== 'admin', {
+        err: 'Admin tag cannot be added'
+      })
+      .then(tags => tags.canDelete((array, item) => item !== 'viewer', {
+        err: 'Viewer tag cannot be removed'
+      }))
+  ]);
+
+const result = check.result({ flattened: true });
+```
 
 ### `ArrayItemCheck`
 
@@ -276,6 +335,8 @@ Common methods:
 - `oneOf(branches)` applies alternative item branches where exactly one branch must pass
 - `not(fn, options?)` applies a negated item branch that must fail
 - `equals(value, options?)` compares the current item value using strict equality by default and supports lax matching with `tolerant: true`
+- `canUpdate(fn, options?)` applies a custom old-value/new-value predicate for the current item value when that item is present in the current input
+- `immutable(options?)` rejects changes when `updating(...)` supplied a previously defined item value and the current input also supplies that item
 
 Item composition example:
 

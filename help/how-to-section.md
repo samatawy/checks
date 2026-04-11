@@ -3,6 +3,7 @@ title: How-To
 children:
   - ./basic-checks.md
   - ./composite-checks.md
+  - ./data-updates.md
   - ./schema-check.md
   - ./reading-results.md
   - ./decorated-classes.md
@@ -18,6 +19,7 @@ Pages in this section:
 
 - [basic-checks.md](basic-checks.md) for day-to-day validation recipes
 - [composite-checks.md](composite-checks.md) for `allOf(...)`, `anyOf(...)`, `oneOf(...)`, and `not(...)`
+- [data-updates.md](data-updates.md) for patch-style update validation, immutability, and update factory flows
 - [schema-check.md](schema-check.md) for validating input against the supported JSON Schema subset
 - [reading-results.md](reading-results.md) for `result(options?)` and output shaping
 - [decorated-classes.md](decorated-classes.md) for decorator-based class validation
@@ -29,5 +31,6 @@ If you are new to the package, a good reading order is:
 
 1. Start with [basic-checks.md](basic-checks.md) for the most common validation recipes.
 2. Continue with [composite-checks.md](composite-checks.md) when you need `allOf(...)`, `anyOf(...)`, `oneOf(...)`, or `not(...)`.
-3. Use [schema-check.md](schema-check.md) when you want to validate data from a supported JSON Schema document instead of writing fluent rules directly.
-4. Finish with [reading-results.md](reading-results.md) when you need to shape output for application code.
+3. Read [data-updates.md](data-updates.md) when validation depends on both incoming patch data and existing values.
+4. Use [schema-check.md](schema-check.md) when you want to validate data from a supported JSON Schema document instead of writing fluent rules directly.
+5. Finish with [reading-results.md](reading-results.md) when you need to shape output for application code.

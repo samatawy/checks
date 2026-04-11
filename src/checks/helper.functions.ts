@@ -16,6 +16,57 @@ export function isPromise(value: any): value is Promise<any> {
         && typeof value.catch === 'function';
 }
 
+export function deepEqual(left: unknown, right: unknown): boolean {
+    if (left === right) {
+        return true;
+    }
+
+    if (!defined(left) || !defined(right)) {
+        return false;
+    }
+
+    if (left instanceof Date && right instanceof Date) {
+        return left.getTime() === right.getTime();
+    }
+
+    if (Array.isArray(left) || Array.isArray(right)) {
+        if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+            return false;
+        }
+
+        for (let index = 0; index < left.length; index++) {
+            if (!deepEqual(left[index], right[index])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    if (typeof left !== 'object' || typeof right !== 'object') {
+        return false;
+    }
+
+    const leftEntries = Object.entries(left as Record<string, unknown>);
+    const rightEntries = Object.entries(right as Record<string, unknown>);
+
+    if (leftEntries.length !== rightEntries.length) {
+        return false;
+    }
+
+    for (const [key, value] of leftEntries) {
+        if (!Object.prototype.hasOwnProperty.call(right, key)) {
+            return false;
+        }
+
+        if (!deepEqual(value, (right as Record<string, unknown>)[key])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function toArray(value?: string | string[]): string[] {
     if (!defined(value)) {
         return [];

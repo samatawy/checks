@@ -11,19 +11,27 @@ export class StringCheck extends StringBaseCheck {
     }
 
     public email(options?: CheckOptions): EmailCheck {
-        return new EmailCheck(this.key!, this.data);
+        return new EmailCheck(this.key!, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public url(options?: CheckOptions): UrlCheck {
-        return new UrlCheck(this.key!, this.data);
+        return new UrlCheck(this.key!, this.data)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public uuid(options?: UUIDCheckOptions): UUIDCheck {
-        return new UUIDCheck(this.key!, this.data, 'uuid', options).inherit(this.out);
+        return new UUIDCheck(this.key!, this.data, 'uuid', options)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public ulid(options?: CheckOptions): UUIDCheck {
-        return new UUIDCheck(this.key!, this.data, 'ulid', options).inherit(this.out);
+        return new UUIDCheck(this.key!, this.data, 'ulid', options)
+            .updating(this.oldData)
+            .inherit(this.out);
     }
 
     public isBase64(options?: CheckOptions): this {
