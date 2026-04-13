@@ -1,10 +1,10 @@
 ---
-title: Coded Results
+title: Coded Message Catalog
 group: Guides
 category: Advanced
 ---
 
-# Coded Results
+# Coded Message Catalog
 
 This guide covers the optional result-code layer.
 
@@ -23,9 +23,9 @@ Codes are useful when:
 
 The coded-result API uses:
 
-- `ResultCatalog`
-- `ResultCatalog.global`
-- `IResultCatalog`
+- `CodedMessageCatalog`
+- `CodedMessageCatalog.global`
+- `ICodedMessageCatalog`
 - `ResultCode`
 - `ResultCodeDefinition`
 
@@ -64,9 +64,9 @@ Language maps are plain key-value objects. The package looks up the requested la
 Use the shared catalog when one process-wide registry is sufficient.
 
 ```ts
-import { FieldCheck, ResultCatalog } from '@samatawy/checks';
+import { CodedMessageCatalog, FieldCheck } from '@samatawy/checks';
 
-ResultCatalog.global.register('person.name.missing', {
+CodedMessageCatalog.global.register('person.name.missing', {
   hint: {
     en: 'Add the legal full name when available',
     de: 'Ergaenze den vollstaendigen Namen, wenn verfuegbar'
@@ -100,12 +100,12 @@ Expected result shape:
 
 ## Scoped Catalog Instances
 
-Use a separate `ResultCatalog` instance when different modules or tenants should not share the same registry.
+Use a separate `CodedMessageCatalog` instance when different modules or tenants should not share the same registry.
 
 ```ts
-import { FieldCheck, ResultCatalog } from '@samatawy/checks';
+import { CodedMessageCatalog, FieldCheck } from '@samatawy/checks';
 
-const catalog = new ResultCatalog();
+const catalog = new CodedMessageCatalog();
 
 catalog.register('person.name.missing', {
   warn: {
@@ -145,9 +145,9 @@ const english = check.result({ language: 'en' });
 If a code exists in the catalog but the requested language does not, the package falls back to the original generated validator text for that level.
 
 ```ts
-import { FieldCheck, ResultCatalog } from '@samatawy/checks';
+import { CodedMessageCatalog, FieldCheck } from '@samatawy/checks';
 
-ResultCatalog.global.register('person.name.missing', {
+CodedMessageCatalog.global.register('person.name.missing', {
   err: {
     en: 'Name is required'
   }
@@ -167,14 +167,14 @@ Here:
 - `french.err` falls back to `Field name is required`
 - both results still expose `code: 'person.name.missing'`
 
-## Coded Results In Nested Object Or Array Output
+## Localized Results In Nested Object Or Array Output
 
 Codes also survive inside nested object and array results.
 
 ```ts
-import { ObjectCheck, ResultCatalog } from '@samatawy/checks';
+import { CodedMessageCatalog, ObjectCheck } from '@samatawy/checks';
 
-ResultCatalog.global.register('children.minor', {
+CodedMessageCatalog.global.register('children.minor', {
   err: {
     en: 'All children must be minors'
   }
@@ -203,7 +203,7 @@ console.log(result.errors);
 
 ## Catalog Operations
 
-Available `ResultCatalog` methods:
+Available `CodedMessageCatalog` methods:
 
 - `register(code, definition)` adds or replaces one code
 - `registerAll(source)` copies codes from another catalog

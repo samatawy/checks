@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { FieldCheck, ObjectCheck, ResultCatalog } from '../src';
+import { CodedMessageCatalog, FieldCheck, ObjectCheck } from '../src';
 
 describe('global check message catalog', () => {
   afterEach(() => {
-    ResultCatalog.global.clear();
+    CodedMessageCatalog.global.clear();
   });
 
   it('translates a coded field result and exposes the code', () => {
-    ResultCatalog.global.register('person.name.missing', {
+    CodedMessageCatalog.global.register('person.name.missing', {
       warn: {
         en: 'Name is missing',
         de: 'Name fehlt',
@@ -27,7 +27,7 @@ describe('global check message catalog', () => {
   });
 
   it('defaults coded results to english when a formatted result is requested without a language', () => {
-    ResultCatalog.global.register('person.name.missing', {
+    CodedMessageCatalog.global.register('person.name.missing', {
       err: 'Name is required'
     });
 
@@ -41,7 +41,7 @@ describe('global check message catalog', () => {
   });
 
   it('supports string shorthand definitions as english translations', () => {
-    ResultCatalog.global.register('person.name.guidance', {
+    CodedMessageCatalog.global.register('person.name.guidance', {
       hint: 'Add the legal full name when available',
       warn: 'Name is missing'
     });
@@ -57,7 +57,7 @@ describe('global check message catalog', () => {
   });
 
   it('keeps coded errors when buildErrorMessage is used and the registry matches', async () => {
-    ResultCatalog.global.register('children.minor', {
+    CodedMessageCatalog.global.register('children.minor', {
       err: {
         en: 'All children must be minors'
       }
@@ -83,7 +83,7 @@ describe('global check message catalog', () => {
   });
 
   it('aggregates translated coded messages in flattened object results', async () => {
-    ResultCatalog.global.register('person.name.missing', {
+    CodedMessageCatalog.global.register('person.name.missing', {
       warn: {
         en: 'Name is missing',
         de: 'Name fehlt'
@@ -101,7 +101,7 @@ describe('global check message catalog', () => {
   });
 
   it('supports scoped result catalogs through separate instances', () => {
-    const catalog = new ResultCatalog();
+    const catalog = new CodedMessageCatalog();
     catalog.register('person.name.missing', {
       warn: {
         en: 'Name is missing',
@@ -123,7 +123,7 @@ describe('global check message catalog', () => {
   });
 
   it('supports multiple translated levels for the same code', () => {
-    ResultCatalog.global.register('person.name.missing', {
+    CodedMessageCatalog.global.register('person.name.missing', {
       hint: {
         en: 'Add the legal full name when available',
         de: 'Ergaenze den vollstaendigen Namen, wenn verfuegbar'
@@ -145,7 +145,7 @@ describe('global check message catalog', () => {
   });
 
   it('falls back to the original generated text when a requested language is missing', () => {
-    ResultCatalog.global.register('person.name.missing', {
+    CodedMessageCatalog.global.register('person.name.missing', {
       err: 'Name is required'
     });
 

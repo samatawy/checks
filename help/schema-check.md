@@ -6,7 +6,7 @@ category: Common Tasks
 
 # SchemaCheck
 
-Use `SchemaCheck` when you already have a JSON-Schema-like object or JSON file and want to validate input against the supported subset instead of writing fluent rules directly.
+Use `SchemaCheck` when you already have a JSON-Schema-like object and want to validate input against the supported subset instead of writing fluent rules directly.
 
 `SchemaCheck` is intentionally limited to a reviewable subset. It currently expects the root schema to describe an object.
 
@@ -52,12 +52,12 @@ Use `SchemaCheck.from(schema)` when the schema already exists as a TypeScript ob
 
 If you need the underlying fluent validator, call `await schemaCheck.check(input)` instead and work with the returned `ObjectCheck`.
 
-## Validate Against A JSON File
+## Validate Against A JSON File In Node
 
 ```ts
-import { SchemaCheck } from '@samatawy/checks';
+import { loadSchemaCheckFromFile } from '@samatawy/checks/node';
 
-const schemaCheck = SchemaCheck.fromFile('./person.schema.json');
+const schemaCheck = await loadSchemaCheckFromFile('./person.schema.json');
 
 const result = await schemaCheck.checkResult({
   name: 'Ada',
@@ -70,7 +70,7 @@ const result = await schemaCheck.checkResult({
 console.log(result.errors);
 ```
 
-Use `SchemaCheck.fromFile(path)` when the schema lives in a JSON file on disk.
+Use `loadSchemaCheckFromFile(path)` from `@samatawy/checks/node` when the schema lives in a JSON file on disk in a Node runtime.
 
 ## Use Supported Object And Array Keywords
 
@@ -220,4 +220,4 @@ Important current limits include:
 - tuple arrays such as `prefixItems` are not supported
 - pattern-based property keywords such as `patternProperties` are not supported
 
-For the broader standards comparison, see [json-schema-comparison.md](json-schema-comparison.md).
+For the broader standards comparison, see [JSON Schema Comparison](json-schema-comparison.md).

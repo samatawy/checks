@@ -2,6 +2,7 @@
 title: Reference
 children:
   - ./checks.md
+  - ./platform-compatibility.md
   - ./json-schema-comparison.md
 ---
 
@@ -11,5 +12,6 @@ Use this section when you need the exported validation surface and result behavi
 
 Pages in this section:
 
-- [checks.md](checks.md) for validation classes, methods, and result shapes
-- [json-schema-comparison.md](json-schema-comparison.md) for overlap, strengths, and gaps relative to JSON Schema
+- [Checks API](checks.md) for validation classes, methods, and result shapes
+- [Platform Compatibility](platform-compatibility.md) for browser-versus-Node feature availability and optional binary dependencies
+- [JSON Schema Comparison](json-schema-comparison.md) for overlap, strengths, and gaps relative to JSON Schema

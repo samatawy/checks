@@ -1,4 +1,4 @@
-import { ResultCatalog } from '../i18n/result.catalog';
+import { CodedMessageCatalog } from '../i18n/result.catalog';
 import type { CheckOptions, SingleResult, ResultSet, IResult, ResultOptions } from '../types';
 
 const baseTextKey = Symbol('baseText');
@@ -116,7 +116,7 @@ function clearBaseText<T extends IResult>(source: T): T {
 }
 
 function resolveCatalog(options?: CheckOptions | ResultOptions) {
-    return options?.catalog ?? ResultCatalog.global;
+    return options?.catalog ?? CodedMessageCatalog.global;
 }
 
 function resolveDefaultLevel(options?: CheckOptions): 'hint' | 'warn' | 'err' {

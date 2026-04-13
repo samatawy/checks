@@ -62,7 +62,7 @@ The package does not cover the full JSON Schema standard.
 
 Notable gaps include:
 
-- only partial JSON Schema document ingestion through `SchemaCheck.from(...)` and `SchemaCheck.fromFile(...)`
+- only partial JSON Schema document ingestion through `SchemaCheck.from(...)` and the Node-only `loadSchemaCheckFromFile(...)` helper
 - no `$schema`, `$id`, `$defs`, or `$ref`
 - no `if` / `then` / `else`
 - no `dependentRequired` or `dependentSchemas`
@@ -118,5 +118,5 @@ Choose `@samatawy/checks` when you need:
 - custom or async business rules
 - decorator-based validation models
 - binary and image validation
-- i18n-aware messages and coded results
+- i18n-aware messages, localized results, and stable codes
 - validated runtime output and optional object hydration

@@ -1,6 +1,6 @@
 import type { CheckOptions } from '../types';
+import { loadFileTypeModule } from '../optional-dependencies';
 import { ValueCheck } from './value.check';
-import { fileTypeFromBuffer } from 'file-type'; // Works in Node AND browser!
 
 
 export class FileCheck extends ValueCheck {
@@ -133,6 +133,7 @@ export class FileCheck extends ValueCheck {
 
     protected async getMimeType(buffer: Uint8Array): Promise<string> {
         const header = buffer.subarray(0, 4100);
+        const { fileTypeFromBuffer } = await loadFileTypeModule();
         const result = await fileTypeFromBuffer(header);
 
         return result?.mime || 'application/octet-stream';

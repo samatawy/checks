@@ -1,7 +1,7 @@
 import type { CheckOptions } from '../types';
 import { defined } from './helper.functions';
+import { loadProbeImageSizeModule } from '../optional-dependencies';
 import { FileCheck } from './file.check';
-import * as probe from 'probe-image-size'; // Works in Node AND browser but with different methods!
 
 
 export class ImageCheck extends FileCheck {
@@ -118,6 +118,7 @@ export class ImageCheck extends FileCheck {
     protected async getImageDimensions(buffer: Uint8Array, type?: string): Promise<{ width: number, height: number, type: string } | null> {
         const bufferCtor = (globalThis as { Buffer?: typeof Buffer }).Buffer;
         if (bufferCtor) {
+            const probe = await loadProbeImageSizeModule();
             // probe-image-size can work with a Buffer in Node, but not with Uint8Array directly, so we need to convert it first
             const result = probe.sync(bufferCtor.from(buffer));
             if (!result) return null;

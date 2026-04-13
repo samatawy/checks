@@ -25,7 +25,7 @@ export type {
     ResultCode,
     TranslationMap,
     ResultCodeDefinition,
-    IResultCatalog,
+    ICodedMessageCatalog,
     ResultOptions,
 
 } from '../types';

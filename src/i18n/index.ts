@@ -1,3 +1,3 @@
 export {
-    ResultCatalog,
+    CodedMessageCatalog,
 } from './result.catalog';

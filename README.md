@@ -22,12 +22,12 @@ Start with the hosted docs at [samatawy.github.io/checks](https://samatawy.githu
 
 For the local guides in this repo, the most useful entry points are:
 
-- [help/index.md](help/index.md) for the docs overview
-- [help/basic-checks.md](help/basic-checks.md) for common validation patterns
-- [help/composite-checks.md](help/composite-checks.md) for `allOf(...)`, `anyOf(...)`, `oneOf(...)`, and `not(...)`
-- [help/schema-check.md](help/schema-check.md) for validating input from the supported JSON Schema subset
-- [help/reading-results.md](help/reading-results.md) for `flattened`, `nested`, and `validated` output
-- [help/checks.md](help/checks.md) for the full API reference
+- [Documentation](help/index.md) for the docs overview
+- [Basic Checks](help/basic-checks.md) for common validation patterns
+- [Composite Checks](help/composite-checks.md) for `allOf(...)`, `anyOf(...)`, `oneOf(...)`, and `not(...)`
+- [SchemaCheck](help/schema-check.md) for validating input from the supported JSON Schema subset
+- [Reading Results](help/reading-results.md) for `flattened`, `nested`, and `validated` output
+- [Checks API](help/checks.md) for the full API reference
 
 Run `npm run docs` to generate the local docs site in `docs/`.
 
@@ -52,6 +52,14 @@ Why these are optional:
 - `file-type` is used to detect MIME types from file buffers
 - `probe-image-size` is used for image metadata in Node runtimes
 - browser image dimension checks can also use browser-native APIs
+
+If you load JSON Schema files from disk in Node, use the dedicated Node-only entrypoint:
+
+```ts
+import { loadSchemaCheckFromFile } from '@samatawy/checks/node';
+```
+
+If you are validating against inline schema objects, the main package import remains portable.
 
 ## Quick Start
 
@@ -100,7 +108,7 @@ console.log(output.errors);
 console.log(output.validated);
 ```
 
-The most common patterns are `result({ language })` for the merged result tree, `result({ flattened: true })` for plain message arrays, and `result({ validated: 'partial' | 'strict' })` when you want a filtered clone of the validated input. For the complete result guide, see [help/reading-results.md](help/reading-results.md).
+The most common patterns are `result({ language })` for the merged result tree, `result({ flattened: true })` for plain message arrays, and `result({ validated: 'partial' | 'strict' })` when you want a filtered clone of the validated input. For the complete result guide, see [Reading Results](help/reading-results.md).
 
 ## Validation Model
 
@@ -124,17 +132,29 @@ const check = await ObjectCheck.for({
 ]);
 ```
 
-That example shows the usual style: start at `ObjectCheck.for(...)`, branch to typed field validators, and use composition helpers only where you actually need alternatives. For a broader walkthrough, see [help/basic-checks.md](help/basic-checks.md) and [help/composite-checks.md](help/composite-checks.md).
+That example shows the usual style: start at `ObjectCheck.for(...)`, branch to typed field validators, and use composition helpers only where you actually need alternatives. For a broader walkthrough, see [Basic Checks](help/basic-checks.md) and [Composite Checks](help/composite-checks.md).
 
-If your validation rules already exist as a supported JSON schema document, see [help/schema-check.md](help/schema-check.md) instead of translating everything to fluent rules by hand.
+If your validation rules already exist as a supported JSON schema document, see [SchemaCheck](help/schema-check.md) instead of translating everything to fluent rules by hand.
+
+## Platform Compatibility
+
+The core fluent validation API is intended to work in both browser and Node runtimes.
+
+Platform-specific areas:
+
+- `@samatawy/checks/node` is Node-only because it reads schema files from disk
+- `FileCheck` requires the optional `file-type` peer when used
+- `ImageCheck` requires `probe-image-size` in Node and browser support for `createImageBitmap(...)` when used in the browser
+
+See [Platform Compatibility](help/platform-compatibility.md) for the full matrix.
 
 ## Object Factory
 
-If a class exposes static `validateInput(input)` and `fromValidInput(input)` methods, `ObjectFactory` can validate input and then hydrate an instance. See [help/object-factory.md](help/object-factory.md).
+If a class exposes static `validateInput(input)` and `fromValidInput(input)` methods, `ObjectFactory` can validate input and then hydrate an instance. See [Object Factory](help/object-factory.md).
 
 ## Coded Results
 
-Stable result codes and translated output are supported, but optional. If you need catalogs, codes, or localized messages, see [help/coded-results.md](help/coded-results.md).
+Stable result codes and translated output are supported, but optional. If you need catalogs, codes, or localized messages, see [Coded Message Catalog](help/coded-results.md).
 
 ## File And Image Validation
 
@@ -169,7 +189,7 @@ npm test
 npm run build
 ```
 
-For contributor workflows and publishing details, see [help/development.md](help/development.md) and [help/publishing.md](help/publishing.md).
+For contributor workflows and publishing details, see [Development](help/development.md) and [Publishing](help/publishing.md).
 
 ## License
 

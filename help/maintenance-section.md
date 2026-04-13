@@ -11,5 +11,5 @@ Use this section when working on the package itself.
 
 Pages in this section:
 
-- [development.md](development.md) for local workflow and extension guidelines
-- [publishing.md](publishing.md) for release and publish steps
+- [Development](development.md) for local workflow and extension guidelines
+- [Publishing](publishing.md) for release and publish steps

@@ -1,4 +1,4 @@
-import type { IResultCatalog, ResultCode, ResultCodeDefinition, TranslationMap, SingleResult } from '../types';
+import type { ICodedMessageCatalog, ResultCode, ResultCodeDefinition, TranslationMap, SingleResult } from '../types';
 
 // Internal representation of result code definitions with translation maps
 interface NormalizedResultCodeDefinition {
@@ -17,19 +17,19 @@ interface NormalizedResultCodeDefinition {
  * individual checks. A catalog can then be supplied through check options or
  * result options when you want messages resolved from result codes.
  */
-export class ResultCatalog implements IResultCatalog {
+export class CodedMessageCatalog implements ICodedMessageCatalog {
 
     /**
      * Shared global catalog instance for simple application-wide registration.
      */
-    public static readonly global = new ResultCatalog();
+    public static readonly global = new CodedMessageCatalog();
 
     private readonly entries = new Map<string, NormalizedResultCodeDefinition>();
 
     /**
      * Creates a result catalog and optionally copies entries from an existing catalog.
      */
-    constructor(source?: IResultCatalog) {
+    constructor(source?: ICodedMessageCatalog) {
         if (source) {
             this.configure(source);
         }
@@ -38,7 +38,7 @@ export class ResultCatalog implements IResultCatalog {
     /**
      * Replaces the current entries with the contents of another catalog.
      */
-    public configure(source: IResultCatalog): this {
+    public configure(source: ICodedMessageCatalog): this {
         this.clear();
         return this.registerAll(source);
     }
@@ -57,7 +57,7 @@ export class ResultCatalog implements IResultCatalog {
     /**
      * Registers every code exposed by another catalog.
      */
-    public registerAll(source: IResultCatalog): this {
+    public registerAll(source: ICodedMessageCatalog): this {
         for (const code of source.listCodes()) {
             const definition = source.getDefinition(code);
             this.register(code, definition!);

@@ -30,9 +30,9 @@ export interface ResultCodeDefinition {
 }
 
 /**
- * Resolves result code definitions and localized messages.
+ * Resolves coded validation message definitions and translated messages.
  */
-export interface IResultCatalog {
+export interface ICodedMessageCatalog {
 
     /**
      * Returns a resolved result object for a code in the requested language.
@@ -118,7 +118,7 @@ export interface CheckOptions {
     code?: ResultCode;
 
     /** Catalog used to resolve result codes into localized messages. */
-    catalog?: IResultCatalog;
+    catalog?: ICodedMessageCatalog;
 }
 
 /**
@@ -191,7 +191,7 @@ export interface ResultOptions {
     language?: string;
 
     /** Catalog used to resolve result codes during result generation. */
-    catalog?: IResultCatalog;
+    catalog?: ICodedMessageCatalog;
 
     /** Returns the original nested result structure without post-processing. */
     raw?: boolean;

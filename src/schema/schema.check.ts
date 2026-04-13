@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises';
-
 import type { Check, CheckOptions, IResult, ResultOptions } from '../types';
 import { ObjectCheck } from '../checks/object.check';
 import { FieldCheck } from '../checks/field.check';
@@ -65,7 +63,7 @@ export interface JsonSchema {
     unevaluatedItems?: boolean | JsonSchema;
 }
 
-export type SchemaSource = JsonSchema | string;
+export type SchemaSource = JsonSchema;
 
 class StaticCheck implements Check {
     constructor(private readonly payload: IResult) { }
@@ -78,7 +76,7 @@ class StaticCheck implements Check {
 const PASS_CHECK = new StaticCheck({ valid: true });
 
 /**
- * Builds an ObjectCheck from a standard JSON Schema object or JSON file path.
+ * Builds an ObjectCheck from a standard JSON Schema object.
  *
  * Current support is intentionally limited to a reviewable subset of JSON Schema:
  * - root object schemas
@@ -97,15 +95,15 @@ export class SchemaCheck {
     private lastCheck?: ObjectCheck;
 
     /**
-     * Creates a SchemaCheck instance from a JSON Schema object or a file path to a JSON Schema.
-     * @param source The JSON Schema object or file path to create the SchemaCheck from.
+     * Creates a SchemaCheck instance from a JSON Schema object.
+     * @param source The JSON Schema object to create the SchemaCheck from.
      */
     constructor(source: SchemaSource) {
         this.source = source;
     }
 
     /**
-     * Creates a SchemaCheck instance from a JSON Schema object or a file path to a JSON Schema.
+     * Creates a SchemaCheck instance from a JSON Schema object.
      * @param schema The JSON Schema object to create the SchemaCheck from.
      * @returns A new instance of SchemaCheck.
      */
@@ -114,21 +112,12 @@ export class SchemaCheck {
     }
 
     /**
-     * Creates a SchemaCheck instance from a JSON Schema file path.
-     * @param filePath The file path to the JSON Schema.
-     * @returns A new instance of SchemaCheck.
-     */
-    public static fromFile(filePath: string): SchemaCheck {
-        return new SchemaCheck(filePath);
-    }
-
-    /**
      * Performs a check against the provided input using the schema.
      * @param input The input value to be validated against the schema.
      * @returns A promise that resolves to an ObjectCheck instance.
      */
     public async check(input: unknown): Promise<ObjectCheck> {
-        const schema = await this.loadSchema();
+        const schema = this.source;
         this.assertSupportedSchema(schema, []);
 
         if (!this.isRootObjectSchema(schema)) {
@@ -163,15 +152,6 @@ export class SchemaCheck {
     public async checkResult(input: unknown, options?: ResultOptions): Promise<IResult> {
         const check = await this.check(input);
         return check.result(options);
-    }
-
-    private async loadSchema(): Promise<JsonSchema> {
-        if (typeof this.source !== 'string') {
-            return this.source;
-        }
-
-        const content = await readFile(this.source, 'utf8');
-        return JSON.parse(content) as JsonSchema;
     }
 
     private async applyObjectSchema(

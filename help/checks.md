@@ -10,7 +10,7 @@ This package provides a fluent validation API built around a small set of compos
 
 Many flows are asynchronous. Any API that evaluates promised checks or loads binary data should be awaited before you build the final result.
 
-If you need stable codes or translated result text, see [coded-results.md](coded-results.md). The main API works fine without that layer.
+If you need stable codes or translated result text, see [Coded Message Catalog](coded-results.md). The main API works fine without that layer.
 
 ## Main classes
 
@@ -378,6 +378,8 @@ Methods:
 
 Supported inputs include `Blob`, `File`, `Uint8Array`, `ArrayBuffer`, Node `Buffer`, and `data:` URLs.
 
+`FileCheck` requires the optional `file-type` package when used.
+
 ### `ImageCheck`
 
 `ImageCheck` extends `FileCheck` with image-specific validation.
@@ -394,6 +396,8 @@ Methods:
 - `minHeight(minHeight, options?)`
 - `maxWidth(maxWidth, options?)`
 - `maxHeight(maxHeight, options?)`
+
+`ImageCheck` requires the optional `probe-image-size` package in Node. In browsers it depends on `createImageBitmap(...)` support.
 
 ### Primitive check classes
 
@@ -455,7 +459,7 @@ Use `ulid()` when the value must be a ULID. Like `uuid()`, it validates immediat
 For object and array checks:
 
 - `result({ language })` returns the merged nested result tree
-- `result({ language, catalog })` resolves coded messages with an explicit result catalog instead of `ResultCatalog.global`
+- `result({ language, catalog })` resolves coded messages with an explicit message catalog instead of `CodedMessageCatalog.global`
 - `result({ flattened: true, language })` returns flattened `hints`, `warnings`, and `errors`
 - `result({ nested: true, language })` returns an input-shaped projection under `input`
 - `result({ validated: 'partial', language })` returns a cloned validated value with invalid descendants removed and valid siblings preserved
@@ -486,7 +490,7 @@ console.log(output.errors);
 
 Notes:
 
-- `catalog` lets final result formatting resolve coded messages from a specific `ResultCatalog`; without it, the package uses `ResultCatalog.global`
+- `catalog` lets final result formatting resolve coded messages from a specific `CodedMessageCatalog`; without it, the package uses `CodedMessageCatalog.global`
 - `validated` uses the current normalized input value, so coercions or mutations performed by checks are reflected in the output
 - `'partial'` is the default mode to prefer when you want to keep valid object fields or array items even if siblings fail
 - `'strict'` is useful when a parent object or array should be considered unusable as soon as one descendant is invalid
@@ -534,13 +538,13 @@ interface CheckOptions {
   warn?: string | string[];
   err?: string | string[];
   code?: string | number;
-  catalog?: IResultCatalog;
+  catalog?: ICodedMessageCatalog;
 }
 ```
 
 Use inline `hint`, `warn`, or `err` for direct messages.
 
-Use `code` when you want the message level and translations to come from a `ResultCatalog`. If you do not pass `catalog`, the package uses `ResultCatalog.global`.
+Use `code` when you want the message level and translations to come from a `CodedMessageCatalog`. If you do not pass `catalog`, the package uses `CodedMessageCatalog.global`.
 
 ### `StringCheckOptions`
 
@@ -559,7 +563,7 @@ Controls how final output is shaped.
 ```ts
 interface ResultOptions {
   language?: string;
-  catalog?: IResultCatalog;
+  catalog?: ICodedMessageCatalog;
   raw?: boolean;
   nested?: boolean;
   validated?: 'partial' | 'strict';

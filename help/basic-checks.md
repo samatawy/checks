@@ -22,6 +22,12 @@ For file and image validation:
 npm install @samatawy/checks file-type probe-image-size
 ```
 
+If you need to load JSON Schema files from disk in Node, the Node-only helper lives under a separate entrypoint:
+
+```ts
+import { loadSchemaCheckFromFile } from '@samatawy/checks/node';
+```
+
 ## Validate A Simple Object
 
 Use `ObjectCheck` when you want to validate a plain object and return the merged nested result tree.
