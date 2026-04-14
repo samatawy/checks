@@ -1,20 +1,28 @@
 # @samatawy/checks
 
-TypeScript validation utilities for fluent object, array, field, string, number, date, file, and image checks.
+TypeScript validation and object-management utilities for fluent checks, validated object construction, coded results, and lightweight typed store and cache workflows.
 
-The main focus is on developer convenience and maintainability. The code is optimized for readability, IDE and AI friendliness, declarative class decoration, etc.
+This package is still evolving and should not yet be treated as production-tested infrastructure. Breaking changes are still relatively frequent while the API surface is being refined.
 
-The other focus is on business applications. Features such as error code management and i18n are designed for use in large projects with strict requirements.
+The main focus is on developer convenience and maintainability. The code is optimized for readability, IDE and AI friendliness, declarative class decoration, and composing validation with object lifecycle concerns.
+
+The other focus is on business applications. Features such as coded-result management, i18n, validated object hydration, and lightweight in-process store and cache helpers are designed for application code that wants a small typed runtime layer without pulling in a larger framework.
 
 The package builds to both ESM and CommonJS, ships declaration files, and supports both synchronous and asynchronous validation flows.
 
 ## Where It Fits
 
-This package is a good fit when validation is part of application logic instead of a one-off form helper. Typical examples are:
- - API payload validation and import pipelines, 
- - data quality audit workflows,
- - admin workflows that need warnings as well as errors, 
- - and file intake flows that need MIME, size, or image-dimension checks.
+This package is a good fit when validation is part of application logic instead of a one-off form helper, and when validated objects need to flow through a small typed runtime layer.
+
+Typical examples are:
+- API payload validation and import pipelines
+- DTO-style classes that own both validation and construction rules through `ObjectFactory`
+- admin workflows that need warnings as well as errors
+- coded-result and i18n workflows in larger business applications
+- file intake flows that need MIME, size, or image-dimension checks
+- lightweight typed store, cache, and test-double patterns around validated objects
+
+This package is probably not the best fit when you only need a minimal schema validator, a form-only client-side helper, or a full persistence framework.
 
 ## Documentation
 
