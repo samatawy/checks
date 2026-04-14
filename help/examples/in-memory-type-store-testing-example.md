@@ -146,7 +146,7 @@ ObjectStore.global.registerTypeStore(PersonDto, personStore);
 const service = new PersonService(ObjectStore.global, personStore);
 ```
 
-For a compact example, `ObjectStore.global` avoids one extra local variable. In real test suites, clear it before each test so registrations do not leak across cases.
+For a compact example, this uses `ObjectStore.global`. In real test suites, clear it before each test so registrations do not leak across cases.
 
 This works without custom hooks because:
 
@@ -209,5 +209,4 @@ For custom domain-related actions, a good pattern is to subclass `InMemoryTypeSt
 
 - Your tests stay close to the package's real store abstractions.
 - Business logic can be exercised without network or database setup.
-- The store stays reusable across many test files instead of living as a one-off mock in each suite.
 - Domain-specific actions can still be tested explicitly without forcing them into the generic `TypeStore` surface.
