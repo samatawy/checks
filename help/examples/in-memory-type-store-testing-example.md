@@ -23,6 +23,8 @@ Assume production code depends on a person repository with CRUD, query, and tag-
 ## DTO And Service Under Test
 
 ```ts
+import { ObjectStore } from '@samatawy/checks';
+
 class PersonDto {
   constructor(
     public readonly id: string,
@@ -38,27 +40,26 @@ class PersonDto {
 
     return new PersonDto(this.id, this.name, this.active, [...this.tags, tag]);
   }
+
+  removeTag(tag: string): PersonDto {
+    return new PersonDto(
+      this.id,
+      this.name,
+      this.active,
+      this.tags.filter(value => value !== tag),
+    );
+  }
 }
 
-class PersonTestStore {
-  constructor(public readonly store: InMemoryTypeStore<PersonDto, string, PersonDto, { name?: string; active?: boolean; tags?: string[] }, { active?: boolean; page?: number; pageSize?: number; sort?: { by: string; direction?: 'asc' | 'desc' } }>) {}
-
-  async addTag(id: string, tag: string): Promise<PersonDto | undefined> {
-    const existing = await this.store.fetch(id);
-    if (!existing) {
-      return undefined;
-    }
-
-    const updated = existing.addTag(tag);
-    await this.store.update(existing, { tags: updated.tags });
-    return updated;
-  }
+interface PersonTagActions {
+  addTag(id: string, tag: string): Promise<PersonDto | undefined>;
+  removeTag(id: string, tag: string): Promise<PersonDto | undefined>;
 }
 
 class PersonService {
   constructor(
     private readonly people: ObjectStore,
-    private readonly personStore: PersonTestStore,
+    private readonly personTags: PersonTagActions,
   ) {}
 
   async activatePerson(id: string): Promise<PersonDto | undefined> {
@@ -75,8 +76,14 @@ class PersonService {
     return result.items;
   }
 
+  // Custom domain action: this is outside the base ObjectStore and TypeStore APIs.
   async tagPerson(id: string, tag: string): Promise<PersonDto | undefined> {
-    return this.personStore.addTag(id, tag);
+    return this.personTags.addTag(id, tag);
+  }
+
+  // Custom domain action: this is outside the base ObjectStore and TypeStore APIs.
+  async untagPerson(id: string, tag: string): Promise<PersonDto | undefined> {
+    return this.personTags.removeTag(id, tag);
   }
 }
 ```
@@ -86,26 +93,60 @@ class PersonService {
 ```ts
 import { InMemoryTypeStore, ObjectStore } from '@samatawy/checks';
 
-const personRecords = new InMemoryTypeStore<
+// Test-only in-memory implementation that also provides the custom domain actions.
+class PersonMemoryStore extends InMemoryTypeStore<
   PersonDto,
   string,
   PersonDto,
   { name?: string; active?: boolean; tags?: string[] },
   { active?: boolean; page?: number; pageSize?: number; sort?: { by: string; direction?: 'asc' | 'desc' } }
->({
-  keyOf(person) {
-    return person.id;
-  },
-  initialValues: [
-    new PersonDto('2', 'Grace', false, []),
-    new PersonDto('1', 'Ada', true, ['core']),
-  ],
-});
+> implements PersonTagActions {
+  constructor() {
+    super({
+      keyOf(person) {
+        return person.id;
+      },
+      initialValues: [
+        new PersonDto('2', 'Grace', false, []),
+        new PersonDto('1', 'Ada', true, ['core']),
+      ],
+    });
+  }
 
-const personStore = new PersonTestStore(personRecords);
-const store = new ObjectStore().registerTypeStore(PersonDto, personRecords);
-const service = new PersonService(store, personStore);
+  // Custom domain method: this is not part of InMemoryTypeStore or TypeStore.
+  async addTag(id: string, tag: string): Promise<PersonDto | undefined> {
+    const existing = await this.fetch(id);
+    if (!existing) {
+      return undefined;
+    }
+
+    const updated = existing.addTag(tag);
+    await this.update(existing, { tags: updated.tags });
+    return updated;
+  }
+
+  // Custom domain method: this is not part of InMemoryTypeStore or TypeStore.
+  async removeTag(id: string, tag: string): Promise<PersonDto | undefined> {
+    const existing = await this.fetch(id);
+    if (!existing) {
+      return undefined;
+    }
+
+    const updated = existing.removeTag(tag);
+    await this.update(existing, { tags: updated.tags });
+    return updated;
+  }
+}
+
+const personStore = new PersonMemoryStore();
+
+ObjectStore.global.clear();
+ObjectStore.global.registerTypeStore(PersonDto, personStore);
+
+const service = new PersonService(ObjectStore.global, personStore);
 ```
+
+For a compact example, `ObjectStore.global` avoids one extra local variable. In real test suites, clear it before each test so registrations do not leak across cases.
 
 This works without custom hooks because:
 
@@ -117,8 +158,9 @@ This works without custom hooks because:
 The custom domain action is layered on top:
 
 - `InMemoryTypeStore` keeps the shared CRUD and query behavior
-- `PersonTestStore` adds `addTag(...)` for test-only or domain-specific flows
-- `PersonService` can depend on both the generic store API and the explicit custom action
+- `PersonTagActions` describes the extra domain-specific behavior the service needs
+- `PersonMemoryStore` extends `InMemoryTypeStore` and implements `PersonTagActions`
+- `PersonService` stays focused on the behavior under test and does not need to know how the test store is implemented
 
 ## Example Vitest Test
 
@@ -135,10 +177,14 @@ describe('PersonService', () => {
 
     expect(tagged).toEqual(new PersonDto('2', 'Grace', true, ['reviewed']));
 
+    const untagged = await service.untagPerson('1', 'core');
+
+    expect(untagged).toEqual(new PersonDto('1', 'Ada', true, []));
+
     const activePeople = await service.listActivePeople();
 
     expect(activePeople).toEqual([
-      new PersonDto('1', 'Ada', true, ['core']),
+      new PersonDto('1', 'Ada', true, []),
       new PersonDto('2', 'Grace', true, ['reviewed']),
     ]);
   });
@@ -157,7 +203,7 @@ Add hooks only when the test store needs more control:
 - `fieldValue(...)` if sorting or default query fields should map to different property names
 - `canCache(...)` and `ttl_ms` if the same store should also be registered in `CachedObjectStore`
 
-For custom domain-related actions, a good pattern is to wrap `InMemoryTypeStore` in a specialized test store or subclass that exposes methods such as `addTag(...)` and `removeTag(...)`.
+For custom domain-related actions, a good pattern is to subclass `InMemoryTypeStore` with a domain-specific store that exposes methods such as `addTag(...)` and `removeTag(...)`.
 
 ## Why This Is Useful
 

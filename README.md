@@ -35,6 +35,9 @@ For the local guides in this repo, the most useful entry points are:
 - [Composite Checks](help/how-to/composite-checks.md) for `allOf(...)`, `anyOf(...)`, `oneOf(...)`, and `not(...)`
 - [SchemaCheck](help/how-to/schema-check.md) for validating input from the supported JSON Schema subset
 - [Reading Results](help/how-to/reading-results.md) for `flattened`, `nested`, and `validated` output
+- [Object Caching](help/how-to/object-caching.md) for typed cache and store workflows
+- [Cache API](help/reference/cache-api.md) for the cache/store runtime layer
+- [Examples](help/examples/index.md) for shared models, HTTP and MongoDB stores, and `InMemoryTypeStore` testing patterns
 - [Checks API](help/reference/checks.md) for the full API reference
 
 Run `npm run docs` to generate the local docs site in `docs/`.
@@ -192,6 +195,21 @@ That update flow is useful for patch-style JSON input where validation depends o
 Stable result codes and translated output are supported, but optional. If you need catalogs, codes, or localized messages, see [Coded Message Catalog](help/how-to/coded-results.md).
 
 In Node runtimes, translations can also be loaded from external JSON files through `@samatawy/checks/node` so translators can work on one language file at a time.
+
+## Typed Stores And Caching
+
+The package also includes a small typed runtime layer for applications that want validated objects to move through simple store and cache abstractions.
+
+That layer includes:
+
+- `TypeCache` and `ObjectCache` for in-memory caching
+- `TypeStore` and `ObjectStore` for per-type CRUD orchestration
+- `CachedObjectStore` for read-through and write-through caching
+- `InMemoryTypeStore` for tests, demos, and other local in-process implementations
+
+These helpers are intentionally lightweight. They are meant to sit next to your DTOs, validation rules, and object factories, not replace a full ORM or distributed cache.
+
+See [Object Caching](help/how-to/object-caching.md), [Cache API](help/reference/cache-api.md), and the [Examples](help/examples/index.md) section for the current patterns.
 
 ## File And Image Validation
 
