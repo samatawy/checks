@@ -220,4 +220,4 @@ Important current limits include:
 - tuple arrays such as `prefixItems` are not supported
 - pattern-based property keywords such as `patternProperties` are not supported
 
-For the broader standards comparison, see [JSON Schema Comparison](json-schema-comparison.md).
+For the broader standards comparison, see [JSON Schema Comparison](../reference/json-schema-comparison.md).

@@ -1,3 +1,4 @@
+export * from './cache';
 export * from './checks';
 export * from './decorators';
 export * from './factory';

@@ -7,6 +7,7 @@ children:
   - ./data-updates.md
   - ./decorated-classes.md
   - ./object-factory.md
+  - ./object-caching.md
   - ./coded-results.md
   - ./schema-check.md
 ---
@@ -23,6 +24,7 @@ Pages in this section:
 - [Data Updates](data-updates.md) for patch-style update validation, immutability, and update factory flows
 - [Decorated Classes](decorated-classes.md) for decorator-based class validation
 - [Object Factory](object-factory.md) for validated construction and hydration
+- [Object Caching](object-caching.md) for typed in-memory caches, store registries, and cache-backed CRUD flows
 - [Coded Message Catalog](coded-results.md) for stable codes, i18n catalogs, and translated output workflows
 - [SchemaCheck](schema-check.md) for validating input against the supported JSON Schema subset
 
@@ -38,6 +40,7 @@ Optionally you may also:
 
 1. Read [Decorated Classes](decorated-classes.md) when you want validation rules to live next to DTO-like class definitions. Keeping validity logic in the class definition can often be a clean design.
 2. Use [Object Factory](object-factory.md) when validation and object construction or update should happen together. This applies to data classes that know how to validate input and use it.
-3. Read [Coded Message Catalog](coded-results.md) when you need stable result codes with localized messages. In addition, you can separate messages from your code and organize them into catalogs.
-4. Use [SchemaCheck](schema-check.md) when you want to validate data from a supported JSON Schema document instead of writing fluent rules directly.
-5. Read [Platform Compatibility](platform-compatibility.md) when your code must run in both browser and Node or uses binary and schema-file features.
+3. Read [Object Caching](object-caching.md) when you want a small in-memory cache or a typed store registry next to validation and object hydration.
+4. Read [Coded Message Catalog](coded-results.md) when you need stable result codes with localized messages. In addition, you can separate messages from your code and organize them into catalogs.
+5. Use [SchemaCheck](schema-check.md) when you want to validate data from a supported JSON Schema document instead of writing fluent rules directly.
+6. Read [Platform Compatibility](../reference/platform-compatibility.md) when your code must run in both browser and Node or uses binary and schema-file features.

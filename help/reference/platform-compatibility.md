@@ -21,6 +21,7 @@ Some features are universal, some depend on optional peer packages, and a small 
 | `CodedMessageCatalog` | Yes | Yes | Pure message and code lookup. |
 | `SchemaCheck.from(schema)` | Yes | Yes | Inline schema objects are portable. |
 | `loadSchemaCheckFromFile(...)` from `@samatawy/checks/node` | No | Yes | Loads a schema file from disk through Node file I/O. |
+| `loadCodedMessagesFromFile(...)` from `@samatawy/checks/node` | No | Yes | Loads external translation JSON files and merges them into a catalog at runtime. |
 | `FileCheck` | Yes | Yes | Requires the optional `file-type` peer dependency when used. |
 | `ImageCheck` | Conditional | Yes | Requires `probe-image-size` in Node. In browsers it depends on `createImageBitmap(...)` support. |
 
@@ -75,6 +76,6 @@ If that API is missing, image dimension checks cannot load metadata and the imag
 
 Use the main package import for most application code.
 
-Use `@samatawy/checks/node` only in Node code that reads schema files from disk.
+Use `@samatawy/checks/node` only in Node code that reads schema files or external coded-message translation files from disk.
 
 Install `file-type` and `probe-image-size` only when you actually use `FileCheck` or `ImageCheck`.

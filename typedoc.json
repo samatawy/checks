@@ -4,9 +4,10 @@
         "src/index.ts"
     ],
     "projectDocuments": [
-        "help/how-to-section.md",
-        "help/reference-section.md",
-        "help/maintenance-section.md"
+        "help/how-to/index.md",
+        "help/examples/index.md",
+        "help/reference/index.md",
+        "help/maintenance/index.md"
     ],
     "tsconfig": "tsconfig.json",
     "out": "docs",

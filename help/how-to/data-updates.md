@@ -143,11 +143,19 @@ class PersonDto {
   }
 }
 
+const existing = new PersonDto('Ada', 'Lead');
+
 const updated = await ObjectFactory.update(
-  new PersonDto('Ada', 'Lead'),
+  existing,
   { title: 'Architect' },
   PersonDto,
 );
+
+if (!updated.valid) {
+  console.log(updated.result({ flattened: true }));
+} else {
+  console.log(updated.instance);
+}
 ```
 
 ## Choose The Update Helper That Fits
@@ -157,13 +165,17 @@ Use `ObjectFactory.update(...)` when you want the full factory result object.
 Use `ObjectFactory.updateOrThrow(...)` when invalid update input should raise an exception.
 
 ```ts
-const updated = await ObjectFactory.updateOrThrow(existingPerson, { title: 'Architect' }, PersonDto);
+const existing = new PersonDto('Ada', 'Lead');
+
+const updated = await ObjectFactory.updateOrThrow(existing, { title: 'Architect' }, PersonDto);
 ```
 
 Use `ObjectFactory.updateOrErrors(...)` when you want either `{ instance }` or `{ errors }` without throwing.
 
 ```ts
-const updated = await ObjectFactory.updateOrErrors(existingPerson, { name: 'Grace' }, PersonDto);
+const existing = new PersonDto('Ada', 'Lead');
+
+const updated = await ObjectFactory.updateOrErrors(existing, { name: 'Grace' }, PersonDto);
 
 if (updated.errors) {
   console.log(updated.errors);

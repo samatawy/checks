@@ -1,3 +1,1 @@
-export {
-    CodedMessageCatalog,
-} from './result.catalog';
+export { CodedMessageCatalog } from './result.catalog';

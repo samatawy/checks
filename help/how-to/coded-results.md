@@ -123,6 +123,61 @@ const result = new FieldCheck('name', {}).required({
 });
 ```
 
+## Load Translations From JSON Files In Node
+
+If translators maintain external JSON files, load them at runtime through the Node-only entrypoint.
+
+```ts
+import { CodedMessageCatalog } from '@samatawy/checks';
+import { loadCodedMessagesFromFile } from '@samatawy/checks/node';
+
+const catalog = new CodedMessageCatalog();
+
+await loadCodedMessagesFromFile(catalog, './messages.json');
+```
+
+Each file should be a JSON object keyed by result code. Under each code, use `hint`, `warn`, and `err` first. Each level can be either:
+
+- a plain string, which means the English translation
+- a language map such as `{ "en": "...", "de": "..." }`
+
+```json
+{
+  "person.name.missing": {
+    "hint": {
+      "en": "Add the legal full name when available",
+      "de": "Ergaenze den vollstaendigen Namen, wenn verfuegbar"
+    },
+    "err": {
+      "en": "Name is required",
+      "de": "Name ist erforderlich"
+    }
+  },
+  "person.age.invalid": {
+    "err": "Age must be a number"
+  }
+}
+```
+
+That means one file can contain only one language or several languages, depending on how you want translators to work. For example, a translator-owned German file can contain entries like `"err": { "de": "..." }`, while an English-maintained file can use the shorter `"err": "..."` form.
+
+If you already have a base catalog in code, call the same method again to merge file-based translations into that catalog:
+
+```ts
+import { CodedMessageCatalog } from '@samatawy/checks';
+import { loadCodedMessagesFromFile } from '@samatawy/checks/node';
+
+const catalog = new CodedMessageCatalog();
+
+catalog.register('person.name.missing', {
+  err: {
+    en: 'Name is required'
+  }
+});
+
+await loadCodedMessagesFromFile(catalog, './messages.de.json');
+```
+
 ## Translation Happens At Result Time
 
 Checks keep the code while rules are being composed. Translation is applied when you call `result(...)`.

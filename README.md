@@ -23,11 +23,11 @@ Start with the hosted docs at [samatawy.github.io/checks](https://samatawy.githu
 For the local guides in this repo, the most useful entry points are:
 
 - [Documentation](help/index.md) for the docs overview
-- [Basic Checks](help/basic-checks.md) for common validation patterns
-- [Composite Checks](help/composite-checks.md) for `allOf(...)`, `anyOf(...)`, `oneOf(...)`, and `not(...)`
-- [SchemaCheck](help/schema-check.md) for validating input from the supported JSON Schema subset
-- [Reading Results](help/reading-results.md) for `flattened`, `nested`, and `validated` output
-- [Checks API](help/checks.md) for the full API reference
+- [Basic Checks](help/how-to/basic-checks.md) for common validation patterns
+- [Composite Checks](help/how-to/composite-checks.md) for `allOf(...)`, `anyOf(...)`, `oneOf(...)`, and `not(...)`
+- [SchemaCheck](help/how-to/schema-check.md) for validating input from the supported JSON Schema subset
+- [Reading Results](help/how-to/reading-results.md) for `flattened`, `nested`, and `validated` output
+- [Checks API](help/reference/checks.md) for the full API reference
 
 Run `npm run docs` to generate the local docs site in `docs/`.
 
@@ -57,6 +57,33 @@ If you load JSON Schema files from disk in Node, use the dedicated Node-only ent
 
 ```ts
 import { loadSchemaCheckFromFile } from '@samatawy/checks/node';
+```
+
+The same Node-only entrypoint can also load external coded-message translation files at runtime:
+
+```ts
+import { CodedMessageCatalog } from '@samatawy/checks';
+import { loadCodedMessagesFromFile } from '@samatawy/checks/node';
+
+const catalog = new CodedMessageCatalog();
+
+await loadCodedMessagesFromFile(catalog, './messages.json');
+```
+
+In that JSON file, use `err`, `warn`, and `hint` first. A plain string means English by default, while a nested object can provide explicit languages:
+
+```json
+{
+  "person.age.invalid": {
+    "err": "Age must be a number"
+  },
+  "person.name.missing": {
+    "err": {
+      "en": "Name is required",
+      "de": "Name ist erforderlich"
+    }
+  }
+}
 ```
 
 If you are validating against inline schema objects, the main package import remains portable.
@@ -108,7 +135,7 @@ console.log(output.errors);
 console.log(output.validated);
 ```
 
-The most common patterns are `result({ language })` for the merged result tree, `result({ flattened: true })` for plain message arrays, and `result({ validated: 'partial' | 'strict' })` when you want a filtered clone of the validated input. For the complete result guide, see [Reading Results](help/reading-results.md).
+The most common patterns are `result({ language })` for the merged result tree, `result({ flattened: true })` for plain message arrays, and `result({ validated: 'partial' | 'strict' })` when you want a filtered clone of the validated input. For the complete result guide, see [Reading Results](help/how-to/reading-results.md).
 
 ## Validation Model
 
@@ -132,29 +159,31 @@ const check = await ObjectCheck.for({
 ]);
 ```
 
-That example shows the usual style: start at `ObjectCheck.for(...)`, branch to typed field validators, and use composition helpers only where you actually need alternatives. For a broader walkthrough, see [Basic Checks](help/basic-checks.md) and [Composite Checks](help/composite-checks.md).
+That example shows the usual style: start at `ObjectCheck.for(...)`, branch to typed field validators, and use composition helpers only where you actually need alternatives. For a broader walkthrough, see [Basic Checks](help/how-to/basic-checks.md) and [Composite Checks](help/how-to/composite-checks.md).
 
-If your validation rules already exist as a supported JSON schema document, see [SchemaCheck](help/schema-check.md) instead of translating everything to fluent rules by hand.
-
-## Platform Compatibility
-
-The core fluent validation API is intended to work in both browser and Node runtimes.
-
-Platform-specific areas:
-
-- `@samatawy/checks/node` is Node-only because it reads schema files from disk
-- `FileCheck` requires the optional `file-type` peer when used
-- `ImageCheck` requires `probe-image-size` in Node and browser support for `createImageBitmap(...)` when used in the browser
-
-See [Platform Compatibility](help/platform-compatibility.md) for the full matrix.
+If your validation rules already exist as a supported JSON schema document, see [SchemaCheck](help/how-to/schema-check.md) instead of translating everything to fluent rules by hand.
 
 ## Object Factory
 
-If a class exposes static `validateInput(input)` and `fromValidInput(input)` methods, `ObjectFactory` can validate input and then hydrate an instance. See [Object Factory](help/object-factory.md).
+If a class exposes static `validateInput(input)` and `fromValidInput(input)` methods, `ObjectFactory` can validate input and then hydrate an instance. It can also update an existing instance from JSON input when the class exposes static `validateUpdate(oldValue, newValue)` and `updateFrom(existing, input)` methods. See [Object Factory](help/how-to/object-factory.md).
+
+```ts
+const existing = new PersonDto('Ada', 'Lead');
+
+const updatedPerson = await ObjectFactory.updateOrThrow(existing, {
+  title: 'Architect'
+}, PersonDto);
+```
+
+That update flow is useful for patch-style JSON input where validation depends on both the current instance and the incoming changes.
+
+`ObjectFactory.create(...)` and `ObjectFactory.update(...)` return a wrapper object with `valid`, `instance`, and `result(options?)`, which is useful when the caller needs both the hydrated instance on success and the validation details on failure.
 
 ## Coded Results
 
-Stable result codes and translated output are supported, but optional. If you need catalogs, codes, or localized messages, see [Coded Message Catalog](help/coded-results.md).
+Stable result codes and translated output are supported, but optional. If you need catalogs, codes, or localized messages, see [Coded Message Catalog](help/how-to/coded-results.md).
+
+In Node runtimes, translations can also be loaded from external JSON files through `@samatawy/checks/node` so translators can work on one language file at a time.
 
 ## File And Image Validation
 
@@ -180,6 +209,18 @@ const check = await ObjectCheck.for(input).check(person => [
 const result = check.result({ flattened: true, language: 'en' });
 ```
 
+## Platform Compatibility
+
+The core fluent validation API is intended to work in both browser and Node runtimes.
+
+Platform-specific areas:
+
+- `@samatawy/checks/node` is Node-only because it reads schema files from disk
+- `FileCheck` requires the optional `file-type` peer when used
+- `ImageCheck` requires `probe-image-size` in Node and browser support for `createImageBitmap(...)` when used in the browser
+
+See [Platform Compatibility](help/reference/platform-compatibility.md) for the full matrix.
+
 ## Development
 
 ```bash
@@ -189,7 +230,7 @@ npm test
 npm run build
 ```
 
-For contributor workflows and publishing details, see [Development](help/development.md) and [Publishing](help/publishing.md).
+For contributor workflows and publishing details, see [Development](help/maintenance/development.md) and [Publishing](help/maintenance/publishing.md).
 
 ## License
 

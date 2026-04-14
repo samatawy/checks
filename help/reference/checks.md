@@ -10,7 +10,7 @@ This package provides a fluent validation API built around a small set of compos
 
 Many flows are asynchronous. Any API that evaluates promised checks or loads binary data should be awaited before you build the final result.
 
-If you need stable codes or translated result text, see [Coded Message Catalog](coded-results.md). The main API works fine without that layer.
+If you need stable codes or translated result text, see [Coded Message Catalog](../how-to/coded-results.md). The main API works fine without that layer.
 
 ## Main classes
 
