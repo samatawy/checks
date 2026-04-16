@@ -4,7 +4,11 @@ title: Documentation
 
 # Documentation
 
-This package exposes a fluent validation API for working with objects, arrays, fields, strings, numbers, dates, files, and images.
+`@samatawy/checks` provides TypeScript validation and object-management utilities for fluent checks, validated object construction, coded results, and lightweight typed store and cache workflows.
+
+The package is still evolving and should not yet be treated as production-tested infrastructure. Breaking changes are still relatively frequent while the API surface is being refined.
+
+It is aimed at business application code that wants a small typed runtime layer around validated DTOs, object hydration, localized coded results, and in-process store or cache helpers without pulling in a larger framework.
 
 The generated docs site is organized into four top-level sections:
 
@@ -17,14 +21,22 @@ The generated docs site is organized into four top-level sections:
 
 The public API is exported from [src/index.ts](../src/index.ts) and includes:
 
-- validation classes such as `ObjectCheck`, `ArrayCheck`, and `FieldCheck`
-- specialized string validators such as `EmailCheck` and `UrlCheck`
-- async-capable binary validators such as `FileCheck` and `ImageCheck`
-- cache and store helpers such as `TypeCache`, `ObjectCache`, `ObjectStore`, and `CachedObjectStore`
-- a Node-only schema file-loading helper under `@samatawy/checks/node`
+- fluent validation classes such as `ObjectCheck`, `ArrayCheck`, and `FieldCheck`
+- specialized validators such as `EmailCheck`, `UrlCheck`, `FileCheck`, and `ImageCheck`
+- `ObjectFactory` for validated object creation and update flows
+- coded-result and i18n helpers such as `CodedMessageCatalog` and `ICodedMessageCatalog`
+- cache and store helpers such as `TypeCache`, `ObjectCache`, `ObjectStore`, `CachedObjectStore`, and `InMemoryTypeStore`
+- a Node-only schema and message file-loading helper under `@samatawy/checks/node`
 - result and option types such as `ResultSet`, `SingleResult`, `ResultCodeDefinition`, and `CheckOptions`
-- `CodedMessageCatalog` and `ICodedMessageCatalog` for optional code-to-message mapping
-- `result(options?)` as the main output API for nested, flattened, and input-shaped projections
+- `result(options?)` as the main output API for nested, flattened, localized, and validated projections
+
+## Highlights
+
+- fluent validation for objects, arrays, fields, strings, numbers, dates, files, and images
+- validated object hydration and patch-style updates through `ObjectFactory`
+- coded-result and localization workflows for business-facing validation output
+- lightweight typed cache and store abstractions for application runtime flows
+- support for both synchronous and asynchronous validation patterns
 
 ## Recommended reading order
 
