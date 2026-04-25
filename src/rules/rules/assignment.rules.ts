@@ -1,6 +1,6 @@
 import { AbstractRule } from "./abstract.rule";
 import type { Expression } from "../syntax/expression";
-import type { RuleContext } from "../types";
+import type { RuleContext, RuleEffect } from "../types";
 import { RuleParser } from "../parser/rule.parser";
 
 export class OutputRule extends AbstractRule {
@@ -31,10 +31,16 @@ export class OutputRule extends AbstractRule {
         return `SET ${this.outputKey} = ${this.expression.toString()}`;
     }
 
-    public evaluate(context: RuleContext): boolean {
-        const value = this.expression.evaluate(context);
-        context.setOutput(this.outputKey, value);
-        return true;
+    public evaluate(context: RuleContext): RuleEffect {
+        const oldValue = context.getOutput(this.outputKey);
+        const newValue = this.expression.evaluate(context);
+
+        if (oldValue === newValue) {
+            return {};
+        } else {
+            context.setOutput(this.outputKey, newValue);
+            return { changed: this.outputKey };
+        }
     }
 }
 

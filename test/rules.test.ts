@@ -212,4 +212,28 @@ describe('rules test', () => {
     expect(blockResult.errors.length).toBe(1);
   });
 
+  it('evaluate rules in iterations', async () => {
+    const space = new WorkSpace({ debugging: true });
+    space.addRule('if x > 10 then y = 15');
+
+    let ctx = space.loadContext({ x: 12 });
+    expect(space.applicableRules(ctx).length).toBe(1);
+    space.evaluate(ctx);
+    expect(ctx.getOutput('y')).toBe(15);
+
+    space.addRule('if y > 10 then z = 20');
+    ctx = space.loadContext({ x: 12 });
+    expect(space.applicableRules(ctx).length).toBe(1);
+    space.evaluate(ctx);
+    expect(ctx.getOutput('z')).toBe(20);
+
+    // test oscillating data
+    space.clearRules();
+    space.addRule('if x > 10 then y = 15');
+    space.addRule('if y > 10 then y = 20');
+    ctx = space.loadContext({ x: 12 });
+    expect(space.applicableRules(ctx).length).toBe(1);
+    space.evaluate(ctx);
+  });
+
 });

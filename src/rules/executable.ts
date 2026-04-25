@@ -1,5 +1,5 @@
 import type { Expression } from "./syntax/expression";
-import type { Executor, RuleContext } from "./types";
+import type { Executor, RuleContext, RuleEffect } from "./types";
 
 export abstract class ExecutableAction implements Executor {
 
@@ -7,7 +7,7 @@ export abstract class ExecutableAction implements Executor {
 
     public abstract toString(): string;
 
-    public abstract execute(context: RuleContext): void;
+    public abstract execute(context: RuleContext): RuleEffect;
 }
 
 // TODO: Is this required? Can we just use OutputRule instead of OutputAction?
@@ -31,8 +31,16 @@ export class OutputAction extends ExecutableAction {
         return `SET ${this.key} = ${this.value.toString()}`;
     }
 
-    public execute(context: RuleContext): void {
-        context.setOutput(this.key, this.value.evaluate(context));
+    public execute(context: RuleContext): RuleEffect {
+        const oldValue = context.getOutput(this.key);
+        const newValue = this.value.evaluate(context);
+
+        if (oldValue === newValue) {
+            return {};
+        } else {
+            context.setOutput(this.key, newValue);
+            return { changed: this.key };
+        }
     }
 }
 
@@ -54,7 +62,8 @@ export class ExceptionThrower extends ExecutableAction {
         return `THROW ${this.errorMessage}`;
     }
 
-    public execute(context: RuleContext): void {
+    public execute(context: RuleContext): RuleEffect {
         context.addException(this.errorMessage, context);
+        return { exception: this.errorMessage };
     }
 }    

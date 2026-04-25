@@ -17,12 +17,21 @@ export interface RuleContext {
     getOutput(key?: string): any;
 }
 
+export interface RuleEffect {
+
+    satisfied?: boolean;
+
+    changed?: string;
+
+    exception?: string;
+}
+
 export interface Evaluator {
 
-    evaluate(context: RuleContext): boolean;
+    evaluate(context: RuleContext): RuleEffect;
 }
 
 export interface Executor {
 
-    execute(context: RuleContext): void;
+    execute(context: RuleContext): RuleEffect;
 }

@@ -1,7 +1,7 @@
 import { AbstractRule } from "./abstract.rule";
 import { ExceptionThrower, type ExecutableAction } from "../executable";
 import type { Expression } from "../syntax/expression";
-import type { RuleContext } from "../types";
+import type { RuleContext, RuleEffect } from "../types";
 import { RuleParser } from "../parser/rule.parser";
 
 export class IfThenRule extends AbstractRule {
@@ -31,11 +31,12 @@ export class IfThenRule extends AbstractRule {
         return `IF ${this.condition.toString()} THEN ${this.consequence.toString()}`;
     }
 
-    public evaluate(context: RuleContext): boolean {
+    public evaluate(context: RuleContext): RuleEffect {
         if (this.condition.evaluate(context)) {
-            this.consequence.execute(context);
+            return { satisfied: true, ...this.consequence.execute(context) };
+        } else {
+            return { satisfied: false };
         }
-        return true;
     }
 }
 
@@ -63,13 +64,12 @@ export class IfThenElseRule extends IfThenRule {
         return `IF ${this.condition.toString()} THEN ${this.consequence.toString()} ELSE ${this.alternative.toString()}`;
     }
 
-    public evaluate(context: RuleContext): boolean {
+    public evaluate(context: RuleContext): RuleEffect {
         if (this.condition.evaluate(context)) {
-            this.consequence.execute(context);
+            return { satisfied: true, ...this.consequence.execute(context) };
         } else {
-            this.alternative.execute(context);
+            return { satisfied: false, ...this.alternative.execute(context) };
         }
-        return true;
     }
 }
 
@@ -102,11 +102,12 @@ export class IfThrowRule extends AbstractRule {
         return `IF ${this.condition.toString()} THROW ${this.consequence.toString()}`;
     }
 
-    public evaluate(context: RuleContext): boolean {
+    public evaluate(context: RuleContext): RuleEffect {
         if (this.condition.evaluate(context)) {
-            this.consequence.execute(context);
+            return { satisfied: true, ...this.consequence.execute(context) };
+        } else {
+            return { satisfied: false };
         }
-        return true;
     }
 }
 

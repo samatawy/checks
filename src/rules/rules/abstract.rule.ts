@@ -1,4 +1,4 @@
-import type { RuleContext, Evaluator } from "../types";
+import type { RuleContext, Evaluator, RuleEffect } from "../types";
 
 export abstract class AbstractRule implements Evaluator {
 
@@ -44,5 +44,5 @@ export abstract class AbstractRule implements Evaluator {
 
     public abstract toString(): string;
 
-    public abstract evaluate(context: RuleContext): boolean;
+    public abstract evaluate(context: RuleContext): RuleEffect;
 }

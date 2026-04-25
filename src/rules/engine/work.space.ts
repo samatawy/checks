@@ -6,6 +6,11 @@ import { RuleGraph } from "../graph/rule.graph";
 import { RuleNode, type AbstractNode } from "../graph/nodes";
 import { RuleParser } from "../parser/rule.parser";
 
+export interface WorkSpaceOptions {
+    debugging: boolean;
+    max_iterations: number;
+}
+
 export class WorkSpace {    // could implement Evaluator but no need for ambiguity
 
     rules: AbstractRule[];
@@ -14,10 +19,17 @@ export class WorkSpace {    // could implement Evaluator but no need for ambigui
 
     constants: any;
 
-    constructor() {
+    options: WorkSpaceOptions;
+
+    constructor(options?: Partial<WorkSpaceOptions>) {
         this.rules = [];
         this.graph = new RuleGraph();
         this.constants = {};
+        this.options = {
+            debugging: false,
+            max_iterations: 100,
+            ...options
+        };
     }
 
     public addConstants(constants: any): void {
@@ -50,29 +62,27 @@ export class WorkSpace {    // could implement Evaluator but no need for ambigui
         return this.rules;
     }
 
+    public clearRules(): void {
+        this.rules = [];
+        this.graph = new RuleGraph();
+    }
+
     public loadContext(data: any): WorkingMemory {
         return new WorkingMemory(data, this);
     }
 
     public applicableRules(context: RuleContext): AbstractRule[] {
-        // TODO: Optimize this
-        // return this.rules.filter(rule => rule.applicable(context));
 
         let applicable = new Set<AbstractRule>();
 
         for (let key of context.rootKeys()) {
-            // console.debug('Looking for applicable rules for key:', key);
-            // console.debug('Context root keys:', context.rootKeys());
             const root = this.graph.findRoot(key);
             if (!root) {
-                // console.debug('No root found for key:', key);
+                this.debug('No root found for key:', key);
                 continue;
             }
             if (root) {
-                // console.debug('Found root for key:', key, ' root:', root);
-
                 let currentContext = context.getData(key);
-                // console.debug('Nested context for key:', key, ' is:', currentContext);
                 let currentNode: AbstractNode = root;
 
                 while (currentContext) {
@@ -88,7 +98,6 @@ export class WorkSpace {    // could implement Evaluator but no need for ambigui
                     if (childKeys.length === 0) {
                         break;
                     }
-                    // console.debug('Current context keys:', childKeys);
 
                     for (const childKey of Object.keys(currentContext)) {
                         const childNode = currentNode.findChild(childKey);
@@ -108,15 +117,50 @@ export class WorkSpace {    // could implement Evaluator but no need for ambigui
     }
 
     public evaluate(context: WorkingMemory): any {
-        const applicable = this.applicableRules(context);
-        if (applicable.length === 0) {
-            return;
+        let applicable = this.applicableRules(context);
+        let iterate = (applicable.length > 0), iteration = 0;
+        const maxIterations = this.options.max_iterations;
+
+        while (iterate && iteration < maxIterations) {
+            this.debug(`Iteration ${iteration + 1}: Applicable rules:`, applicable.length);
+
+            iteration++;
+            iterate = false;
+
+            for (const rule of applicable) {
+                this.debug('Evaluating rule:', rule.toString());
+                const effect = rule.evaluate(context);
+                if (effect.changed) {
+                    this.debug(`Rule ${rule.toString()} changed output key: ${effect.changed} to value: ${context.getOutput(effect.changed)}`);
+                    iterate = true;
+                }
+            }
+
+            if (iterate) {
+                const lastApplicable = applicable;
+                const nextApplicable = this.applicableRules(context);
+                iterate = nextApplicable.map(rule => !lastApplicable.includes(rule)).some(changed => changed);
+
+                if (iterate) {
+                    applicable = nextApplicable;
+                }
+            }
         }
-        for (const rule of applicable) {
-            // console.debug('Evaluating rule:', rule.toString(), ' with context:', context);
-            rule.evaluate(context);
+        if (iteration === maxIterations) {
+            console.warn(`Reached maximum iterations (${maxIterations}) while evaluating rules. There may be a cycle in the rules.`);
+        } else if (iteration > 1) {
+            this.debug(`Evaluation completed in ${iteration} iterations.`);
+        } else {
+            this.debug(`Evaluation completed in a single iteration.`);
         }
-        // console.debug('Final context after evaluation:', context);
+
+        this.debug('Final output after evaluation:', context.getOutput());
         return context.getOutput();
+    }
+
+    private debug(...args: any[]): void {
+        if (this.options.debugging) {
+            console.debug(...args);
+        }
     }
 }

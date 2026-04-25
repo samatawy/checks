@@ -26,8 +26,6 @@ export class ComparisonExpression extends BooleanExpression {
         const leftValue = this.left.evaluate(context);
         const rightValue = this.right.evaluate(context);
 
-        console.debug(`Evaluating comparison: ${leftValue} ${this.operator} ${rightValue}`);
-
         switch (this.operator) {
             case '==':
                 return leftValue == rightValue;
