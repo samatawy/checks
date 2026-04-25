@@ -1,0 +1,56 @@
+import type { DateExpression, Expression, NumericExpression, StringExpression } from "../syntax/expression";
+import type { FunctionExpression } from "../syntax/function.expression";
+import { ConstantDates, ConstantNumbers } from "../syntax/functions/functions.constants";
+import { DateTimeComparisonFunction, DateTimeInspectionFunction, DateTimeManipulationFunction } from "../syntax/functions/functions.datetime";
+import { NumericComparisonFunction, NumericManipulationFunction, TrigonomicFunction } from "../syntax/functions/functions.numeric";
+import { StringComparisonFunction, StringInspectionFunction, StringManipulationFunction } from "../syntax/functions/functions.string";
+
+export class FunctionFactory {
+
+    public static create(name: string, args: Expression[]): FunctionExpression {
+
+        // Constants
+        if (ConstantNumbers.names.includes(name)) {
+            return new ConstantNumbers(name);
+        }
+        if (ConstantDates.names.includes(name)) {
+            return new ConstantDates(name);
+        }
+
+        // Numeric functions
+        if (NumericManipulationFunction.names.includes(name)) {
+            return new NumericManipulationFunction(name, args[0] as NumericExpression, args.slice(1));
+        }
+        if (NumericComparisonFunction.names.includes(name)) {
+            return new NumericComparisonFunction(name, args[0] as NumericExpression, [args[1] as Expression]);
+        }
+        if (TrigonomicFunction.names.includes(name)) {
+            return new TrigonomicFunction(name, args[0] as NumericExpression, []);
+        }
+
+        // String functions
+        if (StringManipulationFunction.names.includes(name)) {
+            return new StringManipulationFunction(name, args[0] as StringExpression, args.slice(1));
+        }
+        if (StringComparisonFunction.names.includes(name)) {
+            return new StringComparisonFunction(name, args[0] as StringExpression, args[1] as StringExpression);
+        }
+        if (StringInspectionFunction.names.includes(name)) {
+            return new StringInspectionFunction(name, args[0] as StringExpression, []);
+        }
+
+        // DateTime functions
+        if (DateTimeManipulationFunction.names.includes(name)) {
+            return new DateTimeManipulationFunction(name, args[0] as DateExpression, args.slice(1));
+        }
+        if (DateTimeComparisonFunction.names.includes(name)) {
+            return new DateTimeComparisonFunction(name, args[0] as DateExpression, args[1] as DateExpression);
+        }
+        if (DateTimeInspectionFunction.names.includes(name)) {
+            return new DateTimeInspectionFunction(name, args[0] as DateExpression, []);
+        }
+
+        throw new Error(`Unknown function: "${name}()"`);
+    }
+
+}
