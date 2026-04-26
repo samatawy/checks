@@ -1,4 +1,4 @@
-import type { RuleContext } from "../types";
+import type { WorkingContext } from "../types";
 import { Expression } from "./expression";
 
 export class TernaryExpression extends Expression {
@@ -23,7 +23,7 @@ export class TernaryExpression extends Expression {
         return new Set([...conditionRequirements, ...trueRequirements, ...falseRequirements]);
     }
 
-    public evaluate(context: RuleContext): any {
+    public evaluate(context: WorkingContext): any {
         const conditionValue = this.condition.evaluate(context);
         return conditionValue ? this.trueExpression.evaluate(context) : this.falseExpression.evaluate(context);
     }

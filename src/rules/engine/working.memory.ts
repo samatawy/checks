@@ -1,9 +1,9 @@
 import { Exception } from "../exception";
 import { cloneDeep, getPathValue, pathExists } from "../utils";
-import type { RuleContext } from "../types";
+import type { WorkingContext } from "../types";
 import type { WorkSpace } from "./work.space";
 
-export class WorkingMemory implements RuleContext {
+export class WorkingMemory implements WorkingContext {
 
     private workspace: WorkSpace;
 

@@ -1,4 +1,4 @@
-import type { RuleContext } from "../../types";
+import type { WorkingContext } from "../../types";
 import type { DateExpression, Expression, StringExpression } from "../expression";
 import { BooleanFunctionExpression, DateFunctionExpression, NumericFunctionExpression, StringFunctionExpression } from "../function.expression";
 
@@ -17,7 +17,7 @@ export class DateTimeManipulationFunction extends DateFunctionExpression {
         this.extra_args = args;
     }
 
-    public evaluate(context: RuleContext): Date {
+    public evaluate(context: WorkingContext): Date {
         const evaluatedArgs = this.extra_args.map(arg => arg.evaluate(context));
 
         const targetValue = this.target_arg.evaluate(context);
@@ -78,7 +78,7 @@ export class DateTimeComparisonFunction extends BooleanFunctionExpression {
         this.right_arg = right;
     }
 
-    public evaluate(context: RuleContext): boolean {
+    public evaluate(context: WorkingContext): boolean {
         const leftValue = this.left_arg.evaluate(context);
         const rightValue = this.right_arg.evaluate(context);
 
@@ -141,7 +141,7 @@ export class DateTimeInspectionFunction extends NumericFunctionExpression {
         this.extra_args = args;
     }
 
-    public evaluate(context: RuleContext): number {
+    public evaluate(context: WorkingContext): number {
         const targetValue = this.target_arg.evaluate(context);
         if (!(targetValue instanceof Date)) {
             throw new Error(`Target argument for function ${this.name} did not evaluate to a date`);

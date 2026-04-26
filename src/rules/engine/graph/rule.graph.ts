@@ -1,10 +1,19 @@
-import type { AbstractRule } from "../rules/abstract.rule";
+import type { AbstractRule } from "../../rules/abstract.rule";
 import { AbstractNode, CombinationNode, DataNode, RuleNode } from "./nodes";
 
+/**
+ * The RuleGraph class is responsible for organizing rules based on their required inputs and outputs, 
+ * allowing for efficient evaluation and execution of rules in the correct order. 
+ * It builds a graph structure where nodes represent data keys or rules, and edges represent dependencies between them.
+ */
 export class RuleGraph {
 
     roots: AbstractNode[];
 
+    /**
+     * Create a new RuleGraph instance.
+     * You should normally not need to create a RuleGraph directly, as it is managed by the WorkSpace. 
+     */
     constructor() {
         this.roots = [];
     }
@@ -13,6 +22,11 @@ export class RuleGraph {
         this.roots.push(node);
     }
 
+    /**
+     * Find a root node in the graph by its key. Root nodes represent top-level data keys that rules depend on.
+     * @param key the key of the root node to find.
+     * @returns the root node with the given key, or undefined if no such node exists.
+     */
     public findRoot(key: string): DataNode | undefined {
         // console.debug('Looking for root with key:', key, ' in roots:', this.roots);
         return this.roots.find(root => root instanceof DataNode && root.key === key) as DataNode | undefined;
@@ -36,6 +50,13 @@ export class RuleGraph {
         return childNode;
     }
 
+    /**
+     * Add a rule to the graph based on its required inputs. 
+     * The rule is represented as a RuleNode, and it is connected to the nodes representing its required data keys. 
+     * If multiple rules require the same data key, they are connected to a common CombinationNode to represent the dependency.
+     * @param rule the rule to be added to the graph.
+     * @returns void
+     */
     public addRule(rule: AbstractRule): void {
         const required = rule.required();
         if (required.size === 0) {

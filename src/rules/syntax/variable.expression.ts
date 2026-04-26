@@ -1,4 +1,4 @@
-import type { RuleContext } from "../types";
+import type { WorkingContext } from "../types";
 import { Expression } from "./expression";
 
 export class VariableExpression extends Expression {
@@ -14,7 +14,7 @@ export class VariableExpression extends Expression {
         return new Set([this.variableName]);
     }
 
-    public evaluate(context: RuleContext): any {
+    public evaluate(context: WorkingContext): any {
         return context.getData(this.variableName) || context.getConstant(this.variableName);
     }
 

@@ -7,8 +7,26 @@ import { LogicalExpression } from "../syntax/logical.expression";
 import { TernaryExpression } from "../syntax/ternary.expression";
 import { VariableExpression } from "../syntax/variable.expression";
 
+/**
+ * Parser class for parsing expressions from rule syntax.
+ * You should normally not need to use this parser directly, as it is primarily used internally 
+ * by the RuleParser and ExecutableParser when parsing conditions and consequences from rule syntax.
+ * This parser handles parsing of literals, variables, function calls, logical expressions (AND/OR), 
+ * comparison expressions (==, !=, <, >, <=, >=), arithmetic expressions (+, -, *, /, %), 
+ * and ternary expressions (condition ? trueExpr : falseExpr).
+ * It uses a recursive descent parsing approach, starting with the most complex expressions (function calls, logical expressions) 
+ * and working down to simpler expressions (literals, variables).
+ * The parser also handles operator precedence by first parsing lower-precedence operators (like + and -) 
+ * before higher-precedence operators (like * and /).    
+ */
 export class ExpressionParser {
 
+    /**
+     * Parse a string expression into an Expression object that can be evaluated within the rule engine.
+     * @param syntax The string representation of the expression to parse.
+     * @returns An Expression object representing the parsed expression if successful.
+     * @throws An error if the expression is empty or invalid.
+     */
     public parse(syntax: string): Expression {
         if (!syntax || syntax.trim() === '') {
             throw new Error("Empty expression");

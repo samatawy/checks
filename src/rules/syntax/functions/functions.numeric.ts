@@ -1,4 +1,4 @@
-import type { RuleContext } from "../../types";
+import type { WorkingContext } from "../../types";
 import type { Expression, NumericExpression } from "../expression";
 import { BooleanFunctionExpression, NumericFunctionExpression } from "../function.expression";
 
@@ -17,7 +17,7 @@ export class NumericManipulationFunction extends NumericFunctionExpression {
         this.extra_args = args;
     }
 
-    public evaluate(context: RuleContext): number {
+    public evaluate(context: WorkingContext): number {
         const evaluatedArgs = this.extra_args.map(arg => arg.evaluate(context));
 
         const targetValue = this.target_arg.evaluate(context);
@@ -105,7 +105,7 @@ export class NumericComparisonFunction extends BooleanFunctionExpression {
         this.extra_args = args;
     }
 
-    public evaluate(context: RuleContext): boolean {
+    public evaluate(context: WorkingContext): boolean {
         const targetValue = this.target.evaluate(context);
         if (typeof targetValue !== 'number') {
             throw new Error(`Target argument for function ${this.name} did not evaluate to a number`);
@@ -161,7 +161,7 @@ export class TrigonomicFunction extends NumericFunctionExpression {
         this.extra_args = args;
     }
 
-    public evaluate(context: RuleContext): number {
+    public evaluate(context: WorkingContext): number {
         const evaluatedArgs = this.extra_args.map(arg => arg.evaluate(context));
 
         const targetValue = this.target_arg.evaluate(context);

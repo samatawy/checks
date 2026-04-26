@@ -1,12 +1,14 @@
-import type { AbstractRule } from "../rules/abstract.rule";
+import type { AbstractRule } from "../../rules/abstract.rule";
 
+/**
+ * AbstractNode represents a node in the rule graph. It can be a DataNode, a CombinationNode, or a RuleNode.
+ * Each node can have multiple parents and children, representing the dependencies between rules and data keys.
+ */
 export abstract class AbstractNode {
 
     public parents: AbstractNode[];
 
     public children: AbstractNode[];
-
-    // public rules: AbstractRule[];
 
     constructor() {
         this.parents = [];
@@ -14,19 +16,10 @@ export abstract class AbstractNode {
         // this.rules = [];
     }
 
-    // public addParent(node: AbstractNode): void {
-    //     this.parents.push(node);
-    //     node.children.push(this);
-    // }
-
     public addChild(node: AbstractNode): void {
         this.children.push(node);
         node.parents.push(this);
     }
-
-    // public addRule(rule: AbstractRule): void {
-    //     this.rules.push(rule);
-    // }
 
     public findChild(key: string): AbstractNode | undefined {
         return this.children.find(child => child instanceof DataNode && child.key === key);

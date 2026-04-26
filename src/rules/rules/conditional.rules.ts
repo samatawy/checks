@@ -1,7 +1,7 @@
 import { AbstractRule } from "./abstract.rule";
 import { ExceptionThrower, type ExecutableAction } from "../executable";
 import type { Expression } from "../syntax/expression";
-import type { RuleContext, RuleEffect } from "../types";
+import type { Executor, WorkingContext, RuleEffect } from "../types";
 import { RuleParser } from "../parser/rule.parser";
 
 export class IfThenRule extends AbstractRule {
@@ -25,18 +25,19 @@ export class IfThenRule extends AbstractRule {
         }
         this.consequence = this.consequence || new ExceptionThrower(`Condition met: ${syntax} but no consequence provided`);
         this.require(...this.condition.required(), ...this.consequence.required());
+        this.willChange(...this.consequence.changes());
     }
 
     public toString(): string {
         return `IF ${this.condition.toString()} THEN ${this.consequence.toString()}`;
     }
 
-    public evaluate(context: RuleContext): RuleEffect {
-        if (this.condition.evaluate(context)) {
-            return { satisfied: true, ...this.consequence.execute(context) };
-        } else {
-            return { satisfied: false };
-        }
+    public evaluate(context: WorkingContext): Executor | null {
+        return (this.condition.evaluate(context)) ? this.consequence : null;
+    }
+
+    public execute(context: WorkingContext): RuleEffect {
+        throw new Error('Direct execution of IfThenRule is not supported. Please evaluate first to get the appropriate executor.');
     }
 }
 
@@ -58,18 +59,19 @@ export class IfThenElseRule extends IfThenRule {
         this.consequence = this.consequence || new ExceptionThrower(`Condition met: ${syntax} but no consequence provided`);
         this.alternative = this.alternative || new ExceptionThrower(`Condition failed: ${syntax} but no alternative provided`);
         this.require(...this.condition.required(), ...this.consequence.required(), ...this.alternative.required());
+        this.willChange(...this.consequence.changes(), ...this.alternative.changes());
     }
 
     public toString(): string {
         return `IF ${this.condition.toString()} THEN ${this.consequence.toString()} ELSE ${this.alternative.toString()}`;
     }
 
-    public evaluate(context: RuleContext): RuleEffect {
-        if (this.condition.evaluate(context)) {
-            return { satisfied: true, ...this.consequence.execute(context) };
-        } else {
-            return { satisfied: false, ...this.alternative.execute(context) };
-        }
+    public evaluate(context: WorkingContext): Executor | null {
+        return (this.condition.evaluate(context)) ? this.consequence : this.alternative;
+    }
+
+    public execute(context: WorkingContext): RuleEffect {
+        throw new Error('Direct execution of IfThenElseRule is not supported. Please evaluate first to get the appropriate executor.');
     }
 }
 
@@ -102,12 +104,12 @@ export class IfThrowRule extends AbstractRule {
         return `IF ${this.condition.toString()} THROW ${this.consequence.toString()}`;
     }
 
-    public evaluate(context: RuleContext): RuleEffect {
-        if (this.condition.evaluate(context)) {
-            return { satisfied: true, ...this.consequence.execute(context) };
-        } else {
-            return { satisfied: false };
-        }
+    public evaluate(context: WorkingContext): Executor | null {
+        return (this.condition.evaluate(context)) ? this.consequence : null;
+    }
+
+    public execute(context: WorkingContext): RuleEffect {
+        throw new Error('Direct execution of IfThrowRule is not supported. Please evaluate first to get the appropriate executor.');
     }
 }
 

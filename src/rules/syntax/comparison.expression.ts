@@ -1,4 +1,4 @@
-import type { RuleContext } from "../types";
+import type { WorkingContext } from "../types";
 import { BooleanExpression, Expression } from "./expression";
 
 export class ComparisonExpression extends BooleanExpression {
@@ -22,7 +22,7 @@ export class ComparisonExpression extends BooleanExpression {
         return new Set([...leftRequirements, ...rightRequirements]);
     }
 
-    public evaluate(context: RuleContext): boolean {
+    public evaluate(context: WorkingContext): boolean {
         const leftValue = this.left.evaluate(context);
         const rightValue = this.right.evaluate(context);
 

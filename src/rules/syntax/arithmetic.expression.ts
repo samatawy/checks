@@ -1,4 +1,4 @@
-import type { RuleContext } from "../types";
+import type { WorkingContext } from "../types";
 import { Expression, NumericExpression } from "./expression";
 
 export class ArithmeticExpression extends NumericExpression {
@@ -22,7 +22,7 @@ export class ArithmeticExpression extends NumericExpression {
         return new Set([...leftRequirements, ...rightRequirements]);
     }
 
-    public evaluate(context: RuleContext): number {
+    public evaluate(context: WorkingContext): number {
         const leftValue = this.left.evaluate(context);
         const rightValue = this.right.evaluate(context);
 

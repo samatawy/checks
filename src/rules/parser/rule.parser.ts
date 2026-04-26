@@ -4,6 +4,22 @@ import { IfThenElseRule, IfThenRule } from "../rules/conditional.rules";
 import { ExecutableParser } from "./executable.parser";
 import { ExpressionParser } from "./expression.parser";
 
+export interface RuleMetadata {
+    name?: string;
+    description?: string;
+    salience?: number;
+    syntax?: string;
+}
+
+/**
+ * Parser class for parsing rule syntax into AbstractRule objects.
+ * You should normally not need to use this parser directly, as it is primarily used internally when creating rules from syntax.
+ * This parser handles parsing of conditional rules (IF-THEN, IF-THEN-ELSE, IF-THROW) as well as assignment rules (SET x = value).
+ * It also supports parsing of metadata annotations for rules, such as @name, @description, and @salience.
+ * The parser uses regular expressions to identify the structure of the rule syntax and delegates to the ExpressionParser and ExecutableParser 
+ * for parsing specific components of the rules (like conditions and consequences). 
+ * The parser is designed to be extensible, allowing for additional rule types and syntax patterns to be added in the future as needed.
+ */
 export class RuleParser {
     private expressionParser: ExpressionParser;
     private executableParser: ExecutableParser;
@@ -15,16 +31,66 @@ export class RuleParser {
 
     public parse(syntax: string): AbstractRule | null {
 
-        // If this is a conditional rule, parse it as such
-        if (syntax.match(/^IF\s+/i)) {
-            return this.parseConditionalRule(syntax);
+        const metadata = this.parseMetadata({ syntax });
+        let parsed: AbstractRule | null = null;
+        syntax = metadata.syntax || '';
+        if (syntax.length === 0) {
+            throw new Error('Rule syntax cannot be empty');
         }
 
-        // If this is an assignment rule, parse it as such
-        if (syntax.match(/^SET\s+/i)) {
-            return this.parseStateRule(syntax);
+        // If this is a conditional rule, like "IF condition THEN consequence [ELSE alternative]"
+        // or "IF condition THROW errorMessage"
+        if (syntax.match(/^IF\s+/i)) {
+            parsed = this.parseConditionalRule(syntax);
         }
-        throw new Error(`Unrecognized rule syntax: ${syntax}`);
+
+        // If this is a conditional assignment rule like "SET x = 5 IF condition"
+        if (syntax.match(/^SET\s+\w+\s*=\s*.+\s+IF\s+/i)) {
+            parsed = this.parseStateIfRule(syntax);
+        }
+
+        // If this is a default assignment rule, like "SET x = 10"
+        if (syntax.match(/^SET\s+/i)) {
+            parsed = this.parseStateRule(syntax);
+        }
+
+        if (parsed) {
+            parsed.name = metadata.name;
+            parsed.description = metadata.description;
+            parsed.setSalience(metadata.salience ?? 0);
+            return parsed;
+        } else {
+            throw new Error(`Unrecognized rule syntax: ${syntax}`);
+        }
+    }
+
+    protected parseMetadata(given: RuleMetadata): RuleMetadata {
+        given.syntax = given.syntax?.trim() || '';
+        if (given.syntax.length === 0 || !(given.syntax.startsWith('@'))) {
+            return given;
+        }
+
+        if (given.syntax.startsWith('@name(')) {
+            const match = given.syntax.match(/^@name\((.+?)\)\s*(.*)$/);
+            if (match) {
+                given.name = match[1]!;
+                given.syntax = match[2]!;
+            }
+        } else if (given.syntax.startsWith('@description(')) {
+            const match = given.syntax.match(/^@description\((.+?)\)\s*(.*)$/);
+            if (match) {
+                given.description = match[1]!;
+                given.syntax = match[2]!;
+            }
+        } else if (given.syntax.startsWith('@salience(')) {
+            const match = given.syntax.match(/^@salience\((\d+)\)\s*(.*)$/);
+            if (match) {
+                given.salience = parseInt(match[1]!, 10);
+                given.syntax = match[2]!;
+            }
+        }
+
+        return this.parseMetadata(given);
     }
 
     protected parseIfThenRule(syntax: string): AbstractRule | null {
@@ -76,7 +142,9 @@ export class RuleParser {
 
     protected parseIfThrowRule(syntax: string): AbstractRule | null {
 
-        const match = syntax.match(/^IF\s+(.+?)\s+THEN\s+THROW\s+(.+)$/i);
+        // Both if x throw e and if x then throw e are supported
+        // The keyword 'THEN' is optional
+        const match = syntax.match(/^IF\s+(.+?)\s+(?:THEN\s+)?THROW\s+(.+)$/i);
         if (match) {
             const conditionSyntax = match[1]!;
             const condition = this.expressionParser.parse(conditionSyntax);
@@ -95,17 +163,14 @@ export class RuleParser {
         if (rule) {
             return rule;
         }
-
         rule = this.parseIfThenRule(syntax);
         if (rule) {
             return rule;
         }
-
         rule = this.parseIfThrowRule(syntax);
         if (rule) {
             return rule;
         }
-
         return null;
     }
 
@@ -122,6 +187,30 @@ export class RuleParser {
             }
 
             return new StateRule(syntax, variableName, valueExpr); // You would need to implement this class
+        }
+        return null;
+    }
+
+    protected parseStateIfRule(syntax: string): AbstractRule | null {
+        // This is a placeholder for parsing conditional assignment rules like "SET x = 5 IF condition"
+
+        const match = syntax.match(/^SET\s+(\w+)\s*=\s*(.+)\s+IF\s+(.+)$/i);
+        if (match) {
+            const variableName = match[1]!;
+            const valueSyntax = match[2]!;
+            const conditionSyntax = match[3]!;
+
+            const valueExpr = this.expressionParser.parse(valueSyntax);
+            if (!valueExpr) {
+                throw new Error(`Failed to parse value expression for StateIfRule: ${valueSyntax}`);
+            }
+
+            const conditionExpr = this.expressionParser.parse(conditionSyntax);
+            if (!conditionExpr) {
+                throw new Error(`Failed to parse condition expression for StateIfRule: ${conditionSyntax}`);
+            }
+
+            return new IfThenRule(syntax, conditionExpr, new StateRule(syntax, variableName, valueExpr));
         }
         return null;
     }

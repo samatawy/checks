@@ -1,4 +1,4 @@
-import type { RuleContext } from "../../types";
+import type { WorkingContext } from "../../types";
 import { DateFunctionExpression, NumericFunctionExpression } from "../function.expression";
 
 export class ConstantNumbers extends NumericFunctionExpression {
@@ -7,7 +7,7 @@ export class ConstantNumbers extends NumericFunctionExpression {
         super(name, []);
     }
 
-    public evaluate(context: RuleContext): number {
+    public evaluate(context: WorkingContext): number {
         switch (this.name) {
             case 'pi':
                 return Math.PI;
@@ -58,7 +58,7 @@ export class ConstantDates extends DateFunctionExpression {
         super(name, []);
     }
 
-    public evaluate(context: RuleContext): Date {
+    public evaluate(context: WorkingContext): Date {
         switch (this.name) {
             case 'now':
                 return new Date();

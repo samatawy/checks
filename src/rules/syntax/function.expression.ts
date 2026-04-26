@@ -1,4 +1,4 @@
-import type { RuleContext } from "../types";
+import type { WorkingContext } from "../types";
 import { Expression } from "./expression";
 
 export abstract class FunctionExpression extends Expression {
@@ -29,25 +29,25 @@ export abstract class FunctionExpression extends Expression {
         return `${this.name}(${argsString})`;
     }
 
-    public abstract evaluate(context: RuleContext): any;
+    public abstract evaluate(context: WorkingContext): any;
 }
 
 export abstract class StringFunctionExpression extends FunctionExpression {
 
-    public abstract evaluate(context: RuleContext): string;
+    public abstract evaluate(context: WorkingContext): string;
 }
 
 export abstract class NumericFunctionExpression extends FunctionExpression {
 
-    public abstract evaluate(context: RuleContext): number;
+    public abstract evaluate(context: WorkingContext): number;
 }
 
 export abstract class BooleanFunctionExpression extends FunctionExpression {
 
-    public abstract evaluate(context: RuleContext): boolean;
+    public abstract evaluate(context: WorkingContext): boolean;
 }
 
 export abstract class DateFunctionExpression extends FunctionExpression {
 
-    public abstract evaluate(context: RuleContext): Date;
+    public abstract evaluate(context: WorkingContext): Date;
 }

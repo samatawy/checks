@@ -5,6 +5,15 @@ import { DateTimeComparisonFunction, DateTimeInspectionFunction, DateTimeManipul
 import { NumericComparisonFunction, NumericManipulationFunction, TrigonomicFunction } from "../syntax/functions/functions.numeric";
 import { StringComparisonFunction, StringInspectionFunction, StringManipulationFunction } from "../syntax/functions/functions.string";
 
+/**
+ * Factory class for creating FunctionExpression instances based on function name and arguments.
+ * You should normally not need to use this factory directly, 
+ * as it is primarily used internally by the ExpressionParser when parsing function calls from rule syntax.
+ * This factory centralizes the logic for mapping function names to their corresponding FunctionExpression classes,
+ * and ensures that the correct types of arguments are passed to each function based on its expected signature.
+ * It also provides a single point of maintenance for adding new functions in the future, 
+ * as new functions can simply be added to this factory without needing to modify the parsing logic elsewhere in the codebase.   
+ */
 export class FunctionFactory {
 
     public static create(name: string, args: Expression[]): FunctionExpression {
