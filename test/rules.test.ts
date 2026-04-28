@@ -437,7 +437,7 @@ describe('rules test', () => {
     }
     `;
     const result = parser.parse(content);
-    console.debug('Types file parsing result:', result);
+    // console.debug('Types file parsing result:', result);
     expect(result.read).toBe(1);
     expect(result.passed).toBe(1);
     expect(result.failed).toBe(0);
@@ -446,7 +446,6 @@ describe('rules test', () => {
     expect(result.types[0]!.properties!.name).toBe('string');
     expect(result.types[0]!.properties!.age).toBe('number');
     expect(result.errors.length).toBe(0);
-
   });
 
 });

@@ -1,6 +1,6 @@
 import { AbstractRule } from "../rules/abstract.rule";
 import { pathExists } from "../utils";
-import type { Executor, WorkingContext } from "../types";
+import type { Executor, RootType, WorkingContext } from "../types";
 import { WorkingMemory } from "./working.memory";
 import { RuleGraph } from "./graph/rule.graph";
 import { RuleNode, type AbstractNode } from "./graph/nodes";
@@ -84,6 +84,15 @@ export class WorkSpace {
     }
 
     /**
+     * Get the type memory of the workspace, which is responsible for managing type definitions 
+     * and performing type checks during rule evaluation.
+     * @returns the TypeMemory instance used by the workspace.
+     */
+    public TypeChecker(): TypeMemory {
+        return this.types;
+    }
+
+    /**
      * Add multiple constants to the workspace. 
      * Constants are key-value pairs that can be used in rule evaluation and are accessible across all rules.
      * @param constants a json object containing constant names as keys and their corresponding values.
@@ -102,6 +111,15 @@ export class WorkSpace {
     }
 
     /**
+     * Check if a constant exists in the workspace.
+     * @param key the name of the constant.
+     * @returns true if the constant exists, false otherwise.
+     */
+    public hasConstant(key: string): boolean {
+        return pathExists(this.constants, key);
+    }
+
+    /**
      * Get the value of a constant by its name.
      * @param key the name of the constant.
      * @returns the value of the constant, or undefined if the constant does not exist.
@@ -111,12 +129,11 @@ export class WorkSpace {
     }
 
     /**
-     * Check if a constant exists in the workspace.
-     * @param key the name of the constant.
-     * @returns true if the constant exists, false otherwise.
+     * Clear all constants from the workspace. 
+     * This will remove all existing constants and their values, effectively resetting the constants to an empty state.
      */
-    public hasConstant(key: string): boolean {
-        return pathExists(this.constants, key);
+    public clearConstants(): void {
+        this.constants = {};
     }
 
     /**

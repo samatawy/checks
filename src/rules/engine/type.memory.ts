@@ -48,9 +48,19 @@ export class TypeMemory implements TypeChecker {
         this.types.set(type.key, type);
     }
 
-    public addRootTypes(types: Map<string, RootType>): void {
-        for (const type of types.values()) {
-            this.addRootType(type);
+    public addRootTypes(types: Map<string, RootType> | Record<string, RootType> | RootType[]): void {
+        if (types instanceof Map) {
+            for (const type of types.values()) {
+                this.addRootType(type);
+            }
+        } else if (Array.isArray(types)) {
+            for (const type of types) {
+                this.addRootType(type);
+            }
+        } else {
+            for (const type of Object.values(types)) {
+                this.addRootType(type);
+            }
         }
     }
 

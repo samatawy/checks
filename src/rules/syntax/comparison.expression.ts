@@ -30,7 +30,6 @@ export class ComparisonExpression extends BooleanExpression {
 
         const leftType = getReturnType(this.left, checker);
         const rightType = getReturnType(this.right, checker);
-        console.debug(`Checking types for comparison: left type = ${this.left}, right type = ${this.right}`);
         const check = (leftType === rightType) ? {
             valid: true,
         } : {

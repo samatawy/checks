@@ -3,7 +3,7 @@ import type { FunctionExpression } from "../syntax/function.expression";
 import { DateTimeComparisonFunction } from "../syntax/functions/datetime.comparison.functions";
 import { DateTimeInspectionFunction } from "../syntax/functions/datetime.inspection.functions";
 import { DateTimeManipulationFunction } from "../syntax/functions/datetime.manipulation.functions";
-import { ConstantDates, ConstantNumbers } from "../syntax/functions/functions.constants";
+import { ConstantDates, ConstantNumbers } from "../syntax/functions/constant.functions";
 import { NumericComparisonFunction } from "../syntax/functions/numeric.comparison.functions";
 import { NumericManipulationFunction } from "../syntax/functions/numeric.manipulation.functions";
 import { TrigonomicFunction } from "../syntax/functions/numeric.trigonometric.functions";
