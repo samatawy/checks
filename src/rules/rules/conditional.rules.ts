@@ -1,8 +1,9 @@
 import { AbstractRule } from "./abstract.rule";
 import { ExceptionThrower, type ExecutableAction } from "../executable";
 import type { Expression } from "../syntax/expression";
-import type { Executor, WorkingContext, RuleEffect } from "../types";
+import type { Executor, WorkingContext, RuleEffect, TypeChecker, ValidationResult } from "../types";
 import { RuleParser } from "../parser/rule.parser";
+import { mergeValidationResults } from "../utils";
 
 export class IfThenRule extends AbstractRule {
 
@@ -30,6 +31,13 @@ export class IfThenRule extends AbstractRule {
 
     public toString(): string {
         return `IF ${this.condition.toString()} THEN ${this.consequence.toString()}`;
+    }
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        return mergeValidationResults(
+            this.condition.checkTypes(checker),
+            this.consequence.checkTypes(checker)
+        )
     }
 
     public evaluate(context: WorkingContext): Executor | null {
@@ -64,6 +72,14 @@ export class IfThenElseRule extends IfThenRule {
 
     public toString(): string {
         return `IF ${this.condition.toString()} THEN ${this.consequence.toString()} ELSE ${this.alternative.toString()}`;
+    }
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        return mergeValidationResults(
+            this.condition.checkTypes(checker),
+            this.consequence.checkTypes(checker),
+            this.alternative.checkTypes(checker)
+        );
     }
 
     public evaluate(context: WorkingContext): Executor | null {
@@ -102,6 +118,13 @@ export class IfThrowRule extends AbstractRule {
 
     public toString(): string {
         return `IF ${this.condition.toString()} THROW ${this.consequence.toString()}`;
+    }
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        return mergeValidationResults(
+            this.condition.checkTypes(checker),
+            this.consequence.checkTypes(checker)
+        );
     }
 
     public evaluate(context: WorkingContext): Executor | null {

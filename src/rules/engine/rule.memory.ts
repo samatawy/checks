@@ -23,6 +23,8 @@ export class RuleMemory {
         this.options = {
             debugging: false,
             strict_conflicts: false,
+            strict_inputs: false,    // Ignored here
+            strict_outputs: false,   // Ignored here
             max_iterations: 100,    // Ignored here
             ...options
         };
@@ -34,6 +36,16 @@ export class RuleMemory {
      */
     public addRule(rule: AbstractRule): void {
         this.rules.push(rule);
+    }
+
+    /**
+     * Add multiple rules to the memory.
+     * @param rules the rules to be added to the memory.
+     */
+    public addRules(rules: AbstractRule[]): void {
+        for (const rule of rules) {
+            this.addRule(rule);
+        }
     }
 
     /**

@@ -1,4 +1,4 @@
-import type { WorkingContext, Evaluator } from "../types";
+import type { WorkingContext, Evaluator, HasValidity, ValidationResult, TypeChecker } from "../types";
 
 /**
  * Represents an expression that can be evaluated in a given context to produce a value. 
@@ -7,7 +7,7 @@ import type { WorkingContext, Evaluator } from "../types";
  * Each expression must implement the required() method to specify which data keys it depends on, 
  * and the evaluate() method to compute its value based on the context.
  */
-export abstract class Expression implements Evaluator {
+export abstract class Expression implements Evaluator, HasValidity {
 
     protected syntax: string;
 
@@ -41,6 +41,13 @@ export abstract class Expression implements Evaluator {
      * @returns the computed value of the expression.
      */
     public abstract evaluate(context: WorkingContext): any;
+
+    /**
+     * Check the types of the expression using the provided type checker.
+     * @param checker the type checker to use for validating the expression's types.
+     * @returns the result of the type check.
+     */
+    public abstract checkTypes(checker?: TypeChecker): ValidationResult;
 
     /**
      * Get a string representation of the expression, which can be used for debugging, logging, or error messages.

@@ -1,5 +1,6 @@
 import type { Expression } from "./syntax/expression";
-import type { Executor, WorkingContext, RuleEffect } from "./types";
+import type { Executor, WorkingContext, RuleEffect, HasValidity, TypeChecker, ValidationResult, AtomicType } from "./types";
+import { getReturnType, isAtomicType, mergeValidationResults } from "./utils";
 
 /**
  * An executable action represents a specific operation that can be executed in the context of a rule.
@@ -9,7 +10,7 @@ import type { Executor, WorkingContext, RuleEffect } from "./types";
  * This allows the rule engine to manage dependencies between rules and ensure that rules are executed 
  * in the correct order based on their requirements and effects.
  */
-export abstract class ExecutableAction implements Executor {
+export abstract class ExecutableAction implements Executor, HasValidity {
 
     /**
      * What data keys are required for this action to be evaluated? 
@@ -24,6 +25,8 @@ export abstract class ExecutableAction implements Executor {
     public abstract changes(): Set<string>;
 
     public abstract toString(): string;
+
+    public abstract checkTypes(checker?: TypeChecker): ValidationResult;
 
     public abstract execute(context: WorkingContext): RuleEffect;
 }
@@ -51,6 +54,34 @@ export class OutputAction extends ExecutableAction {
 
     public toString(): string {
         return `SET ${this.key} = ${this.value.toString()}`;
+    }
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        if (!checker) {
+            return { valid: true };
+        }
+
+        const checks: ValidationResult[] = [];
+        if (checker.strictInputs()) {
+            checks.push(this.value.checkTypes(checker));
+        }
+        if (checker.strictOutputs()) {
+            if (!checker.hasType(this.key)) {
+                checks.push({ valid: false, errors: [`Undefined output variable: ${this.key}`] });
+            }
+            const keyType = checker.getType(this.key);
+            if (!isAtomicType(keyType!)) {
+                checks.push({ valid: false, errors: [`Output key '${this.key}' is not an atomic type`] });
+            }
+            const returnType = getReturnType(this.value, checker);
+            if (keyType && returnType && keyType !== returnType) {
+                checks.push({
+                    valid: false,
+                    errors: [`Type mismatch for output key '${this.key}': expected ${keyType}, but got ${returnType}`]
+                });
+            }
+        }
+        return mergeValidationResults(...checks);
     }
 
     public execute(context: WorkingContext): RuleEffect {
@@ -86,6 +117,10 @@ export class ExceptionThrower extends ExecutableAction {
 
     public toString(): string {
         return `THROW ${this.errorMessage}`;
+    }
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        return { valid: true };
     }
 
     public execute(context: WorkingContext): RuleEffect {

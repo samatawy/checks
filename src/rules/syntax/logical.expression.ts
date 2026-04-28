@@ -1,4 +1,5 @@
-import type { WorkingContext } from "../types";
+import type { TypeChecker, ValidationResult, WorkingContext } from "../types";
+import { getReturnType, mergeValidationResults } from "../utils";
 import { BooleanExpression, Expression } from "./expression";
 
 export class LogicalExpression extends BooleanExpression {
@@ -20,6 +21,27 @@ export class LogicalExpression extends BooleanExpression {
         const leftRequirements = this.left.required();
         const rightRequirements = this.right.required();
         return new Set([...leftRequirements, ...rightRequirements]);
+    }
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        if (!checker || !checker.strictInputs()) {
+            return { valid: true };
+        }
+
+        const leftType = getReturnType(this.left, checker);
+        const rightType = getReturnType(this.right, checker);
+        const check = (leftType === 'boolean' && rightType === 'boolean') ? {
+            valid: true,
+        } : {
+            valid: false,
+            errors: [`Logical operator ${this.operator} requires boolean operands, but got ${leftType} and ${rightType}`],
+        };
+
+        return mergeValidationResults(
+            this.left.checkTypes(checker),
+            this.right.checkTypes(checker),
+            check
+        );
     }
 
     public evaluate(context: WorkingContext): boolean {

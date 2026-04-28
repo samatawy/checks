@@ -1,11 +1,12 @@
-import type { WorkingContext, Evaluator, RuleEffect, Executor } from "../types";
+import { TypeMemory } from "../engine/type.memory";
+import type { WorkingContext, Evaluator, RuleEffect, Executor, HasValidity, ValidationResult, TypeChecker } from "../types";
 
 /**
  * Abstract base class for all rules in the system, providing common properties and methods for evaluating and executing rules. 
  * Each specific rule type (e.g. conditional rules, assignment rules) should extend this class 
  * and implement the abstract methods for evaluation and execution.
  */
-export abstract class AbstractRule implements Evaluator, Executor {
+export abstract class AbstractRule implements Evaluator, Executor, HasValidity {
 
     /**
      * Optional name for the rule, which can be used for identification and debugging purposes.
@@ -109,6 +110,15 @@ export abstract class AbstractRule implements Evaluator, Executor {
     }
 
     public abstract toString(): string;
+
+    /**
+     * Check the types of the rule using the provided type checker. 
+     * This method should validate that all expressions and components of the rule are type-correct 
+     * according to the types known to the checker instance.
+     * @param checker the type checker to use for validating the rule.
+     * @returns the result of the type check, indicating whether the rule is valid.
+     */
+    public abstract checkTypes(checker?: TypeChecker): ValidationResult;
 
     /**
      * Evaluate the rule in the given context to determine if it is satisfied and should be executed.

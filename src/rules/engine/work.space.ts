@@ -6,6 +6,7 @@ import { RuleGraph } from "./graph/rule.graph";
 import { RuleNode, type AbstractNode } from "./graph/nodes";
 import { RuleParser } from "../parser/rule.parser";
 import { RuleMemory } from "./rule.memory";
+import { TypeMemory } from "./type.memory";
 
 /**
  * Options for configuring the behavior of the WorkSpace, including debugging, conflict resolution, and iteration limits.
@@ -22,6 +23,21 @@ export interface WorkSpaceOptions {
      * When true, the workspace will enforce strict rules for resolving conflicts between competing rules, potentially throwing errors if conflicts are detected.
      */
     strict_conflicts: boolean;
+
+    /**
+     * Enable or disable strict input validation. 
+     * When true, the workspace will validate input data against defined types and may reject inputs 
+     * that do not conform to expected structures, ensuring that rules are evaluated with correctly typed data.
+     */
+    strict_inputs: boolean;
+
+    /**
+     * Enable or disable strict output validation.
+     * When true, the workspace will validate the outputs of rule execution against defined types 
+     * and may throw errors if outputs do not conform to expected structures, 
+     * ensuring that rule consequences produce correctly typed data.
+     */
+    strict_outputs: boolean;
 
     /**
      * The maximum number of iterations the workspace will perform when evaluating rules.
@@ -43,6 +59,8 @@ export class WorkSpace {
 
     protected constants: any;
 
+    protected types: TypeMemory;
+
     protected options: WorkSpaceOptions;
 
     /**
@@ -53,9 +71,13 @@ export class WorkSpace {
         this.rules = new RuleMemory(options);
         this.graph = new RuleGraph();
         this.constants = {};
+        this.types = new TypeMemory(options);
+
         this.options = {
             debugging: false,
             strict_conflicts: false,
+            strict_inputs: false,
+            strict_outputs: false,
             max_iterations: 100,
             ...options
         };
@@ -223,6 +245,20 @@ export class WorkSpace {
      * @returns the final output after processing all applicable rules.
      */
     public process(context: WorkingMemory): any {
+
+        const typeCheck = this.types.validateData(context.getOutput());
+        if (typeCheck.valid) {
+            this.debug('Input data passed type validation.');
+        } else {
+            const errorMessage = `Input data failed type validation with errors: ${typeCheck.errors?.join('; ')}`;
+            this.debug(errorMessage);
+            if (this.options.strict_inputs) {
+                throw new Error(errorMessage);
+            } else {
+                this.debug('Proceeding with rule evaluation despite type validation errors due to non-strict input settings.');
+            }
+        }
+
         let applicable = this.applicableRules(context);
         let iterate = (applicable.length > 0), iteration = 0;
         let executors: Executor[] = [];
@@ -325,7 +361,7 @@ export class WorkSpace {
 
     private debug(...args: any[]): void {
         if (this.options.debugging) {
-            console.debug(...args);
+            console.debug('[WorkSpace DEBUG]', ...args);
         }
     }
 }

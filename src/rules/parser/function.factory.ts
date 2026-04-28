@@ -1,9 +1,15 @@
 import type { DateExpression, Expression, NumericExpression, StringExpression } from "../syntax/expression";
 import type { FunctionExpression } from "../syntax/function.expression";
+import { DateTimeComparisonFunction } from "../syntax/functions/datetime.comparison.functions";
+import { DateTimeInspectionFunction } from "../syntax/functions/datetime.inspection.functions";
+import { DateTimeManipulationFunction } from "../syntax/functions/datetime.manipulation.functions";
 import { ConstantDates, ConstantNumbers } from "../syntax/functions/functions.constants";
-import { DateTimeComparisonFunction, DateTimeInspectionFunction, DateTimeManipulationFunction } from "../syntax/functions/functions.datetime";
-import { NumericComparisonFunction, NumericManipulationFunction, TrigonomicFunction } from "../syntax/functions/functions.numeric";
-import { StringComparisonFunction, StringInspectionFunction, StringManipulationFunction } from "../syntax/functions/functions.string";
+import { NumericComparisonFunction } from "../syntax/functions/numeric.comparison.functions";
+import { NumericManipulationFunction } from "../syntax/functions/numeric.manipulation.functions";
+import { TrigonomicFunction } from "../syntax/functions/numeric.trigonometric.functions";
+import { StringComparisonFunction } from "../syntax/functions/string.comparison.functions";
+import { StringInspectionFunction } from "../syntax/functions/string.inspection.functions";
+import { StringManipulationFunction } from "../syntax/functions/string.manipulation.functions";
 
 /**
  * Factory class for creating FunctionExpression instances based on function name and arguments.

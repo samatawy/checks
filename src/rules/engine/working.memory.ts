@@ -50,9 +50,6 @@ export class WorkingMemory implements WorkingContext {
         for (const key of Object.keys(this.output)) {
             keys.add(key);
         }
-        // for (const key in this.workspace.constants) {
-        //     keys.add(key);
-        // }
         return Array.from(keys);
     }
 

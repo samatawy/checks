@@ -1,10 +1,23 @@
-import type { WorkingContext } from "../../types";
-import { DateFunctionExpression, NumericFunctionExpression } from "../function.expression";
+import type { TypeChecker, ValidationResult, WorkingContext } from "../../types";
+import { DateFunctionExpression, NumericFunctionExpression, type TypedParameter } from "../function.expression";
 
 export class ConstantNumbers extends NumericFunctionExpression {
 
     constructor(name: string) {
         super(name, []);
+    }
+
+    public expectsParameters(): TypedParameter[] {
+        return [];
+    }
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        return (this.args.length === 0) ? {
+            valid: true,
+        } : {
+            valid: false,
+            errors: [`Constant numbers do not accept arguments, but got ${this.args.length}`],
+        };
     }
 
     public evaluate(context: WorkingContext): number {
@@ -45,7 +58,7 @@ export class ConstantNumbers extends NumericFunctionExpression {
                 return 6.67430e-11;
 
             default:
-                throw new Error(`Unknown numeric constant: ${this.name}`);
+                throw new Error(`Unknown constant function: ${this.name}`);
         }
     }
 
@@ -56,6 +69,19 @@ export class ConstantDates extends DateFunctionExpression {
 
     constructor(name: string) {
         super(name, []);
+    }
+
+    public expectsParameters(): TypedParameter[] {
+        return [];
+    }
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        return (this.args.length === 0) ? {
+            valid: true,
+        } : {
+            valid: false,
+            errors: [`Constant dates do not accept arguments, but got ${this.args.length}`],
+        };
     }
 
     public evaluate(context: WorkingContext): Date {
@@ -79,7 +105,7 @@ export class ConstantDates extends DateFunctionExpression {
                 return new Date(nowMonthEnd.getFullYear(), nowMonthEnd.getMonth() + 1, 0);
 
             default:
-                throw new Error(`Unknown date function: ${this.name}`);
+                throw new Error(`Unknown constant function: ${this.name}`);
         }
     }
 

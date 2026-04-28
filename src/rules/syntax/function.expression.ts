@@ -1,6 +1,11 @@
-import type { WorkingContext } from "../types";
+import type { AtomicType, TypeChecker, ValidationResult, WorkingContext } from "../types";
+import { getReturnType, mergeValidationResults } from "../utils";
 import { Expression } from "./expression";
 
+export interface TypedParameter {
+    type: AtomicType;
+    optional?: boolean;
+}
 export abstract class FunctionExpression extends Expression {
 
     protected name: string;
@@ -22,6 +27,52 @@ export abstract class FunctionExpression extends Expression {
             }
         }
         return requirements;
+    }
+
+    /**
+     * Returns an array of expected parameters for this function, in order. 
+     * Each parameter includes its expected type and whether it is optional.
+     * This is used for type checking and validation of function arguments.
+     */
+    public abstract expectsParameters(): TypedParameter[];
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        if (!checker || !checker.strictInputs()) {
+            return { valid: true };
+        }
+
+        const checks: ValidationResult[] = [];
+        for (const arg of this.args) {
+            checks.push(arg.checkTypes(checker));
+        }
+
+        const expected = this.expectsParameters();
+        let i = 0;
+        for (const arg of this.args) {
+            if (i >= expected.length) {
+                checks.push({
+                    valid: false,
+                    errors: [`Function ${this.name} expects at most ${expected.length} arguments, but got ${this.args.length}`],
+                });
+                break;
+            }
+            const argType = getReturnType(arg, checker);
+            if (argType != expected[i]!.type) {
+                checks.push({
+                    valid: false,
+                    errors: [`Argument ${i + 1} for function ${this.name} must be of type ${expected[i]!.type}, but got ${argType}`],
+                });
+            }
+            i++;
+        }
+        if (i < expected.length) {
+            const missingParams = expected.slice(i).map(param => param.toString()).join(', ');
+            checks.push({
+                valid: false,
+                errors: [`Function ${this.name} expects at least ${expected.length} arguments, but got ${this.args.length}. Missing parameters: ${missingParams}`],
+            });
+        }
+        return mergeValidationResults(...checks);
     }
 
     public toString(): string {

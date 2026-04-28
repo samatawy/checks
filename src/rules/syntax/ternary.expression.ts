@@ -1,4 +1,5 @@
-import type { WorkingContext } from "../types";
+import type { TypeChecker, ValidationResult, WorkingContext } from "../types";
+import { getReturnType, mergeValidationResults } from "../utils";
 import { Expression } from "./expression";
 
 export class TernaryExpression extends Expression {
@@ -21,6 +22,37 @@ export class TernaryExpression extends Expression {
         const trueRequirements = this.trueExpression.required();
         const falseRequirements = this.falseExpression.required();
         return new Set([...conditionRequirements, ...trueRequirements, ...falseRequirements]);
+    }
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        if (!checker || !checker.strictInputs()) {
+            return { valid: true };
+        }
+
+        const conditionType = getReturnType(this.condition, checker);
+        const check = (conditionType === 'boolean') ? {
+            valid: true,
+        } : {
+            valid: false,
+            errors: [`Ternary condition must be of type boolean, but got ${conditionType}`],
+        };
+
+        const leftType = getReturnType(this.trueExpression, checker);
+        const rightType = getReturnType(this.falseExpression, checker);
+        const expressionCheck = (leftType === rightType) ? {
+            valid: true,
+        } : {
+            valid: false,
+            errors: [`Ternary expressions must return the same type, but got ${leftType} and ${rightType}`],
+        };
+
+        return mergeValidationResults(
+            this.condition.checkTypes(checker),
+            this.trueExpression.checkTypes(checker),
+            this.falseExpression.checkTypes(checker),
+            check,
+            expressionCheck
+        );
     }
 
     public evaluate(context: WorkingContext): any {

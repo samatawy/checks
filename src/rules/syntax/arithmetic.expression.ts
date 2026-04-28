@@ -1,4 +1,5 @@
-import type { WorkingContext } from "../types";
+import type { TypeChecker, ValidationResult, WorkingContext } from "../types";
+import { getReturnType, mergeValidationResults } from "../utils";
 import { Expression, NumericExpression } from "./expression";
 
 export class ArithmeticExpression extends NumericExpression {
@@ -20,6 +21,27 @@ export class ArithmeticExpression extends NumericExpression {
         const leftRequirements = this.left.required();
         const rightRequirements = this.right.required();
         return new Set([...leftRequirements, ...rightRequirements]);
+    }
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        if (!checker || !checker.strictInputs()) {
+            return { valid: true };
+        }
+
+        const leftType = getReturnType(this.left, checker);
+        const rightType = getReturnType(this.right, checker);
+        const check = (leftType === 'number' && rightType === 'number') ? {
+            valid: true,
+        } : {
+            valid: false,
+            errors: [`Arithmetic operator ${this.operator} requires numeric operands, but got ${leftType} and ${rightType}`],
+        };
+
+        return mergeValidationResults(
+            this.left.checkTypes(checker),
+            this.right.checkTypes(checker),
+            check
+        );
     }
 
     public evaluate(context: WorkingContext): number {
