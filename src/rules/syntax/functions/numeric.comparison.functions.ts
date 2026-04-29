@@ -1,6 +1,6 @@
-import type { WorkingContext } from "../../types";
+import type { TypedParameter, WorkingContext } from "../../types";
 import type { Expression, NumericExpression } from "../expression";
-import { BooleanFunctionExpression, type TypedParameter } from "../function.expression";
+import { BooleanFunctionExpression } from "../function.expression";
 
 export class NumericComparisonFunction extends BooleanFunctionExpression {
 

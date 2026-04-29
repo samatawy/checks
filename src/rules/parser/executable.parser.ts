@@ -1,5 +1,8 @@
-import { OutputAction, type ExecutableAction } from "../executable";
+import type { FunctionMemory } from "../engine/function.memory";
+import type { WorkSpace } from "../engine/work.space";
+import { CompositeAction, OutputAction, type ExecutableAction } from "../executable";
 import { ExpressionParser } from "./expression.parser";
+import type { ParserOptions } from "./rule.parser";
 
 /**
  * Parser class for parsing executable actions from rule syntax. 
@@ -9,10 +12,14 @@ import { ExpressionParser } from "./expression.parser";
  * into OutputAction instances that can be executed within the rule engine.
  */
 export class ExecutableParser {
+
+    private options: ParserOptions;
+
     private expressionParser: ExpressionParser;
 
-    constructor() {
-        this.expressionParser = new ExpressionParser();
+    constructor(options: ParserOptions) {
+        this.options = options;
+        this.expressionParser = new ExpressionParser(this.options);
     }
 
     /**
@@ -22,6 +29,22 @@ export class ExecutableParser {
      * @throws An error if the syntax is unrecognized or invalid.
      */
     public parse(syntax: string): ExecutableAction | null {
+
+        if (syntax.includes(';')) {
+            // This allows for multiple actions separated by semicolons, like "SET x = 10; y = 20"
+            const actionSyntaxes = syntax.split(';').map(s => s.trim());
+
+            // Parse each action syntax into an ExecutableAction
+            const actions = actionSyntaxes.map(s => this.parse(s))
+                .filter(a => a !== null) as ExecutableAction[];
+
+            // and combine them into a CompositeAction that executes all of them together
+            if (actions.length === actionSyntaxes.length) {
+                return new CompositeAction(actions);
+            } else {
+                throw new Error(`Failed to parse one or more actions in composite syntax: ${syntax}`);
+            }
+        }
 
         let action: ExecutableAction | null = null;
         // If this is an assignment with SET, parse it as such

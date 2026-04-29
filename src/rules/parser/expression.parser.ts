@@ -6,6 +6,7 @@ import { LiteralExpression } from "../syntax/literal.expression";
 import { LogicalExpression } from "../syntax/logical.expression";
 import { TernaryExpression } from "../syntax/ternary.expression";
 import { VariableExpression } from "../syntax/variable.expression";
+import type { ParserOptions, WorkSpace } from "../..";
 
 /**
  * Parser class for parsing expressions from rule syntax.
@@ -20,6 +21,12 @@ import { VariableExpression } from "../syntax/variable.expression";
  * before higher-precedence operators (like * and /).    
  */
 export class ExpressionParser {
+
+    private options: ParserOptions;
+
+    constructor(options: ParserOptions) {
+        this.options = options;
+    }
 
     /**
      * Parse a string expression into an Expression object that can be evaluated within the rule engine.
@@ -148,7 +155,7 @@ export class ExpressionParser {
             const argsSyntax = tokens.slice(2, -1).join(' ');
             const args = this.splitArguments(argsSyntax);
             const argExpressions = args.map(arg => this.parse(arg));
-            return FunctionFactory.create(functionName, argExpressions);
+            return new FunctionFactory(this.options).create(functionName, argExpressions);
         }
         return null;
     }

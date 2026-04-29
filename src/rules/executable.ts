@@ -31,7 +31,11 @@ export abstract class ExecutableAction implements Executor, HasValidity {
     public abstract execute(context: WorkingContext): RuleEffect;
 }
 
-// TODO: Is this required? Can we just use OutputRule instead of OutputAction?
+/**
+ * A simple action that sets a specific output key to the value of an expression when executed.
+ * This is a common type of action that can be used in many rules to produce an output based on the evaluation of an expression.
+ * The action specifies which output key it will set and what expression will be evaluated to determine the value to set.
+ */
 export class OutputAction extends ExecutableAction {
 
     private key: string;
@@ -97,7 +101,81 @@ export class OutputAction extends ExecutableAction {
     }
 }
 
-// TODO: Is this required? Can we just use IfThrowRule instead of ExceptionAction?
+/**
+ * A composite action allows for combining multiple executable actions into a single action that executes all of them together. 
+ * This can be useful for rules that need to perform multiple operations as a consequence of being satisfied, 
+ * such as setting multiple output values or performing a series of operations in sequence.
+ */
+export class CompositeAction extends ExecutableAction {
+
+    private actions: ExecutableAction[];
+
+    constructor(actions: ExecutableAction[]) {
+        super();
+        this.actions = actions;
+    }
+
+    public required(): Set<string> {
+        const requirements = new Set<string>();
+        for (const action of this.actions) {
+            for (const req of action.required()) {
+                requirements.add(req);
+            }
+        }
+        return requirements;
+    }
+
+    public changes(): Set<string> {
+        const changes = new Set<string>();
+        for (const action of this.actions) {
+            for (const change of action.changes()) {
+                changes.add(change);
+            }
+        }
+        return changes;
+    }
+
+    public toString(): string {
+        return this.actions.map(action => action.toString()).join('; ');
+    }
+
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        const checks: ValidationResult[] = [];
+        for (const action of this.actions) {
+            checks.push(action.checkTypes(checker));
+        }
+        return mergeValidationResults(...checks);
+    }
+
+    public execute(context: WorkingContext): RuleEffect {
+        const effects: RuleEffect[] = [];
+        for (const action of this.actions) {
+            const effect = action.execute(context);
+            effects.push(effect);
+            if (effect.exception) {
+                break;
+            }
+        }
+        // Merge effects
+        const mergedEffect: RuleEffect = {};
+        for (const effect of effects) {
+            if (effect.exception) {
+                mergedEffect.exception = effect.exception;
+                break;
+            }
+            if (effect.changed) {
+                let changes = mergedEffect.changed ? mergedEffect.changed + ', ' : '';
+                mergedEffect.changed = changes + effect.changed;
+            }
+        }
+        return mergedEffect;
+    }
+}
+
+/**
+ * An action that throws an exception when executed. 
+ * This can be used in rules that need to indicate an error condition.
+ */
 export class ExceptionThrower extends ExecutableAction {
 
     private errorMessage: string;

@@ -4,6 +4,7 @@ import type { Expression } from "../syntax/expression";
 import type { Executor, WorkingContext, RuleEffect, TypeChecker, ValidationResult } from "../types";
 import { RuleParser } from "../parser/rule.parser";
 import { mergeValidationResults } from "../utils";
+import type { WorkSpace } from "../..";
 
 export class IfThenRule extends AbstractRule {
 
@@ -11,12 +12,25 @@ export class IfThenRule extends AbstractRule {
 
     protected consequence: ExecutableAction;
 
-    constructor(syntax: string, condition?: Expression | null, consequence?: ExecutableAction | null) {
+    static parse(syntax: string, workspace?: WorkSpace): IfThenRule {
+        const parsed = new RuleParser({ workspace }).parse(syntax);
+        if (parsed instanceof IfThenRule) {
+            return parsed;
+        } else {
+            throw new Error(`Invalid syntax for IfThenRule: ${syntax}`);
+        }
+    }
+
+    static parsed(syntax: string, condition: Expression, consequence: ExecutableAction): IfThenRule {
+        return new IfThenRule(syntax, condition, consequence);
+    }
+
+    protected constructor(syntax: string, condition?: Expression | null, consequence?: ExecutableAction | null) {
         super(syntax);
         this.condition = condition as Expression;
         this.consequence = consequence as ExecutableAction;
         if (!condition || !consequence) {
-            const parsed = new RuleParser().parse(syntax);
+            const parsed = new RuleParser({}).parse(syntax);
             if (parsed instanceof IfThenRule && parsed.condition && parsed.consequence) {
                 this.condition = parsed.condition;
                 this.consequence = parsed.consequence;
@@ -49,21 +63,43 @@ export class IfThenRule extends AbstractRule {
     }
 }
 
-export class IfThenElseRule extends IfThenRule {
+export class IfThenElseRule extends AbstractRule {
+
+    protected condition: Expression;
+
+    protected consequence: ExecutableAction;
 
     protected alternative: ExecutableAction;
 
-    constructor(syntax: string, condition?: Expression | null, consequence?: ExecutableAction | null, alternative?: ExecutableAction | null) {
-        super(syntax, condition, consequence);
+    static parse(syntax: string, workspace?: WorkSpace): IfThenElseRule {
+        const parsed = new RuleParser({ workspace }).parse(syntax);
+        if (parsed instanceof IfThenElseRule) {
+            return parsed;
+        } else {
+            throw new Error(`Invalid syntax for IfThenElseRule: ${syntax}`);
+        }
+    }
+
+    static parsed(syntax: string, condition: Expression, consequence: ExecutableAction, alternative: ExecutableAction): IfThenElseRule {
+        return new IfThenElseRule(syntax, condition, consequence, alternative);
+    }
+
+    protected constructor(syntax: string, condition?: Expression | null, consequence?: ExecutableAction | null, alternative?: ExecutableAction | null) {
+        super(syntax);
+        this.condition = condition as Expression;
+        this.consequence = consequence as ExecutableAction;
         this.alternative = alternative as ExecutableAction;
-        if (!alternative) {
-            const parsed = new RuleParser().parse(syntax);
-            if (parsed instanceof IfThenElseRule && parsed.alternative) {
+        if (!condition || !consequence || !alternative) {
+            const parsed = new RuleParser({}).parse(syntax);
+            if (parsed instanceof IfThenElseRule && parsed.condition && parsed.consequence && parsed.alternative) {
+                this.condition = parsed.condition;
+                this.consequence = parsed.consequence;
                 this.alternative = parsed.alternative;
             } else {
                 throw new Error(`Invalid syntax for IfThenElseRule: ${syntax}`);
             }
         }
+
         this.consequence = this.consequence || new ExceptionThrower(`Condition met: ${syntax} but no consequence provided`);
         this.alternative = this.alternative || new ExceptionThrower(`Condition failed: ${syntax} but no alternative provided`);
         this.require(...this.condition.required(), ...this.consequence.required(), ...this.alternative.required());
@@ -97,15 +133,28 @@ export class IfThrowRule extends AbstractRule {
 
     protected consequence: ExceptionThrower;
 
-    constructor(syntax: string, condition?: Expression | null, errorMessage?: ExceptionThrower | string) {
+    static parse(syntax: string, workspace?: WorkSpace): IfThrowRule {
+        const parsed = new RuleParser({ workspace }).parse(syntax);
+        if (parsed instanceof IfThrowRule) {
+            return parsed;
+        } else {
+            throw new Error(`Invalid syntax for IfThrowRule: ${syntax}`);
+        }
+    }
+
+    static parsed(syntax: string, condition: Expression, error: ExceptionThrower | string): IfThrowRule {
+        return new IfThrowRule(syntax, condition, error);
+    }
+
+    protected constructor(syntax: string, condition?: Expression | null, error?: ExceptionThrower | string) {
         super(syntax);
         this.condition = condition as Expression;
-        this.consequence = errorMessage instanceof ExceptionThrower ?
-            errorMessage :
-            new ExceptionThrower(errorMessage || `Condition met: ${syntax} but no error message provided`);
+        this.consequence = error instanceof ExceptionThrower ?
+            error :
+            new ExceptionThrower(error || `Condition met: ${syntax} but no error message provided`);
 
         if (!condition) {
-            const parsed = new RuleParser().parse(syntax);
+            const parsed = new RuleParser({}).parse(syntax);
             if (parsed instanceof IfThrowRule && parsed.condition && parsed.consequence) {
                 this.condition = parsed.condition;
                 this.consequence = parsed.consequence;

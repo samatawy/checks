@@ -1,3 +1,4 @@
+import type { WorkSpace } from "../..";
 import { AbstractFileReader, type FileReaderOptions } from "./abstract.file.reader";
 
 export interface ConstantsFileResult {
@@ -39,7 +40,11 @@ export class ConstantsFileReader extends AbstractFileReader {
         super({
             read_by: options?.read_by || 'line'
         });
-        this.options = options || {};
+        this.options = {
+            read_by: options?.read_by || 'line',
+            accept: options?.accept || 'partial',
+            ...options
+        }
     }
 
     /**

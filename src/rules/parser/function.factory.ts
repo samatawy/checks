@@ -10,6 +10,11 @@ import { TrigonomicFunction } from "../syntax/functions/numeric.trigonometric.fu
 import { StringComparisonFunction } from "../syntax/functions/string.comparison.functions";
 import { StringInspectionFunction } from "../syntax/functions/string.inspection.functions";
 import { StringManipulationFunction } from "../syntax/functions/string.manipulation.functions";
+import type { FunctionMemory } from "../engine/function.memory";
+import type { Parser } from "probe-image-size";
+import type { ParserOptions } from "./rule.parser";
+import type { TypeChecker, WorkingContext } from "../..";
+import { CustomFunctionExpression } from "../syntax/functions/custom.function";
 
 /**
  * Factory class for creating FunctionExpression instances based on function name and arguments.
@@ -22,7 +27,13 @@ import { StringManipulationFunction } from "../syntax/functions/string.manipulat
  */
 export class FunctionFactory {
 
-    public static create(name: string, args: Expression[]): FunctionExpression {
+    protected options: ParserOptions;
+
+    constructor(options: ParserOptions) {
+        this.options = options;
+    }
+
+    public create(name: string, args: Expression[]): FunctionExpression {
 
         // Constants
         if (ConstantNumbers.names.includes(name)) {
@@ -63,6 +74,13 @@ export class FunctionFactory {
         }
         if (DateTimeInspectionFunction.names.includes(name)) {
             return new DateTimeInspectionFunction(name, args[0] as DateExpression, []);
+        }
+
+        if (this.options.workspace) {
+            const customFunction = this.options.workspace.getFunctionMemory().getFunction(name);
+            if (customFunction) {
+                return CustomFunctionExpression.from(customFunction, args);
+            }
         }
 
         throw new Error(`Unknown function: "${name}()"`);

@@ -1,3 +1,5 @@
+import type { WorkSpace } from "../engine/work.space";
+
 export interface FileReaderOptions {
     /**
      * Determines whether to read the file content line by line or block by block (separated by empty lines). This allows for flexible formatting of the file, where each entry can either be defined on a single line or as a block of text.
@@ -5,6 +7,13 @@ export interface FileReaderOptions {
      * - 'block': Read the file content block by block, where blocks are separated by one or more empty lines. Each block (which can consist of multiple lines) is considered a separate entry to parse. Empty blocks will be skipped.
      */
     read_by: 'line' | 'block';
+
+    /**
+     * Optional reference to the WorkSpace instance, which can be used by the RuleParser 
+     * to access existing rules, types, functions, and constants when parsing rules from the file. 
+     * This allows for more complex rule definitions that can reference other components within the WorkSpace.
+     */
+    workspace?: WorkSpace;
 }
 
 /**
@@ -30,7 +39,10 @@ export abstract class AbstractFileReader {
         }
         const line = content.slice(0, newlineIndex).trim();
         const remainder = content.slice(newlineIndex + 1).trim();
-        if (line.length === 0) {
+        // Ignore comments and empty lines
+        const isComment = line.startsWith('#') || line.startsWith('//');
+
+        if (line.length === 0 || isComment) {
             return this.readLine(remainder);
         } else {
             return { line, remainder };
@@ -39,7 +51,12 @@ export abstract class AbstractFileReader {
 
     protected readBlock(content: string): { line: string, remainder: string } {
         // Normalize line endings to \n for consistent processing
-        const normalizedContent = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        let normalizedContent = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+        // Remove comments
+        normalizedContent = normalizedContent.split('\n')
+            .filter(line => !line.trim().startsWith('#') && !line.trim().startsWith('//'))
+            .join('\n');
 
         // Find the first occurrence of an empty line (allowing whitespace)
         // This regex matches: \n + any whitespace + \n
@@ -55,7 +72,6 @@ export abstract class AbstractFileReader {
         const line = normalizedContent.slice(0, blockEndIndex).trim().replace(/\n/g, ' ');
         const remainder = normalizedContent.slice(match.index + match[0].length).trim();
 
-        // Skip empty blocks (recursively)
         if (line.length === 0) {
             return this.readBlock(remainder);
         } else {

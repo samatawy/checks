@@ -1,11 +1,7 @@
-import type { AtomicType, TypeChecker, ValidationResult, WorkingContext } from "../types";
+import type { TypeChecker, TypedParameter, ValidationResult, WorkingContext } from "../types";
 import { getReturnType, mergeValidationResults } from "../utils";
 import { Expression } from "./expression";
 
-export interface TypedParameter {
-    type: AtomicType;
-    optional?: boolean;
-}
 export abstract class FunctionExpression extends Expression {
 
     protected name: string;
@@ -16,6 +12,10 @@ export abstract class FunctionExpression extends Expression {
         super();
         this.name = name;
         this.args = args;
+    }
+
+    public getName(): string {
+        return this.name;
     }
 
     public required(): Set<string> {

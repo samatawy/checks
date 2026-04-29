@@ -1,6 +1,6 @@
-import type { WorkingContext } from "../../types";
+import type { TypedParameter, WorkingContext } from "../../types";
 import type { DateExpression, Expression } from "../expression";
-import { DateFunctionExpression, type TypedParameter } from "../function.expression";
+import { DateFunctionExpression } from "../function.expression";
 
 export class DateTimeManipulationFunction extends DateFunctionExpression {
 

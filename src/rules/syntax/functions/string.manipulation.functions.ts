@@ -1,6 +1,6 @@
-import type { WorkingContext } from "../../types";
+import type { TypedParameter, WorkingContext } from "../../types";
 import type { Expression, StringExpression } from "../expression";
-import { StringFunctionExpression, type TypedParameter } from "../function.expression";
+import { StringFunctionExpression } from "../function.expression";
 
 export class StringManipulationFunction extends StringFunctionExpression {
 

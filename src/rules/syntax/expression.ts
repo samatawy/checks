@@ -15,9 +15,9 @@ export abstract class Expression implements Evaluator, HasValidity {
         this.syntax = '';
     }
 
-    public setSyntax(syntax: string): void {
-        this.syntax = syntax;
-    }
+    // public setSyntax(syntax: string): void {
+    //     this.syntax = syntax;
+    // }
 
     /**
      * Get the original syntax string that was used to create this expression. This can be useful for debugging, logging, or error messages to provide context about where the expression came from.

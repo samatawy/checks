@@ -13,14 +13,17 @@ import { RuleParser } from '../src/rules/parser/rule.parser';
 import { TypeMemory } from '../src/rules/engine/type.memory';
 import { TypesFileReader } from '../src/rules/reader/types.file.reader';
 import { getDefinedType, hasDefinedType } from '../src/rules/utils';
+import { LiteralExpression, type Expression, type TypeChecker, type ValidationResult, type WorkingContext } from '../src';
+import { CustomFunctionExpression } from '../src/rules/syntax/functions/custom.function';
+import { FunctionsFileReader } from '../src/rules/reader/functions.file.reader';
 
 describe('rules test', () => {
   it('add rules to graph', async () => {
 
     const graph = new RuleGraph();
-    const r1 = new IfThenRule('if x then y = true');
+    const r1 = IfThenRule.parse('if x then y = true');
     expect(r1.required().size).toBe(1);
-    const r2 = new IfThenRule('if a then b = true');
+    const r2 = IfThenRule.parse('if a then b = true');
     expect(r2.required().size).toBe(1);
 
     graph.addRule(r1);
@@ -30,7 +33,7 @@ describe('rules test', () => {
   });
 
   it('throws errors for invalid syntax', async () => {
-    const parser = new ExpressionParser();
+    const parser = new ExpressionParser({});
 
     expect(() => parser.parse('')).toThrow("Empty expression");
     expect(() => parser.parse('x > ')).toThrow();
@@ -44,23 +47,23 @@ describe('rules test', () => {
     expect(() => parser.parse('x + 5)')).toThrow();
 
     try {
-      new IfThenRule('if x then z');
+      IfThenRule.parse('if x then z');
     } catch (e) {
       expect(e).toBeInstanceOf(Error);
     }
-    expect(() => new IfThenRule('if x then z')).toThrow();
-    expect(() => new IfThenElseRule('if x then y else')).toThrow();
-    expect(() => new IfThenElseRule('if x then else z')).toThrow();
-    expect(() => new IfThenElseRule('if then y else z')).toThrow();
+    expect(() => IfThenRule.parse('if x then z')).toThrow();
+    expect(() => IfThenElseRule.parse('if x then y else')).toThrow();
+    expect(() => IfThenElseRule.parse('if x then else z')).toThrow();
+    expect(() => IfThenElseRule.parse('if then y else z')).toThrow();
   });
 
   it('add rules to workspace and find applicable rules to context', async () => {
 
     const space = new WorkSpace();
-    const graph = space.getGraph();
-    const r1 = new IfThenRule('if x then y = true');
+    const graph = space.getRuleGraph();
+    const r1 = IfThenRule.parse('if x then y = true');
     expect(r1.required().size).toBe(1);
-    const r2 = new IfThenRule('if a then b = true');
+    const r2 = IfThenRule.parse('if a then b = true');
     expect(r2.required().size).toBe(1);
 
     space.addRule(r1);
@@ -77,7 +80,7 @@ describe('rules test', () => {
 
   it('add rules to workspace and find applicable rules to context with nested keys', async () => {
     const space = new WorkSpace();
-    const graph = space.getGraph();
+    const graph = space.getRuleGraph();
 
     space.addRule('if x.y then z = true');
     space.addRule('if a.b then c = true');
@@ -94,7 +97,7 @@ describe('rules test', () => {
   });
 
   it('parse expressions', async () => {
-    const parser = new ExpressionParser();
+    const parser = new ExpressionParser({});
 
     const expr1 = parser.parse('x > 10 && y < 5');
     expect(expr1).toBeInstanceOf(LogicalExpression);
@@ -139,11 +142,60 @@ describe('rules test', () => {
     expect(ctx.getOutput('calc')).toBe(15);
   });
 
+  it('define custom functions and use them in rules', async () => {
+    const space = new WorkSpace();
+    const expressionParser = new ExpressionParser({ workspace: space });
+    const triple = CustomFunctionExpression.from({
+      name: 'triple',
+      parameters: [{ name: 'n', type: 'number', optional: false }],
+      expression: expressionParser.parse('n * 3'),
+    }, [expressionParser.parse('4')]);
+    const ctx = space.loadContext({});
+    expect(triple.evaluate(ctx)).toBe(12);
+    // console.debug('Custom function syntax:', triple.toString());
+    // console.debug('Custom function evaluation result:', triple.evaluate(ctx));
+
+    space.getFunctionMemory().addFunction({
+      name: 'double',
+      parameters: [{ name: 'n', type: 'number', optional: false }],
+      expression: {
+        required(): Set<string> {
+          return new Set(['n']);
+        },
+        checkTypes(checker?: TypeChecker): ValidationResult {
+          const nType = checker?.getType('n');
+          if (nType === 'number') {
+            return { valid: true };
+          } else {
+            return { valid: false, errors: ['Parameter n must be a number'] };
+          }
+        },
+        evaluate(context: WorkingContext): any {
+          const n = context.getData('n');
+          return n * 2;
+        },
+        toString(): string {
+          return 'double(n)';
+        },
+        getSyntax(): string {
+          return 'double(n)';
+        }
+      } as Expression
+    });
+
+    space.addRule('if x < 5 then result = double(x)');
+
+    const ctx2 = space.loadContext({ x: 3 });
+    expect(space.applicableRules(ctx2).length).toBe(1);
+    space.process(ctx2);
+    expect(ctx2.getOutput('result')).toBe(6);
+  });
+
 
   it('evaluate rules', async () => {
     const space = new WorkSpace();
-    const r1 = new IfThenRule('if x > 10 then result = 10 + 5 / 2');
-    const r2 = new IfThenRule('if a == 5 then result = (10 + 5) / 2');
+    const r1 = IfThenRule.parse('if x > 10 then result = 10 + 5 / 2');
+    const r2 = IfThenRule.parse('if a == 5 then result = (10 + 5) / 2');
 
     space.addRule(r1);
     space.addRule(r2);
@@ -161,7 +213,7 @@ describe('rules test', () => {
     ctx = space.loadContext({ x: 5, a: 5 });
     expect(space.applicableRules(ctx).length).toBe(2);
 
-    const r3 = new IfThenElseRule('if x > 10 then nested.value = 10 + 5 / 2 else nested.value = (10 + 5) / 2');
+    const r3 = IfThenElseRule.parse('if x > 10 then nested.value = 10 + 5 / 2 else nested.value = (10 + 5) / 2');
     space.addRule(r3);
     ctx = space.loadContext({ x: 15 });
     expect(space.applicableRules(ctx).length).toBe(2);
@@ -171,12 +223,27 @@ describe('rules test', () => {
     expect(output.nested.value).toBe(12.5);
   });
 
+  it('handle composite actions', async () => {
+    const space = new WorkSpace({ strict_inputs: false, strict_outputs: false });
+    space.addRule('if x > 10 then SET y = 15; z = 20');
+
+    let ctx = space.loadContext({ x: 12 });
+    expect(space.applicableRules(ctx).length).toBe(1);
+    space.process(ctx);
+    expect(ctx.getOutput('y')).toBe(15);
+    expect(ctx.getOutput('z')).toBe(20);
+  });
+
   it('read from rules file', async () => {
-    const parser = new RulesFileReader({ accept: 'partial' });
+    const parser = new RulesFileReader({ read_by: 'line', accept: 'partial' });
     const content = `
       if x > 10 then result = 10 + 5 / 2
       if a == 5 then result = (10 + 5) / 2
       if x > 10 then nested.value = 10 + 5 / 2 else nested.value = (10 + 5) / 2
+
+      // comments and empty lines should be ignored
+      // set pi = 3.14159
+      // The following is invalid
       if invalid syntax
     `;
     const result = parser.parse(content);
@@ -187,7 +254,7 @@ describe('rules test', () => {
     expect(result.rules.length).toBe(3);
     expect(result.errors.length).toBe(1);
 
-    const strictParser = new RulesFileReader({ accept: 'all' });
+    const strictParser = new RulesFileReader({ read_by: 'line', accept: 'all' });
     const strictResult = strictParser.parse(content);
     // console.debug('Strict rules file parsing result:', strictResult);
     expect(strictResult.read).toBe(4);
@@ -200,6 +267,7 @@ describe('rules test', () => {
     const blockContent = `
       if x > 10 then result = 10 + 5 / 2
       
+      // This is a comment and should be ignored
       if a == 5 then result = (10 + 5) / 2
       
       @name(Split over lines)
@@ -283,6 +351,57 @@ describe('rules test', () => {
     expect(space.getConstant('PI')).toBe('3.14159');
   });
 
+  it('read from functions file', async () => {
+    const parser = new FunctionsFileReader({ accept: 'partial' });
+    const content = `
+      triple(n: number){ n * 3 }
+
+      join(s1: string, s2: string) { 
+         return concat(s1,s2)
+      }
+
+      double(n: number){ 
+      return n * 2 }
+      
+      invalid syntax
+    `;
+    const result = parser.parse(content);
+    console.debug('Functions file parsing result:', result);
+    expect(result.read).toBe(4);
+    expect(result.passed).toBe(3);
+    expect(result.failed).toBe(1);
+    expect(result.errors.length).toBe(1);
+
+    const strictResult = new FunctionsFileReader({ accept: 'all' }).parse(content);
+    // console.debug('Strict functions file parsing result:', strictResult);
+    expect(strictResult.read).toBe(4);
+    expect(strictResult.passed).toBe(0);
+    expect(strictResult.failed).toBe(4);
+    expect(Object.keys(strictResult.functions).length).toBe(0);
+    expect(strictResult.errors.length).toBe(1);
+
+    const space = new WorkSpace();
+    space.getFunctionMemory().addFunctions(result.functions);
+    const ctx = space.loadContext({ n: 4 });
+
+    const triple = CustomFunctionExpression.from({
+      name: 'triple',
+      parameters: [{ name: 'n', type: 'number', optional: false }],
+      expression: space.getFunctionMemory().getFunction('triple')!.expression,
+    }, [new LiteralExpression(4)]);
+    expect(triple.evaluate(ctx)).toBe(12);
+
+    const join = CustomFunctionExpression.from({
+      name: 'join',
+      parameters: [
+        { name: 's1', type: 'string', optional: false },
+        { name: 's2', type: 'string', optional: false }
+      ],
+      expression: space.getFunctionMemory().getFunction('join')!.expression,
+    }, [new LiteralExpression('Hello, '), new LiteralExpression('world!')]);
+    expect(join.evaluate(ctx)).toBe('Hello, world!');
+  });
+
   it('handle conflicting rule effects', async () => {
     // Conflicting rules can be prevented by setting strict_conflicts to true in the workspace options. 
     // In this case, if two or more applicable rules have the same highest salience and affect the same output key, 
@@ -300,7 +419,7 @@ describe('rules test', () => {
     ctx = space.loadContext({ x: 35 });
     expect(space.process(ctx).y).toBe(25);
 
-    const rmeta = new RuleParser().parse('@salience(7) @name(Highest Priority) if x > 30 then y = 30');
+    const rmeta = new RuleParser({}).parse('@salience(7) @name(Highest Priority) if x > 30 then y = 30');
     expect(rmeta).toBeInstanceOf(IfThenRule);
     expect(rmeta!.name).toBe('Highest Priority');
     expect(rmeta!.getSalience()).toBe(7);
@@ -363,12 +482,12 @@ describe('rules test', () => {
       }
     });
 
-    const rule = new IfThenRule('if Person.age > 18 then Person.isAdult = true');
+    const rule = IfThenRule.parse('if Person.age > 18 then Person.isAdult = true');
     const typeCheckResult = rule.checkTypes(types);
     // console.debug(typeCheckResult);
     expect(typeCheckResult.valid).toBe(true);
 
-    const invalidRule = new IfThenRule('if Person.height > 180 then Person.isTall = true');
+    const invalidRule = IfThenRule.parse('if Person.height > 180 then Person.isTall = true');
     const invalidTypeCheckResult = invalidRule.checkTypes(types);
     // console.debug(invalidTypeCheckResult);
     expect(invalidTypeCheckResult.valid).toBe(false);
@@ -385,18 +504,18 @@ describe('rules test', () => {
       }
     });
 
-    const rule = new IfThenRule('if max(Person.age, 30) > 18 then Person.isAdult = true');
+    const rule = IfThenRule.parse('if max(Person.age, 30) > 18 then Person.isAdult = true');
     const typeCheckResult = rule.checkTypes(types);
     // console.debug(typeCheckResult);
     expect(typeCheckResult.valid).toBe(true);
 
-    const invalidRule = new IfThenRule('if max(Person.height, 180) > 180 then Person.isTall = true');
+    const invalidRule = IfThenRule.parse('if max(Person.height, 180) > 180 then Person.isTall = true');
     const invalidTypeCheckResult = invalidRule.checkTypes(types);
     // console.debug(invalidTypeCheckResult);
     expect(invalidTypeCheckResult.valid).toBe(false);
     expect(invalidTypeCheckResult.errors?.length).toBeGreaterThan(0);
 
-    const invalidParams = new IfThenRule('if max(Person.age, "thirty") > 18 then Person.isAdult = true');
+    const invalidParams = IfThenRule.parse('if max(Person.age, "thirty") > 18 then Person.isAdult = true');
     const invalidParamsTypeCheckResult = invalidParams.checkTypes(types);
     // console.debug(invalidParamsTypeCheckResult);
     expect(invalidParamsTypeCheckResult.valid).toBe(false);
@@ -413,12 +532,12 @@ describe('rules test', () => {
       }
     });
 
-    const invalidOutput = new IfThenRule('if Person.age > 18 then Person.isAdult = true');
+    const invalidOutput = IfThenRule.parse('if Person.age > 18 then Person.isAdult = true');
     const invalidOutputCheckResult = invalidOutput.checkTypes(types2);
     // console.debug(invalidOutputCheckResult);
     expect(invalidOutputCheckResult.valid).toBe(true);
 
-    const invalidOutputType = new IfThenRule('if Person.age > 18 then Person.isAdult = "yes"');
+    const invalidOutputType = IfThenRule.parse('if Person.age > 18 then Person.isAdult = "yes"');
     const invalidOutputTypeCheckResult2 = invalidOutputType.checkTypes(types2);
     // console.debug(invalidOutputTypeCheckResult2);
     expect(invalidOutputTypeCheckResult2.valid).toBe(false);

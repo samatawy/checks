@@ -1,6 +1,7 @@
 import type { AbstractRule } from "../rules/abstract.rule";
 import { RuleParser } from "../parser/rule.parser";
 import { AbstractFileReader, type FileReaderOptions } from "./abstract.file.reader";
+import type { WorkSpace } from "../..";
 
 export interface RulesFileResult {
     read: number;
@@ -40,14 +41,18 @@ export class RulesFileReader extends AbstractFileReader {
      */
     constructor(options?: Partial<RulesFileReaderOptions>) {
         super({
-            read_by: options?.read_by || 'line'
+            read_by: options?.read_by || 'block'
         });
-        this.ruleParser = new RuleParser();
-        this.options = options || {};
+        this.ruleParser = new RuleParser({ workspace: options?.workspace });
+        this.options = {
+            read_by: options?.read_by || 'block',
+            accept: options?.accept || 'partial',
+            ...options
+        }
     }
 
     /**
-     * Parse the content of a rules file and return the result, including the successfully parsed rules and any errors encountered during parsing.
+     * Parse the content of a rules file and return the result, including the successfully parsed rules and any errors encountered.
      * @param fileContent The content of the rules file to parse.
      * @returns The result of parsing, including the successfully parsed rules and any errors encountered.
      */

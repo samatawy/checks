@@ -1,3 +1,5 @@
+import type { Expression } from "./syntax/expression";
+
 export interface WorkingContext {
 
     /**
@@ -64,17 +66,20 @@ export interface WorkingContext {
 export interface RuleEffect {
 
     /**
-     * Indicates whether the rule was satisfied when evaluated. This can be used by the rule engine to determine if the rule should be executed or not.
+     * Indicates whether the rule was satisfied when evaluated. 
+     * This can be used by the rule engine to determine if the rule should be executed or not.
      */
     satisfied?: boolean;
 
     /**
-     * Indicates which data key was changed as a result of executing the rule. This can be used by the rule engine to track changes and manage dependencies between rules.
+     * Indicates which data key was changed as a result of executing the rule. 
+     * This can be used by the rule engine to track changes and manage dependencies between rules.
      */
     changed?: string;
 
     /**
-     * Indicates an exception that was thrown during the execution of the rule. This can be used by the rule engine to handle errors and take appropriate actions.
+     * Indicates an exception that was thrown during the execution of the rule. 
+     * This can be used by the rule engine to handle errors and take appropriate actions.
      */
     exception?: string;
 }
@@ -183,4 +188,19 @@ export interface RootType {
      * The properties of the root type, if it is an object. This allows for nested structures and detailed type definitions.
      */
     properties?: Record<string, PropertyType>;
+}
+
+export interface TypedParameter {
+    type: AtomicType;
+    optional?: boolean;
+}
+
+export interface NamedParameter extends TypedParameter {
+    name: string;
+}
+
+export interface FunctionDefinition {
+    name: string;
+    parameters: NamedParameter[];
+    expression: Expression;
 }

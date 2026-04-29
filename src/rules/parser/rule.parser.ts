@@ -1,6 +1,9 @@
+import type { FunctionMemory } from "../engine/function.memory";
+import type { WorkSpace } from "../engine/work.space";
+import { OutputAction } from "../executable";
 import type { AbstractRule } from "../rules/abstract.rule";
-import { StateRule } from "../rules/assignment.rules";
-import { IfThenElseRule, IfThenRule } from "../rules/conditional.rules";
+import { OutputRule, StateRule } from "../rules/assignment.rules";
+import { IfThenElseRule, IfThenRule, IfThrowRule } from "../rules/conditional.rules";
 import { ExecutableParser } from "./executable.parser";
 import { ExpressionParser } from "./expression.parser";
 
@@ -9,6 +12,10 @@ export interface RuleMetadata {
     description?: string;
     salience?: number;
     syntax?: string;
+}
+
+export interface ParserOptions {
+    workspace?: WorkSpace;
 }
 
 /**
@@ -21,12 +28,17 @@ export interface RuleMetadata {
  * The parser is designed to be extensible, allowing for additional rule types and syntax patterns to be added in the future as needed.
  */
 export class RuleParser {
+
+    private options: ParserOptions;
+
     private expressionParser: ExpressionParser;
+
     private executableParser: ExecutableParser;
 
-    constructor() {
-        this.expressionParser = new ExpressionParser();
-        this.executableParser = new ExecutableParser();
+    constructor(options: ParserOptions) {
+        this.options = options;
+        this.expressionParser = new ExpressionParser(this.options);
+        this.executableParser = new ExecutableParser(this.options);
     }
 
     public parse(syntax: string): AbstractRule | null {
@@ -93,6 +105,22 @@ export class RuleParser {
         return this.parseMetadata(given);
     }
 
+    protected parseConditionalRule(syntax: string): AbstractRule | null {
+        let rule = this.parseIfThenElseRule(syntax);
+        if (rule) {
+            return rule;
+        }
+        rule = this.parseIfThenRule(syntax);
+        if (rule) {
+            return rule;
+        }
+        rule = this.parseIfThrowRule(syntax);
+        if (rule) {
+            return rule;
+        }
+        return null;
+    }
+
     protected parseIfThenRule(syntax: string): AbstractRule | null {
 
         // split syntax allowing nested variables names in the left side 
@@ -110,7 +138,7 @@ export class RuleParser {
             if (!consequence) {
                 throw new Error(`Failed to parse consequence for IfThenRule: ${consequenceSyntax}`);
             }
-            return new IfThenRule(syntax, condition, consequence);
+            return IfThenRule.parsed(syntax, condition, consequence);
         }
         throw new Error(`Syntax does not match IfThenRule pattern: ${syntax}`);
     }
@@ -135,7 +163,7 @@ export class RuleParser {
                 throw new Error(`Failed to parse alternative for IfThenElseRule: ${alternativeSyntax}`);
             }
 
-            return new IfThenElseRule(syntax, condition, consequence, alternative); // For simplicity, we're not implementing the consequence execution here
+            return IfThenElseRule.parsed(syntax, condition, consequence, alternative); // For simplicity, we're not implementing the consequence execution here
         }
         return null;
     }
@@ -153,23 +181,7 @@ export class RuleParser {
             }
             const errorMessage = match[2]!;
 
-            return new IfThenElseRule(syntax, condition, null as any, null as any); // For simplicity, we're not implementing the consequence execution here
-        }
-        return null;
-    }
-
-    protected parseConditionalRule(syntax: string): AbstractRule | null {
-        let rule = this.parseIfThenElseRule(syntax);
-        if (rule) {
-            return rule;
-        }
-        rule = this.parseIfThenRule(syntax);
-        if (rule) {
-            return rule;
-        }
-        rule = this.parseIfThrowRule(syntax);
-        if (rule) {
-            return rule;
+            return IfThrowRule.parsed(syntax, condition, errorMessage);
         }
         return null;
     }
@@ -186,13 +198,13 @@ export class RuleParser {
                 throw new Error(`Failed to parse value expression for StateRule: ${valueSyntax}`);
             }
 
-            return new StateRule(syntax, variableName, valueExpr); // You would need to implement this class
+            return OutputRule.parsed(syntax, variableName, valueExpr); // You would need to implement this class
         }
         return null;
     }
 
     protected parseStateIfRule(syntax: string): AbstractRule | null {
-        // This is a placeholder for parsing conditional assignment rules like "SET x = 5 IF condition"
+        // Parsing conditional assignment rules like "SET x = 5 IF condition"
 
         const match = syntax.match(/^SET\s+(\w+)\s*=\s*(.+)\s+IF\s+(.+)$/i);
         if (match) {
@@ -210,7 +222,8 @@ export class RuleParser {
                 throw new Error(`Failed to parse condition expression for StateIfRule: ${conditionSyntax}`);
             }
 
-            return new IfThenRule(syntax, conditionExpr, new StateRule(syntax, variableName, valueExpr));
+            return IfThenRule.parsed(syntax, conditionExpr, new OutputAction(variableName, valueExpr));
+            // return new IfThenRule(syntax, conditionExpr, new StateRule(syntax, variableName, valueExpr));
         }
         return null;
     }

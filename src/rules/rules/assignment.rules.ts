@@ -3,6 +3,7 @@ import type { Expression } from "../syntax/expression";
 import type { Executor, WorkingContext, RuleEffect, TypeChecker, ValidationResult } from "../types";
 import { RuleParser } from "../parser/rule.parser";
 import { getReturnType, isAtomicType, mergeValidationResults } from "../utils";
+import type { WorkSpace } from "../engine/work.space";
 
 export class OutputRule extends AbstractRule {
 
@@ -10,14 +11,27 @@ export class OutputRule extends AbstractRule {
 
     protected expression: Expression;
 
-    constructor(syntax: string, key: string, expression: Expression | null) {
+    static parse(syntax: string, workspace?: WorkSpace): OutputRule {
+        const parsed = new RuleParser({ workspace }).parse(syntax);
+        if (parsed instanceof OutputRule) {
+            return parsed;
+        } else {
+            throw new Error(`Invalid syntax for OutputRule: ${syntax}`);
+        }
+    }
+
+    static parsed(syntax: string, key: string, expression: Expression): OutputRule {
+        return new OutputRule(syntax, key, expression);
+    }
+
+    protected constructor(syntax: string, key: string, expression: Expression | null) {
         super(syntax);
         this.outputKey = key;
         if (expression) {
             this.expression = expression;
         }
         else {
-            const parsed = new RuleParser().parse(syntax);
+            const parsed = new RuleParser({}).parse(syntax);
             if (parsed instanceof OutputRule && parsed.expression) {
                 this.outputKey = parsed.outputKey;
                 this.expression = parsed.expression;

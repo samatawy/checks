@@ -7,6 +7,7 @@ import { RuleNode, type AbstractNode } from "./graph/nodes";
 import { RuleParser } from "../parser/rule.parser";
 import { RuleMemory } from "./rule.memory";
 import { TypeMemory } from "./type.memory";
+import { FunctionMemory } from "./function.memory";
 
 /**
  * Options for configuring the behavior of the WorkSpace, including debugging, conflict resolution, and iteration limits.
@@ -61,6 +62,8 @@ export class WorkSpace {
 
     protected types: TypeMemory;
 
+    protected functions: FunctionMemory;
+
     protected options: WorkSpaceOptions;
 
     /**
@@ -72,6 +75,7 @@ export class WorkSpace {
         this.graph = new RuleGraph();
         this.constants = {};
         this.types = new TypeMemory(options);
+        this.functions = new FunctionMemory(options);
 
         this.options = {
             debugging: false,
@@ -81,15 +85,6 @@ export class WorkSpace {
             max_iterations: 100,
             ...options
         };
-    }
-
-    /**
-     * Get the type memory of the workspace, which is responsible for managing type definitions 
-     * and performing type checks during rule evaluation.
-     * @returns the TypeMemory instance used by the workspace.
-     */
-    public TypeChecker(): TypeMemory {
-        return this.types;
     }
 
     /**
@@ -145,7 +140,7 @@ export class WorkSpace {
      */
     public addRule(rule: string | AbstractRule, salience?: number): void {
         if (typeof rule === 'string') try {
-            rule = new RuleParser().parse(rule) as AbstractRule;
+            rule = new RuleParser({ workspace: this }).parse(rule) as AbstractRule;
         } catch (e) {
             throw new Error(`Failed to parse rule: ${rule}. Error: ${e instanceof Error ? e.message : String(e)}`);
         }
@@ -186,8 +181,21 @@ export class WorkSpace {
      * Debugging method to get the current rule graph.
      * @returns the current RuleGraph instance representing rules and their dependencies in the workspace.
      */
-    public getGraph(): RuleGraph {
+    public getRuleGraph(): RuleGraph {
         return this.graph;
+    }
+
+    /**
+     * Debugging method to get the type memory of the workspace, responsible for managing type definitions 
+     * and performing type checks during rule evaluation.
+     * @returns the TypeMemory instance used by the workspace.
+     */
+    public getTypeMemory(): TypeMemory {
+        return this.types;
+    }
+
+    public getFunctionMemory(): FunctionMemory {
+        return this.functions;
     }
 
     /**
