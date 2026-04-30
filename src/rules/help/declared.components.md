@@ -1,10 +1,10 @@
 ---
-title: Declared Types
+title: Declared Components
 group: Rule engine
 # category: Caching And Stores
 ---
 
-# Declared Types
+# Declared Components
 
 To configure the Rule engine, you need to declare your business logic in the form of any ofd these declaraive components
 
