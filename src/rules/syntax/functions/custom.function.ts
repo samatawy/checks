@@ -85,6 +85,21 @@ export class CustomFunctionExpression extends FunctionExpression {
             const value = arg.evaluate(context);
             scope.setData(defined!.name, value);
         }
+
+        if (this.definition.lines && this.definition.lines.length > 0) {
+            for (const line of this.definition.lines) {
+                const effect = line.execute(scope);
+                if (effect.exception) {
+                    scope.addException(effect.exception, { function: this.name });
+                    break;
+                }
+                // console.debug(`Executed line in function ${this.name} with effect:`, effect);
+                // console.debug(`Current scope after executing line in function ${this.name}:`, scope.getOutput());
+            }
+        }
+        // const result = this.definition.expression.evaluate(scope);
+        // console.debug(`Evaluated function ${this.name} with arguments ${this.args.map(arg => arg.toString()).join(', ')} to result: ${result}`);
+        // return result;
         return this.definition.expression.evaluate(scope);
     }
 }

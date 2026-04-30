@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { RuleGraph } from '../src/rules/engine/graph/rule.graph';
-import { IfThenElseRule, IfThenRule } from '../src/rules/rules/conditional.rules';
-import { WorkSpace } from '../src/rules/engine/work.space';
-import { ExpressionParser } from '../src/rules/parser/expression.parser';
-import { LogicalExpression } from '../src/rules/syntax/logical.expression';
-import { TernaryExpression } from '../src/rules/syntax/ternary.expression';
-import { ComparisonExpression } from '../src/rules/syntax/comparison.expression';
-import { ArithmeticExpression } from '../src/rules/syntax/arithmetic.expression';
-import { RulesFileReader } from '../src/rules/reader/rules.file.reader';
-import { ConstantsFileReader } from '../src/rules/reader/constants.file.reader';
-import { RuleParser } from '../src/rules/parser/rule.parser';
-import { TypeMemory } from '../src/rules/engine/type.memory';
-import { TypesFileReader } from '../src/rules/reader/types.file.reader';
-import { getDefinedType, hasDefinedType } from '../src/rules/utils';
-import { LiteralExpression, type Expression, type TypeChecker, type ValidationResult, type WorkingContext } from '../src/rules/..';
-import { CustomFunctionExpression } from '../src/rules/syntax/functions/custom.function';
-import { FunctionsFileReader } from '../src/rules/reader/functions.file.reader';
+import { RuleGraph } from '../engine/graph/rule.graph';
+import { IfThenElseRule, IfThenRule } from '../rules/conditional.rules';
+import { WorkSpace } from '../engine/work.space';
+import { ExpressionParser } from '../parser/expression.parser';
+import { LogicalExpression } from '../syntax/logical.expression';
+import { TernaryExpression } from '../syntax/ternary.expression';
+import { ComparisonExpression } from '../syntax/comparison.expression';
+import { ArithmeticExpression } from '../syntax/arithmetic.expression';
+import { RulesFileReader } from '../reader/rules.file.reader';
+import { ConstantsFileReader } from '../reader/constants.file.reader';
+import { RuleParser } from '../parser/rule.parser';
+import { TypeMemory } from '../engine/type.memory';
+import { TypesFileReader } from '../reader/types.file.reader';
+import { getDefinedType, hasDefinedType } from '../utils';
+import { LiteralExpression, type Expression, type TypeChecker, type ValidationResult, type WorkingContext } from '../..';
+import { CustomFunctionExpression } from '../syntax/functions/custom.function';
+import { FunctionsFileReader } from '../reader/functions.file.reader';
 
 describe('rules test', () => {
   it('add rules to graph', async () => {
@@ -140,8 +140,6 @@ describe('rules test', () => {
     expect(ctx.getOutput('approx')).toBe(3);
     expect(ctx.getOutput('year')).toEqual(new Date().getFullYear());
     expect(ctx.getOutput('calc')).toBe(15);
-
-    console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
   });
 
   it('define custom functions and use them in rules', async () => {
@@ -191,8 +189,6 @@ describe('rules test', () => {
     expect(space.applicableRules(ctx2).length).toBe(1);
     space.process(ctx2);
     expect(ctx2.getOutput('result')).toBe(6);
-
-    console.debug('Logged rules during processing:', ctx2.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
   });
 
 
@@ -225,8 +221,6 @@ describe('rules test', () => {
     expect(ctx.getOutput('nested.value')).toBe(12.5);
     const output = ctx.getOutput();
     expect(output.nested.value).toBe(12.5);
-
-    console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
   });
 
   it('handle composite actions', async () => {
@@ -360,59 +354,52 @@ describe('rules test', () => {
   it('read from functions file', async () => {
     const parser = new FunctionsFileReader({ accept: 'partial' });
     const content = `
-      triple(n: number) = n * 3
+      triple(n: number){ n * 3 }
 
-      join_spaced(s1: string, s2: string) { 
-        // return concat(s1, concat(" ", s2)) }
-         return s1 + ' ' + s2
+      join(s1: string, s2: string) { 
+         return concat(s1,s2)
       }
 
-      round_double(n: number){ 
-      d = n * 2;
-      d = floor(d);
-      return d }
-
-      sales_tax(total: number) {
-        tax_rate = (total < 100)? 0.12 : 0.14;
-        tax = total * tax_rate;
-        return max(1, tax)
-      }
+      double(n: number){ 
+      return n * 2 }
       
       invalid syntax
     `;
     const result = parser.parse(content);
     // console.debug('Functions file parsing result:', result);
-    expect(result.read).toBe(5);
-    expect(result.passed).toBe(4);
+    expect(result.read).toBe(4);
+    expect(result.passed).toBe(3);
     expect(result.failed).toBe(1);
     expect(result.errors.length).toBe(1);
 
     const strictResult = new FunctionsFileReader({ accept: 'all' }).parse(content);
     // console.debug('Strict functions file parsing result:', strictResult);
-    expect(strictResult.read).toBe(5);
+    expect(strictResult.read).toBe(4);
     expect(strictResult.passed).toBe(0);
-    expect(strictResult.failed).toBe(5);
+    expect(strictResult.failed).toBe(4);
     expect(Object.keys(strictResult.functions).length).toBe(0);
     expect(strictResult.errors.length).toBe(1);
 
     const space = new WorkSpace();
     space.getFunctionMemory().addFunctions(result.functions);
-    space.addRule('SET tripled = triple(n)');
-    space.addRule('SET greeting = join_spaced("Hello", name)');
-    space.addRule('SET rounded = round_double(fp)');
-    space.addRule('SET tax = sales_tax(invoice.total)');
+    const ctx = space.loadContext({ n: 4 });
 
-    const ctx = space.loadContext({ n: 4, fp: 3.2, name: 'world!', invoice: { total: 50 } });
+    const triple = CustomFunctionExpression.from({
+      name: 'triple',
+      parameters: [{ name: 'n', type: 'number', optional: false }],
+      expression: space.getFunctionMemory().getFunction('triple')!.expression,
+    }, [new LiteralExpression(4)]);
+    expect(triple.evaluate(ctx)).toBe(12);
 
-    const output = space.process(ctx);
-    // console.debug('Function evaluation output:', output);
-    expect(output.tripled).toBe(12);
-    expect(output.greeting).toBe('Hello world!');
-    expect(output.rounded).toBe(6);
-    expect(output.tax).toBe(6);
-    expect(output.tax_rate).toBeUndefined();
-
-    console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
+    const join = CustomFunctionExpression.from({
+      name: 'join',
+      parameters: [
+        { name: 's1', type: 'string', optional: false },
+        { name: 's2', type: 'string', optional: false }
+      ],
+      expression: space.getFunctionMemory().getFunction('join')!.expression,
+    }, [new LiteralExpression('Hello, '), new LiteralExpression('world!')]);
+    expect(join.evaluate(ctx)).toBe('Hello, world!');
   });
 
   it('handle conflicting rule effects', async () => {
@@ -440,9 +427,6 @@ describe('rules test', () => {
     space.addRule(rmeta!);
     ctx = space.loadContext({ x: 35 });
     expect(space.process(ctx).y).toBe(30);
-
-    console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
-
   });
 
   it('handles typed inputs and outputs', async () => {

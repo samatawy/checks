@@ -55,7 +55,7 @@ export class IfThenRule extends AbstractRule {
     }
 
     public evaluate(context: WorkingContext): Executor | null {
-        return (this.condition.evaluate(context)) ? this.consequence : null;
+        return (this.condition.evaluate(context)) ? this.consequence.prepareEffect({ satisfied: true }) : null;
     }
 
     public execute(context: WorkingContext): RuleEffect {
@@ -119,7 +119,9 @@ export class IfThenElseRule extends AbstractRule {
     }
 
     public evaluate(context: WorkingContext): Executor | null {
-        return (this.condition.evaluate(context)) ? this.consequence : this.alternative;
+        return (this.condition.evaluate(context)) ?
+            this.consequence.prepareEffect({ satisfied: true }) :
+            this.alternative.prepareEffect({ satisfied: false });
     }
 
     public execute(context: WorkingContext): RuleEffect {
@@ -177,7 +179,7 @@ export class IfThrowRule extends AbstractRule {
     }
 
     public evaluate(context: WorkingContext): Executor | null {
-        return (this.condition.evaluate(context)) ? this.consequence : null;
+        return (this.condition.evaluate(context)) ? this.consequence.prepareEffect({ satisfied: true }) : null;
     }
 
     public execute(context: WorkingContext): RuleEffect {

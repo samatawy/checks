@@ -48,7 +48,7 @@ export class FunctionsFileReader extends AbstractFileReader {
             accept: options?.accept || 'partial',
             ...options
         };
-        console.debug(this.options);
+        // console.debug(this.options);
         this.functionParser = new FunctionParser({ workspace: options?.workspace });
     }
 
@@ -98,7 +98,7 @@ export class FunctionsFileReader extends AbstractFileReader {
                     errors
                 };
             }
-            console.debug('Parsed functions attempts:', attempts);
+            // console.debug('Parsed functions attempts:', attempts);
             // Prevent duplicates (and report them as errors) returning the functions as an object with key-value pairs
             const defined_functions = attempts.filter(c => c !== null) as FunctionDefinition[];
             let result: Record<string, FunctionDefinition> = {};

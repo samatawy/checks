@@ -271,6 +271,8 @@ export class WorkSpace {
      */
     public process(context: WorkingMemory): any {
 
+        context.clearLog();
+
         const typeCheck = this.types.validateData(context.getOutput());
         if (typeCheck.valid) {
             this.debug('Input data passed type validation.');
@@ -284,6 +286,7 @@ export class WorkSpace {
             }
         }
 
+        let satisfied: AbstractRule[] = [];
         let applicable = this.applicableRules(context);
         let iterate = (applicable.length > 0), iteration = 0;
         let executors: Executor[] = [];
@@ -294,6 +297,7 @@ export class WorkSpace {
 
             iteration++;
             iterate = false;
+            satisfied = [];
             executors = [];
 
             // Evaluate all applicable rules and collect their executors
@@ -302,13 +306,24 @@ export class WorkSpace {
                 this.debug('Evaluating rule:', rule.toString());
                 const executor = rule.evaluate(context);
                 if (executor) {
+                    satisfied.push(rule);
                     executors.push(executor);
                 }
             }
 
             // Execute all collected executors and track if any outputs were changed
             for (const executor of executors) {
+                const idx = executors.indexOf(executor);
+
                 const effect = executor.execute(context);
+                // Log the rule being executed
+                if (satisfied[idx]) context.addToLog(satisfied[idx], effect);
+
+                if (effect.exception) {
+                    this.debug('Executor threw an exception:', effect.exception);
+                    iterate = false;
+                    break;
+                }
                 if (effect.changed) {
                     this.debug(`Executor changed output key: ${effect.changed} to value: ${context.getOutput(effect.changed)}`);
                     iterate = true;

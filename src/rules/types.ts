@@ -1,3 +1,4 @@
+import type { ExecutableAction } from "./executable";
 import type { Expression } from "./syntax/expression";
 
 export interface WorkingContext {
@@ -202,5 +203,6 @@ export interface NamedParameter extends TypedParameter {
 export interface FunctionDefinition {
     name: string;
     parameters: NamedParameter[];
+    lines?: ExecutableAction[];
     expression: Expression;
 }

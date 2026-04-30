@@ -1,7 +1,14 @@
 import { Exception } from "../exception";
 import { cloneDeep, getPathValue, pathExists } from "../utils";
-import type { WorkingContext } from "../types";
+import type { RuleEffect, WorkingContext } from "../types";
 import type { WorkSpace } from "./work.space";
+import type { AbstractRule } from "../rules/abstract.rule";
+
+export interface LoggedRule {
+    rule: AbstractRule;
+    effect: RuleEffect;
+}
+
 
 export class WorkingMemory implements WorkingContext {
 
@@ -13,12 +20,15 @@ export class WorkingMemory implements WorkingContext {
 
     private output: any;
 
+    private logged: LoggedRule[];
+
     constructor(data: any, workspace: WorkSpace) {
         this.input = data === undefined ? {} : data;
         this.workspace = workspace;
 
         this.exceptions = [];
         this.output = cloneDeep(this.input);
+        this.logged = [];
     }
 
     public hasConstant(key: string): boolean {
@@ -59,6 +69,18 @@ export class WorkingMemory implements WorkingContext {
 
     public getExceptions(): Exception[] {
         return this.exceptions;
+    }
+
+    public addToLog(rule: AbstractRule, effect: RuleEffect): void {
+        this.logged.push({ rule, effect });
+    }
+
+    public clearLog(): void {
+        this.logged = [];
+    }
+
+    public getLog(): LoggedRule[] {
+        return new Array(...this.logged);
     }
 
     public setOutput(key: string, value: any): void {

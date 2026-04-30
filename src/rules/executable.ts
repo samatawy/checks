@@ -12,6 +12,8 @@ import { getReturnType, isAtomicType, mergeValidationResults } from "./utils";
  */
 export abstract class ExecutableAction implements Executor, HasValidity {
 
+    protected preparedEffect?: Partial<RuleEffect>;
+
     /**
      * What data keys are required for this action to be evaluated? 
      * @returns a set of data keys required for this action to be evaluated.
@@ -23,6 +25,11 @@ export abstract class ExecutableAction implements Executor, HasValidity {
      * @returns a set of data keys that will be changed when this action is executed.
      */
     public abstract changes(): Set<string>;
+
+    public prepareEffect(partial: Partial<RuleEffect>): this {
+        this.preparedEffect = { ...this.preparedEffect, ...partial };
+        return this;
+    };
 
     public abstract toString(): string;
 
@@ -96,7 +103,7 @@ export class OutputAction extends ExecutableAction {
             return {};
         } else {
             context.setOutput(this.key, newValue);
-            return { changed: this.key };
+            return { ...this.preparedEffect, changed: this.key };
         }
     }
 }
@@ -168,7 +175,7 @@ export class CompositeAction extends ExecutableAction {
                 mergedEffect.changed = changes + effect.changed;
             }
         }
-        return mergedEffect;
+        return { ...this.preparedEffect, ...mergedEffect };
     }
 }
 
@@ -203,6 +210,6 @@ export class ExceptionThrower extends ExecutableAction {
 
     public execute(context: WorkingContext): RuleEffect {
         context.addException(this.errorMessage, context);
-        return { exception: this.errorMessage };
+        return { ...this.preparedEffect, exception: this.errorMessage };
     }
 }    

@@ -2,6 +2,7 @@ import type { Expression } from "../..";
 import type { AtomicType, FunctionDefinition, NamedParameter, PropertyType } from "../types";
 import { isAtomicType } from "../utils";
 import { ExpressionParser } from "./expression.parser";
+import { ExecutableParser } from "./executable.parser";
 import type { ParserOptions } from "./rule.parser";
 
 /**
@@ -18,11 +19,19 @@ export class FunctionParser {
 
     private expressionParser: ExpressionParser;
 
+    private executableParser: ExecutableParser;
+
     constructor(options: ParserOptions) {
         this.options = options;
         this.expressionParser = new ExpressionParser(this.options);
+        this.executableParser = new ExecutableParser(this.options);
     }
 
+    /**
+     * Parse a function definition from its syntax string and return the corresponding FunctionDefinition object.
+     * @param syntax The syntax string of the function to parse.
+     * @returns The parsed FunctionDefinition object if successful, null otherwise.
+     */
     public parse(syntax: string): FunctionDefinition | null {
 
         let defined: FunctionDefinition | null = null;
@@ -31,8 +40,8 @@ export class FunctionParser {
         }
 
         // If this is in the form name(arg1, arg2) { expr } attempt parsing
-        if (syntax.match(/\w+\(.*\)\s*{.*}/g)) {
-            console.debug('Syntax passes initial match');
+        if (syntax.match(/\w+\(.*\)\s*{.*}/g) || syntax.match(/\w+\(.*\)\s*=\s*.*$/g)) {
+            // console.debug('Syntax passes initial match');
             defined = this.parseCustomFunction(syntax);
         } else {
             console.debug('Syntax does not pass initial match');
@@ -50,17 +59,62 @@ export class FunctionParser {
         if (syntax.length === 0) {
             return null;
         }
+        const simple_match = syntax.match(/(\w+)\s*\((.*)\)\s*=\s*(.*)$/);
+        if (simple_match) {
+            // console.debug('Syntax matches simple function pattern, attempting to parse as simple function expression');
+
+            const name = simple_match[1]!;
+            const paramsSyntax = simple_match[2]!;
+            const bodySyntax = simple_match[3]!;
+            const params = this.readParameters(paramsSyntax);
+            const expression = this.parseBody(bodySyntax);
+            return { name, parameters: params, expression };
+        }
+
         const match = syntax.match(/(\w+)\s*\((.*)\)\s*{(.*)}$/);
         if (match) {
-            console.debug('Syntax matches function pattern, attempting to parse as function expression');
+            // console.debug('Syntax matches function pattern, attempting to parse as function expression');
 
             const name = match[1]!;
             const paramsSyntax = match[2]!;
             const bodySyntax = match[3]!;
             const params = this.readParameters(paramsSyntax);
-            const expression = this.parseBody(bodySyntax);
-            return { name, parameters: params, expression };
-            // return CustomFunctionExpression.from({ name, parameters: params, expression }, []);
+
+            // Split body into lines and return expression (last line)
+            const all_lines = bodySyntax.split(';').map(s => s.trim()).filter(s => s.length > 0);
+            if (all_lines.length === 0) {
+                throw new Error('Function body cannot be empty');
+            }
+            const return_line = all_lines[all_lines.length - 1]!;
+            // console.debug('Parsed function body lines:', all_lines);
+            // console.debug('Return line identified as:', return_line);
+            if (!return_line.trim().toLowerCase().startsWith('return ')) {
+                throw new Error('Last line of function body must be a return statement');
+            }
+            // Parse lines if they exist into executables 
+            // that will be executed in order before the return expression is evaluated
+            let parsed_lines = [];
+            const other_lines = all_lines.slice(0, all_lines.length - 1);
+            if (other_lines.length > 0) {
+                for (const line of other_lines) {
+                    if (line.trim().length === 0) {
+                        continue;
+                    }
+                    if (line.trim().toLowerCase().startsWith('return ')) {
+                        throw new Error('Only the last line of the function body can be a return statement');
+                    }
+                    const parsed = this.executableParser.parse(line);
+                    if (parsed) {
+                        parsed_lines.push(parsed);
+                    } else {
+                        throw new Error(`Failed to parse line ${line} in function body.`);
+                    }
+                }
+            }
+
+            const parsed_return = this.parseBody(return_line.trim().substring(7).trim());
+            return { name, parameters: params, lines: parsed_lines, expression: parsed_return };
+
         } else {
             console.debug('Syntax does not match function pattern, cannot parse as function expression');
         }

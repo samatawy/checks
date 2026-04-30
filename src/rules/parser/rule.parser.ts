@@ -41,6 +41,11 @@ export class RuleParser {
         this.executableParser = new ExecutableParser(this.options);
     }
 
+    /**
+     * Parse a rule from its syntax string and return the corresponding AbstractRule implementation.
+     * @param syntax The syntax string of the rule to parse.
+     * @returns The parsed implementation of AbstractRule object if successful, null otherwise.
+     */
     public parse(syntax: string): AbstractRule | null {
 
         const metadata = this.parseMetadata({ syntax });

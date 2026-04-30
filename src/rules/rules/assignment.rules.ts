@@ -4,6 +4,7 @@ import type { Executor, WorkingContext, RuleEffect, TypeChecker, ValidationResul
 import { RuleParser } from "../parser/rule.parser";
 import { getReturnType, isAtomicType, mergeValidationResults } from "../utils";
 import type { WorkSpace } from "../engine/work.space";
+import { OutputAction } from "../executable";
 
 export class OutputRule extends AbstractRule {
 
@@ -78,14 +79,15 @@ export class OutputRule extends AbstractRule {
         if (oldValue === newValue) {
             return null;
         } else {
-            return {
-                changes: () => new Set(this.outputKey),
+            return new OutputAction(this.outputKey, this.expression);
+            // {
+            //     changes: () => new Set(this.outputKey),
 
-                execute: (ctx: WorkingContext): RuleEffect => {
-                    ctx.setOutput(this.outputKey, newValue);
-                    return { changed: this.outputKey };
-                }
-            }
+            //     execute: (ctx: WorkingContext): RuleEffect => {
+            //         ctx.setOutput(this.outputKey, newValue);
+            //         return { changed: this.outputKey };
+            //     }
+            // }
         }
     }
 
