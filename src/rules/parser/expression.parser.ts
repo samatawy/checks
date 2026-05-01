@@ -7,6 +7,7 @@ import { LogicalExpression } from "../syntax/logical.expression";
 import { TernaryExpression } from "../syntax/ternary.expression";
 import { VariableExpression } from "../syntax/variable.expression";
 import type { ParserOptions, WorkSpace } from "../..";
+import { LambdaExpression } from "../syntax/lambda.expression";
 
 /**
  * Parser class for parsing expressions from rule syntax.
@@ -57,6 +58,11 @@ export class ExpressionParser {
             // console.debug(`Expression is enclosed in parentheses, stripping and parsing inner expression: ${syntax}`);
             const innerSyntax = this.stripEnclosingParentheses(syntax);
             return this.parse(innerSyntax);
+        }
+
+        const lambdaExpr = this.readLambdaExpression(tokens);
+        if (lambdaExpr) {
+            return lambdaExpr;
         }
 
         const functionExpr = this.readFunctionExpression(tokens);
@@ -243,6 +249,40 @@ export class ExpressionParser {
             const falseExpr = this.parse(falseSyntax);
             return new TernaryExpression(conditionExpr, trueExpr, falseExpr);
         }
+        return null;
+    }
+
+    protected readLambdaExpression(tokens: string[]): LambdaExpression | null {
+        let colonIndex = -1;
+        let parenthesesCount = 0;
+
+        const match = tokens.join(' ').match(/^(\w+)\s*:\s*(.*)$/);
+        if (match) {
+            const variableSyntax = match[1]!;
+            const expressionSyntax = match[2]!;
+            const expression = this.parse(expressionSyntax);
+            return new LambdaExpression(variableSyntax, expression);
+        }
+
+        // for (let i = 0; i < tokens.length; i++) {
+        //     if (tokens[i] === '(') {
+        //         parenthesesCount++;
+        //     } else if (tokens[i] === ')') {
+        //         parenthesesCount--;
+        //     } else if (parenthesesCount === 0) {
+        //         if (tokens[i] === ':') {
+        //             colonIndex = i;
+        //             break;
+        //         }
+        //     }
+        // }
+
+        // if (colonIndex !== -1) {
+        //     const variableSyntax = tokens.slice(0, colonIndex).join(' ');
+        //     const expressionSyntax = tokens.slice(colonIndex + 1).join(' ');
+        //     const expression = this.parse(expressionSyntax);
+        //     return new LambdaExpression(variableSyntax, expression);
+        // }
         return null;
     }
 

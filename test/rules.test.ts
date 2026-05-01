@@ -141,7 +141,14 @@ describe('rules test', () => {
     expect(ctx.getOutput('year')).toEqual(new Date().getFullYear());
     expect(ctx.getOutput('calc')).toBe(15);
 
-    console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
+    space.addRule('if count(person.children) > 2 then person.child_count = count(person.children); person.age_range = range(person.children)');
+    const ctx2 = space.loadContext({ person: { children: [1, 8, 16] } });
+    expect(space.applicableRules(ctx2).length).toBe(1);
+    space.process(ctx2);
+    expect(ctx2.getOutput('person.child_count')).toBe(3);
+    expect(ctx2.getOutput('person.age_range')).toBe(15);
+
+    // console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
   });
 
   it('define custom functions and use them in rules', async () => {
@@ -192,7 +199,7 @@ describe('rules test', () => {
     space.process(ctx2);
     expect(ctx2.getOutput('result')).toBe(6);
 
-    console.debug('Logged rules during processing:', ctx2.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
+    // console.debug('Logged rules during processing:', ctx2.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
   });
 
 
@@ -226,7 +233,7 @@ describe('rules test', () => {
     const output = ctx.getOutput();
     expect(output.nested.value).toBe(12.5);
 
-    console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
+    // console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
   });
 
   it('handle composite actions', async () => {
@@ -361,6 +368,7 @@ describe('rules test', () => {
     const parser = new FunctionsFileReader({ accept: 'partial' });
     const content = `
       triple(n: number) = n * 3
+      // all_even(numbers: number[]) = numbers * 3
 
       join_spaced(s1: string, s2: string) { 
         // return concat(s1, concat(" ", s2)) }
@@ -412,7 +420,7 @@ describe('rules test', () => {
     expect(output.tax).toBe(6);
     expect(output.tax_rate).toBeUndefined();
 
-    console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
+    // console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
   });
 
   it('handle conflicting rule effects', async () => {
@@ -441,7 +449,7 @@ describe('rules test', () => {
     ctx = space.loadContext({ x: 35 });
     expect(space.process(ctx).y).toBe(30);
 
-    console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
+    // console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
 
   });
 
@@ -451,7 +459,8 @@ describe('rules test', () => {
       key: 'Person',
       properties: {
         name: 'string',
-        age: 'number'
+        age: 'number',
+        children: 'string[]',
       }
     });
 
@@ -461,8 +470,14 @@ describe('rules test', () => {
     expect(personType!.properties!.name).toBe('string');
     expect(personType!.properties!.age).toBe('number');
 
-    const validInput = { Person: { name: 'Alice', age: 30 } };
+    const validInput = { Person: { name: 'Alice', age: 30, children: ['Bob', 'Charlie'] } };
     expect(types.validateData(validInput).valid).toBe(true);
+
+    const invalidArrayInput = { Person: { name: 'Alice', age: 30, children: [26, 'Bob'] } };
+    const invalidArrayResult = types.validateData(invalidArrayInput);
+    // console.debug(invalidArrayResult);
+    expect(invalidArrayResult.valid).toBe(false);
+    expect(invalidArrayResult.errors?.length).toBeGreaterThan(0);
 
     const invalidInput = { Person: { name: 50, age: 'thirty' }, Extra: true };
     const invalidResult = types.validateData(invalidInput);
@@ -494,7 +509,16 @@ describe('rules test', () => {
       key: 'Person',
       properties: {
         name: 'string',
-        age: 'number'
+        age: 'number',
+        children: 'string[]',
+        ages: 'number[]',
+        family: {
+          type: 'array',
+          items: {
+            name: 'string',
+            age: 'number',
+          }
+        }
       }
     });
 
@@ -502,6 +526,11 @@ describe('rules test', () => {
     const typeCheckResult = rule.checkTypes(types);
     // console.debug(typeCheckResult);
     expect(typeCheckResult.valid).toBe(true);
+
+    const arrayRule = IfThenRule.parse('if count(Person.children) > 2 then Person.hasManyChildren = true; Person.family_range = range(Person.family.age)');
+    const arrayTypeCheckResult = arrayRule.checkTypes(types);
+    // console.debug(arrayTypeCheckResult);
+    expect(arrayTypeCheckResult.valid).toBe(true);
 
     const invalidRule = IfThenRule.parse('if Person.height > 180 then Person.isTall = true');
     const invalidTypeCheckResult = invalidRule.checkTypes(types);
@@ -581,6 +610,106 @@ describe('rules test', () => {
     expect(result.types[0]!.properties!.name).toBe('string');
     expect(result.types[0]!.properties!.age).toBe('number');
     expect(result.errors.length).toBe(0);
+  });
+
+  it('handles arrays in rules and types', async () => {
+    const space = new WorkSpace({ strict_inputs: true, strict_outputs: false });
+    space.getTypeMemory().addRootType({
+      key: 'Person',
+      properties: {
+        name: 'string',
+        age: 'number',
+        children: 'string[]',
+        ages: 'number[]',
+        family: {
+          type: 'array',
+          items: {
+            name: 'string',
+            age: 'number',
+          }
+        }
+      }
+    });
+
+    space.addRule('if count(Person.children) > 2 then Person.hasManyChildren = true; Person.family_range = range(Person.ages)');
+    space.addRule('set age_range = range(Person.family.age)');
+
+    const ctx = space.loadContext({
+      Person: {
+        name: 'Alice', age: 30,
+        children: ['Bob', 'Charlie', 'David'], ages: [5, 10, 15],
+        family: []
+      }
+    });
+    expect(space.applicableRules(ctx).length).toBe(1);
+    const output = space.process(ctx);
+    // console.debug('Output with arrays:', output);
+    expect(output.Person.hasManyChildren).toBe(true);
+    expect(output.Person.family_range).toBe(10);
+
+    const ctx2 = space.loadContext({
+      Person: {
+        name: 'Alice', age: 30,
+        // children: ['Bob', 'Charlie', 'David'], ages: [5, 10, 15],
+        family: [{ name: 'Bob', age: 5 }, { name: 'Charlie', age: 10 }, { name: 'David', age: 15 }]
+      }
+    });
+    // expect(space.applicableRules(ctx2).length).toBe(2);
+    const output2 = space.process(ctx2);
+    // console.debug('Output with family array:', output2);
+    expect(output2.age_range).toBe(10);
+
+    const invalidCtx = space.loadContext({ Person: { name: 'Alice', age: 30, children: ['Bob', 'Charlie', 'David'], ages: [5, 'ten', 15] } });
+    const invalidOutput = space.process(invalidCtx);
+    // console.debug('Output with invalid array types:', JSON.stringify(invalidCtx.getExceptions()));
+    // console.debug('Output with invalid array types:', invalidCtx.getExceptions());
+    // expect(() => space.process(invalidCtx)).toThrow(); // context processing no longer throws.
+  });
+
+  it('handles lambda expressions', async () => {
+    const space = new WorkSpace({ strict_inputs: true, strict_outputs: false });
+    space.getTypeMemory().addRootType({
+      key: 'Person',
+      properties: {
+        name: 'string',
+        age: 'number',
+        children: 'string[]',
+        ages: 'number[]',
+        family: {
+          type: 'array',
+          items: {
+            name: 'string',
+            age: 'number',
+          }
+        }
+      }
+    });
+
+    space.addRule('if every(Person.family, member : member.age > 10) then Person.hasOldChildren = true else Person.hasOldChildren = false');
+
+    const ctx = space.loadContext({
+      Person: {
+        name: 'Alice', age: 30,
+        family: [{ name: 'Bob', age: 15 }, { name: 'Charlie', age: 25 }, { name: 'David', age: 20 }]
+      }
+    });
+    expect(space.applicableRules(ctx).length).toBe(1);
+    const output = space.process(ctx);
+    // console.debug('Output with lambda expression:', output);
+    expect(output.Person.hasOldChildren).toBe(true);
+
+    space.clearRules();
+    space.addRule('set adultChildren = count(filter(Person.family, member : member.age >= 21))');
+
+    const ctx2 = space.loadContext({
+      Person: {
+        name: 'Alice', age: 30,
+        family: [{ name: 'Bob', age: 5 }, { name: 'Charlie', age: 8 }, { name: 'David', age: 22 }]
+      }
+    });
+    const output2 = space.process(ctx2);
+    // console.debug('Output with lambda expression - no older members:', output2);
+    expect(output2.adultChildren).toBe(1);
   });
 
 });

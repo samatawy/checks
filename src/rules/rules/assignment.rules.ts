@@ -58,6 +58,7 @@ export class OutputRule extends AbstractRule {
                 checks.push({ valid: false, errors: [`Undefined output variable: ${this.outputKey}`] });
             }
             const keyType = checker.getType(this.outputKey);
+            // TODO: Support array types in output validation?
             if (!isAtomicType(keyType!)) {
                 checks.push({ valid: false, errors: [`Output key '${this.outputKey}' is not an atomic type`] });
             }

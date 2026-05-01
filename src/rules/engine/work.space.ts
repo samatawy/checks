@@ -3,11 +3,12 @@ import { pathExists } from "../utils";
 import type { Executor, RootType, WorkingContext } from "../types";
 import { WorkingMemory } from "./working.memory";
 import { RuleGraph } from "./graph/rule.graph";
-import { RuleNode, type AbstractNode } from "./graph/nodes";
+import { CombinationNode, RuleNode, type AbstractNode } from "./graph/nodes";
 import { RuleParser } from "../parser/rule.parser";
 import { RuleMemory } from "./rule.memory";
 import { TypeMemory } from "./type.memory";
 import { FunctionMemory } from "./function.memory";
+import type { A } from "vitest/dist/chunks/environment.d.cL3nLXbE.js";
 
 /**
  * Options for configuring the behavior of the WorkSpace, including debugging, conflict resolution, and iteration limits.
@@ -219,7 +220,7 @@ export class WorkSpace {
 
         let applicable = new Set<AbstractRule>();
 
-        for (let key of context.rootKeys()) {
+        for (const key of context.rootKeys()) {
             const root = this.graph.findRoot(key);
             if (!root) {
                 this.debug('No root found for key:', key);
@@ -228,36 +229,62 @@ export class WorkSpace {
             if (root) {
                 let currentContext = context.getData(key);
                 let currentNode: AbstractNode = root;
-
-                while (currentContext) {
-                    if (currentNode instanceof RuleNode) {
-                        applicable.add(currentNode.rule);
-                    }
-                    for (const child of currentNode.children) {
-                        if (child instanceof RuleNode) {
-                            applicable.add(child.rule);
-                        }
-                    }
-                    const childKeys = Object.keys(currentContext);
-                    if (childKeys.length === 0) {
-                        break;
-                    }
-
-                    for (const childKey of Object.keys(currentContext)) {
-                        const childNode = currentNode.findChild(childKey);
-                        if (childNode) {
-                            currentNode = childNode;
-                            currentContext = currentContext[childKey];
-                        } else {
-                            currentContext = null;
-                        }
-                    }
+                const found = this.readRulesFromNode(currentNode, currentContext);
+                for (const rule of found) {
+                    applicable.add(rule);
                 }
             }
         }
 
-        let checked: AbstractRule[] = Array.from(applicable).filter(rule => rule.applicable(context));
-        return checked;
+        return Array.from(applicable);
+    }
+
+    private readRulesFromNode(currentNode: AbstractNode, currentContext: any): Set<AbstractRule> {
+        let found: Set<AbstractRule> = new Set();
+        if (currentNode instanceof RuleNode) {
+            found.add(currentNode.rule);
+            return found;
+        }
+        for (const child of currentNode.children) {
+            if (child instanceof RuleNode) {
+                found.add(child.rule);
+            }
+            if (child instanceof CombinationNode) {
+                const childRules = this.readRulesFromNode(child, currentContext);
+                for (const rule of childRules) {
+                    found.add(rule);
+                }
+            }
+        }
+        if (Array.isArray(currentContext)) {
+            // Iterate over child items of array context
+            for (let itemContext of currentContext) {
+                const itemNodes = this.readRulesFromNode(currentNode, itemContext);
+                for (const rule of itemNodes) {
+                    found.add(rule);
+                }
+            }
+            // return found;
+        } else if (typeof currentContext === 'object' && currentContext !== null) {
+            // Iterate over child keys of object context
+            const childKeys = Object.keys(currentContext);
+
+            if (childKeys.length === 0) {
+                return found;
+            } else {
+                for (const childKey of childKeys) {
+                    const childNode = currentNode.findChild(childKey);
+                    if (childNode) {
+                        const childRules = this.readRulesFromNode(childNode, currentContext[childKey]);
+                        for (const rule of childRules) {
+                            found.add(rule);
+                        }
+                    }
+                }
+                // return found;
+            }
+        }
+        return found;
     }
 
     /**
@@ -280,7 +307,12 @@ export class WorkSpace {
             const errorMessage = `Input data failed type validation with errors: ${typeCheck.errors?.join('; ')}`;
             this.debug(errorMessage);
             if (this.options.strict_inputs) {
-                throw new Error(errorMessage);
+                for (const error of typeCheck.errors || []) {
+                    this.debug('Type validation error:', error);
+                    context.addException(error, { type: 'input_validation' });
+                }
+                return context.getOutput();
+                // throw new Error(errorMessage);
             } else {
                 this.debug('Proceeding with rule evaluation despite type validation errors due to non-strict input settings.');
             }

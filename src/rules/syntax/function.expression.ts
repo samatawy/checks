@@ -1,5 +1,5 @@
-import type { TypeChecker, TypedParameter, ValidationResult, WorkingContext } from "../types";
-import { getReturnType, mergeValidationResults } from "../utils";
+import type { ArrayType, AtomicType, TypeChecker, TypedParameter, ValidationResult, WorkingContext } from "../types";
+import { getReturnType, isArrayType, mergeValidationResults } from "../utils";
 import { Expression } from "./expression";
 
 export abstract class FunctionExpression extends Expression {
@@ -36,6 +36,8 @@ export abstract class FunctionExpression extends Expression {
      */
     public abstract expectsParameters(): TypedParameter[];
 
+    public abstract returnsType(): AtomicType | ArrayType;
+
     public checkTypes(checker?: TypeChecker): ValidationResult {
         if (!checker || !checker.strictInputs()) {
             return { valid: true };
@@ -57,12 +59,27 @@ export abstract class FunctionExpression extends Expression {
                 break;
             }
             const argType = getReturnType(arg, checker);
-            if (argType != expected[i]!.type) {
+            const expectedType = expected[i]!.type;
+            // console.debug(`Checking argument ${i + 1} for function ${this.name}: expected type ${expectedType}, actual type ${argType}`);
+            if (expectedType === 'array') {
+                // This is a special case, parameters of type array can accept any array type (string[], number[], etc.)
+                if (!isArrayType(argType!)) {
+                    // console.debug(`Array Type mismatch for argument ${i + 1} in function ${this.name}: expected array, got ${argType} (${arg})`);
+                    checks.push({
+                        valid: false,
+                        errors: [`Argument ${i + 1} for function ${this.name} must be an array type, but got ${argType}`],
+                    });
+                }
+            } else if (argType != expectedType) {
+                // console.debug(`Type mismatch for argument ${i + 1} in function ${this.name}: expected ${expectedType}, got ${argType} (${arg})`);
                 checks.push({
                     valid: false,
-                    errors: [`Argument ${i + 1} for function ${this.name} must be of type ${expected[i]!.type}, but got ${argType}`],
+                    errors: [`Argument ${i + 1} for function ${this.name} must be of type ${expectedType}, but got ${argType}`],
                 });
             }
+
+            // Dive into the argument's own type checks as well
+            checks.push(arg.checkTypes(checker));
             i++;
         }
         if (i < expected.length) {
@@ -85,20 +102,36 @@ export abstract class FunctionExpression extends Expression {
 
 export abstract class StringFunctionExpression extends FunctionExpression {
 
+    public returnsType(): AtomicType | ArrayType {
+        return 'string';
+    }
+
     public abstract evaluate(context: WorkingContext): string;
 }
 
 export abstract class NumericFunctionExpression extends FunctionExpression {
+
+    public returnsType(): AtomicType | ArrayType {
+        return 'number';
+    }
 
     public abstract evaluate(context: WorkingContext): number;
 }
 
 export abstract class BooleanFunctionExpression extends FunctionExpression {
 
+    public returnsType(): AtomicType | ArrayType {
+        return 'boolean';
+    }
+
     public abstract evaluate(context: WorkingContext): boolean;
 }
 
 export abstract class DateFunctionExpression extends FunctionExpression {
+
+    public returnsType(): AtomicType | ArrayType {
+        return 'date';
+    }
 
     public abstract evaluate(context: WorkingContext): Date;
 }

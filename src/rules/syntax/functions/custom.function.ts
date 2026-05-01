@@ -1,5 +1,5 @@
-import type { FunctionDefinition, TypeChecker, TypedParameter, ValidationResult, WorkingContext } from "../../types";
-import { getReturnType, mergeValidationResults } from "../../utils";
+import type { ArrayType, AtomicType, FunctionDefinition, TypeChecker, TypedParameter, ValidationResult, WorkingContext } from "../../types";
+import { getReturnType, isArrayType, mergeValidationResults } from "../../utils";
 import type { Expression } from "../expression";
 import { FunctionExpression } from "../function.expression";
 
@@ -26,6 +26,17 @@ export class CustomFunctionExpression extends FunctionExpression {
             }
         }
         return vars;
+    }
+
+    public returnsType(): AtomicType | ArrayType {
+        if (!this.definition) {
+            throw new Error(`Function definition not found for function ${this.name}`);
+        }
+        const returnType = getReturnType(this.definition.expression);
+        if (!returnType) {
+            throw new Error(`Unable to determine return type of function ${this.name}`);
+        }
+        return returnType;
     }
 
     public expectsParameters(): TypedParameter[] {
@@ -56,12 +67,25 @@ export class CustomFunctionExpression extends FunctionExpression {
                 break;
             }
             const argType = getReturnType(arg, checker);
-            if (argType != expected[i]!.type) {
+            const expectedType = expected[i]!.type;
+            if (expectedType === 'array') {
+                // This is a special case, parameters of type array can accept any array type (string[], number[], etc.)
+                if (!isArrayType(argType!)) {
+                    // console.debug(`Array Type mismatch for argument ${i + 1} in function ${this.name}: expected array, got ${argType} (${arg})`);
+                    checks.push({
+                        valid: false,
+                        errors: [`Argument ${i + 1} for function ${this.name} must be of type array, but got ${argType}`],
+                    });
+                }
+            } else if (argType != expectedType) {
+                // console.debug(`Type mismatch for argument ${i + 1} in function ${this.name}: expected ${expectedType}, got ${argType} (${arg})`);
                 checks.push({
                     valid: false,
-                    errors: [`Argument ${i + 1} for function ${this.name} must be of type ${expected[i]!.type}, but got ${argType}`],
+                    errors: [`Argument ${i + 1} for function ${this.name} must be of type ${expectedType}, but got ${argType}`],
                 });
             }
+
+            // Dive into the argument's own type checks as well
             checks.push(arg.checkTypes(checker));
             i++;
         }
@@ -125,6 +149,7 @@ class FunctionContext implements WorkingContext {
         } else if (this.parent) {
             return this.parent.getData(key);
         } else {
+            // console.debug(`Undefined variable access: ${key} in function context. Current variables:`, this.variables);
             throw new Error(`Undefined variable: ${key}`);
         }
     }

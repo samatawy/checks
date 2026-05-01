@@ -167,10 +167,17 @@ export type AtomicType = 'string' | 'number' | 'boolean' | 'date';
 
 export type ComplexType = 'object' | 'array';
 
-export type PropertyType = AtomicType | ComplexType | Record<string, ObjectType>;
+export type ArrayType = 'array' | 'string[]' | 'number[]' | 'boolean[]' | 'date[]';
+
+export type PropertyType = AtomicType | ArrayType | ObjectArrayType | ComplexType | Record<string, ObjectType>;
 
 export interface ObjectType {
     [key: string]: PropertyType;
+}
+
+export interface ObjectArrayType {
+    type: 'array';
+    items: ObjectType;
 }
 
 /** A defined root type that can contain nested properties*/
@@ -183,7 +190,7 @@ export interface RootType {
     /**
      * The atomic type of the root type, if applicable. Needed only for root types that are not objects.
      */
-    type?: AtomicType;
+    type?: AtomicType | ArrayType | ComplexType;
 
     /**
      * The properties of the root type, if it is an object. This allows for nested structures and detailed type definitions.
@@ -192,7 +199,7 @@ export interface RootType {
 }
 
 export interface TypedParameter {
-    type: AtomicType;
+    type: AtomicType | ArrayType | 'lambda';
     optional?: boolean;
 }
 

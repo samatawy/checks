@@ -1,3 +1,4 @@
+import { FunctionParser } from "../parser/function.parser";
 import type { FunctionDefinition } from "../types";
 import type { WorkSpaceOptions } from "./work.space";
 
@@ -71,14 +72,22 @@ export class FunctionMemory {
     /**
      * Add a function definition to the memory.
      * @param func The function definition to add.
+     * @throws Error if the function name is reserved or already exists in the memory.
      */
     public addFunction(func: FunctionDefinition): void {
+        if (FunctionParser.isReservedName(func.name)) {
+            throw new Error(`Cannot add function with reserved name: ${func.name}`);
+        }
+        if (this.functions.has(func.name)) {
+            throw new Error(`Function with name ${func.name} already exists`);
+        }
         this.functions.set(func.name, func);
     }
 
     /**
      * Add multiple function definitions to the memory.
      * @param funcs The function definitions to add, can be a Map, Record, or array.
+     * @throws Error if any function name is reserved or already exists in the memory.
      */
     public addFunctions(funcs: Map<string, FunctionDefinition> | Record<string, FunctionDefinition> | FunctionDefinition[]): void {
         if (funcs instanceof Map) {

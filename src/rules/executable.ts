@@ -1,5 +1,5 @@
 import type { Expression } from "./syntax/expression";
-import type { Executor, WorkingContext, RuleEffect, HasValidity, TypeChecker, ValidationResult, AtomicType } from "./types";
+import type { Executor, WorkingContext, RuleEffect, HasValidity, TypeChecker, ValidationResult } from "./types";
 import { getReturnType, isAtomicType, mergeValidationResults } from "./utils";
 
 /**
@@ -81,6 +81,7 @@ export class OutputAction extends ExecutableAction {
                 checks.push({ valid: false, errors: [`Undefined output variable: ${this.key}`] });
             }
             const keyType = checker.getType(this.key);
+            // TODO: Support array types in output validation?
             if (!isAtomicType(keyType!)) {
                 checks.push({ valid: false, errors: [`Output key '${this.key}' is not an atomic type`] });
             }

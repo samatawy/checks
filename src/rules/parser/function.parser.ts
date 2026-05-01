@@ -1,9 +1,21 @@
-import type { Expression } from "../..";
 import type { AtomicType, FunctionDefinition, NamedParameter, PropertyType } from "../types";
 import { isAtomicType } from "../utils";
 import { ExpressionParser } from "./expression.parser";
 import { ExecutableParser } from "./executable.parser";
 import type { ParserOptions } from "./rule.parser";
+import { ArrayInspectionFunction } from "../syntax/functions/array.inspection.functions";
+import { LambdaFunctionExpression } from "../syntax/functions/lambda.functions";
+import { ConstantDates, ConstantNumbers } from "../syntax/functions/constant.functions";
+import { StringManipulationFunction } from "../syntax/functions/string.manipulation.functions";
+import { StringComparisonFunction } from "../syntax/functions/string.comparison.functions";
+import { StringInspectionFunction } from "../syntax/functions/string.inspection.functions";
+import { NumericManipulationFunction } from "../syntax/functions/numeric.manipulation.functions";
+import { NumericComparisonFunction } from "../syntax/functions/numeric.comparison.functions";
+import { TrigonomicFunction } from "../syntax/functions/numeric.trigonometric.functions";
+import { DateTimeManipulationFunction } from "../syntax/functions/datetime.manipulation.functions";
+import { DateTimeComparisonFunction } from "../syntax/functions/datetime.comparison.functions";
+import { DateTimeInspectionFunction } from "../syntax/functions/datetime.inspection.functions";
+import type { Expression } from "../syntax/expression";
 
 /**
  * Parser class for parsing function syntax into CustomFunctionExpression objects.
@@ -21,6 +33,31 @@ export class FunctionParser {
 
     private executableParser: ExecutableParser;
 
+    private static reserved_names: Set<string>;
+
+    static {
+        FunctionParser.reserved_names = new Set<string>([
+            ...ConstantNumbers.names,
+            ...ConstantDates.names,
+            ...ArrayInspectionFunction.names,
+            ...LambdaFunctionExpression.names,
+            ...StringManipulationFunction.names,
+            ...StringComparisonFunction.names,
+            ...StringInspectionFunction.names,
+            ...NumericManipulationFunction.names,
+            ...NumericComparisonFunction.names,
+            ...TrigonomicFunction.names,
+            ...DateTimeManipulationFunction.names,
+            ...DateTimeComparisonFunction.names,
+            ...DateTimeInspectionFunction.names,
+            // Add more built-in function names here as needed
+        ]);
+    }
+
+    static isReservedName(name: string): boolean {
+        return FunctionParser.reserved_names.has(name);
+    }
+
     constructor(options: ParserOptions) {
         this.options = options;
         this.expressionParser = new ExpressionParser(this.options);
@@ -31,6 +68,7 @@ export class FunctionParser {
      * Parse a function definition from its syntax string and return the corresponding FunctionDefinition object.
      * @param syntax The syntax string of the function to parse.
      * @returns The parsed FunctionDefinition object if successful, null otherwise.
+     * @throws An error if the syntax is unrecognized or invalid, or if the function name is reserved.
      */
     public parse(syntax: string): FunctionDefinition | null {
 
@@ -64,6 +102,9 @@ export class FunctionParser {
             // console.debug('Syntax matches simple function pattern, attempting to parse as simple function expression');
 
             const name = simple_match[1]!;
+            if (FunctionParser.isReservedName(name)) {
+                throw new Error(`Cannot define function with reserved name: ${name}`);
+            }
             const paramsSyntax = simple_match[2]!;
             const bodySyntax = simple_match[3]!;
             const params = this.readParameters(paramsSyntax);
@@ -76,6 +117,9 @@ export class FunctionParser {
             // console.debug('Syntax matches function pattern, attempting to parse as function expression');
 
             const name = match[1]!;
+            if (FunctionParser.isReservedName(name)) {
+                throw new Error(`Cannot define function with reserved name: ${name}`);
+            }
             const paramsSyntax = match[2]!;
             const bodySyntax = match[3]!;
             const params = this.readParameters(paramsSyntax);
@@ -124,6 +168,7 @@ export class FunctionParser {
     protected readParameters(syntax: string): NamedParameter[] {
         // Parse parameters if any are provided, otherwise return an empty array
         // Parameters are expected in the form "name: type, name2: type2, ..."
+        // Only atomic type parameters are allowed for now
         const params: NamedParameter[] = [];
         const paramSyntaxes = syntax.split(',').map(s => s.trim()).filter(s => s.length > 0);
         for (const paramSyntax of paramSyntaxes) {

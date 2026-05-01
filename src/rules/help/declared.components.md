@@ -6,7 +6,7 @@ group: Rule engine
 
 # Declared Components
 
-To configure the Rule engine, you need to declare your business logic in the form of any ofd these declaraive components
+To configure the Rule engine, you need to declare your business logic in the form of any of these declarative components
 
 
 # Types of Rules
