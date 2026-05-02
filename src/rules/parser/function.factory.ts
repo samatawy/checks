@@ -16,7 +16,7 @@ import type { ParserOptions } from "./rule.parser";
 import type { TypeChecker, WorkingContext } from "../..";
 import { CustomFunctionExpression } from "../syntax/functions/custom.function";
 import { ArrayInspectionFunction } from "../syntax/functions/array.inspection.functions";
-import { LambdaFunctionExpression } from "../syntax/functions/lambda.functions";
+import { ArrayLambdaFunction } from "../syntax/functions/array.lambda.functions";
 
 /**
  * Factory class for creating FunctionExpression instances based on function name and arguments.
@@ -49,8 +49,8 @@ export class FunctionFactory {
         if (ArrayInspectionFunction.names.includes(name)) {
             return new ArrayInspectionFunction(name, args[0] as Expression, args.slice(1));
         }
-        if (LambdaFunctionExpression.names.includes(name)) {
-            return new LambdaFunctionExpression(name, args);
+        if (ArrayLambdaFunction.names.includes(name)) {
+            return new ArrayLambdaFunction(name, args);
         }
 
         // Numeric functions

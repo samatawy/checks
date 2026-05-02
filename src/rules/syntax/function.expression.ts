@@ -1,4 +1,4 @@
-import type { ArrayType, AtomicType, TypeChecker, TypedParameter, ValidationResult, WorkingContext } from "../types";
+import type { ArrayType, AtomicType, ObjectArrayType, TypeChecker, TypedParameter, ValidationResult, WorkingContext } from "../types";
 import { getReturnType, isArrayType, mergeValidationResults } from "../utils";
 import { Expression } from "./expression";
 
@@ -36,16 +36,23 @@ export abstract class FunctionExpression extends Expression {
      */
     public abstract expectsParameters(): TypedParameter[];
 
-    public abstract returnsType(): AtomicType | ArrayType;
+    /**
+     * Returns the return type of the function.
+     * The return type can be an atomic type or an array type.
+     * Array Lambda functions can also return object array type.
+     * 
+     * @param checker Optional type checker to use for determining the return type.
+     */
+    public abstract returnsType(checker?: TypeChecker): AtomicType | ArrayType | ObjectArrayType;
 
     public checkTypes(checker?: TypeChecker): ValidationResult {
-        if (!checker || !checker.strictInputs()) {
-            return { valid: true };
-        }
-
         const checks: ValidationResult[] = [];
         for (const arg of this.args) {
             checks.push(arg.checkTypes(checker));
+        }
+
+        if (!checker?.strictSyntax()) {
+            return mergeValidationResults(...checks);
         }
 
         const expected = this.expectsParameters();
@@ -58,8 +65,15 @@ export abstract class FunctionExpression extends Expression {
                 });
                 break;
             }
-            const argType = getReturnType(arg, checker);
+
+            let argType: any = getReturnType(arg, checker);
             const expectedType = expected[i]!.type;
+
+            // accept undefined if strict inputs is false
+            if (argType === undefined && !checker.strictInputs()) {
+                argType = expectedType;
+            }
+
             // console.debug(`Checking argument ${i + 1} for function ${this.name}: expected type ${expectedType}, actual type ${argType}`);
             if (expectedType === 'array') {
                 // This is a special case, parameters of type array can accept any array type (string[], number[], etc.)
@@ -71,6 +85,7 @@ export abstract class FunctionExpression extends Expression {
                     });
                 }
             } else if (argType != expectedType) {
+                // } else if (argType && argType != expectedType) {
                 // console.debug(`Type mismatch for argument ${i + 1} in function ${this.name}: expected ${expectedType}, got ${argType} (${arg})`);
                 checks.push({
                     valid: false,
@@ -89,6 +104,7 @@ export abstract class FunctionExpression extends Expression {
                 errors: [`Function ${this.name} expects at least ${expected.length} arguments, but got ${this.args.length}. Missing parameters: ${missingParams}`],
             });
         }
+
         return mergeValidationResults(...checks);
     }
 
@@ -102,7 +118,7 @@ export abstract class FunctionExpression extends Expression {
 
 export abstract class StringFunctionExpression extends FunctionExpression {
 
-    public returnsType(): AtomicType | ArrayType {
+    public returnsType(checker?: TypeChecker): AtomicType | ArrayType {
         return 'string';
     }
 
@@ -111,7 +127,7 @@ export abstract class StringFunctionExpression extends FunctionExpression {
 
 export abstract class NumericFunctionExpression extends FunctionExpression {
 
-    public returnsType(): AtomicType | ArrayType {
+    public returnsType(checker?: TypeChecker): AtomicType | ArrayType {
         return 'number';
     }
 
@@ -120,7 +136,7 @@ export abstract class NumericFunctionExpression extends FunctionExpression {
 
 export abstract class BooleanFunctionExpression extends FunctionExpression {
 
-    public returnsType(): AtomicType | ArrayType {
+    public returnsType(checker?: TypeChecker): AtomicType | ArrayType {
         return 'boolean';
     }
 
@@ -129,7 +145,7 @@ export abstract class BooleanFunctionExpression extends FunctionExpression {
 
 export abstract class DateFunctionExpression extends FunctionExpression {
 
-    public returnsType(): AtomicType | ArrayType {
+    public returnsType(checker?: TypeChecker): AtomicType | ArrayType {
         return 'date';
     }
 

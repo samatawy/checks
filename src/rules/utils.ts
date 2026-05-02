@@ -1,8 +1,11 @@
 import { BooleanExpression, DateExpression, Expression, NumericExpression, StringExpression } from "./syntax/expression";
 import { BooleanFunctionExpression, DateFunctionExpression, FunctionExpression, NumericFunctionExpression, StringFunctionExpression } from "./syntax/function.expression";
+import { CustomFunctionExpression } from "./syntax/functions/custom.function";
+import { LambdaExpression } from "./syntax/lambda.expression";
 import { LiteralExpression } from "./syntax/literal.expression";
+import { TernaryExpression } from "./syntax/ternary.expression";
 import { VariableExpression } from "./syntax/variable.expression";
-import type { ArrayType, AtomicType, PropertyType, RootType, TypeChecker, ValidationResult } from "./types";
+import type { ArrayType, AtomicType, ComplexType, ObjectArrayType, ObjectType, PropertyType, RootType, TypeChecker, ValidationResult } from "./types";
 
 /**
  * Check if a given key exists in the context, supporting nested keys using dot notation (e.g., "person.name.first").
@@ -55,11 +58,8 @@ export function getPathValue(context: any, key: string): any {
             } else if (currentContext && Array.isArray(currentContext)) {
                 // follow all items in the array and check if the key exists in any of the items, if so we return an array of the values at that key for each item
                 const items = currentContext.map(item => getPathValue(item, k));
-                // if (items.some(item => item !== undefined)) {
+
                 currentContext = items.filter(item => item !== undefined);
-                // } else {
-                //     return undefined;
-                // }
 
             } else {
                 return undefined;
@@ -96,7 +96,7 @@ export function cloneDeep(obj: any): any {
  * @param checker an optional type checker to use for variable expressions.
  * @returns the return type of the expression, or undefined if it cannot be determined.
  */
-export function getReturnType(expression: Expression, checker?: TypeChecker): AtomicType | ArrayType | undefined {
+export function getReturnType(expression: Expression, checker?: TypeChecker): AtomicType | ArrayType | ObjectType | ObjectArrayType | undefined {
     if (expression instanceof LiteralExpression) {
         const value = expression.evaluate();
         const type = typeof value;
@@ -108,20 +108,15 @@ export function getReturnType(expression: Expression, checker?: TypeChecker): At
     }
     else if (expression instanceof VariableExpression) {
         if (checker) {
-            return checker.getType(expression.getVariableName()) as AtomicType | ArrayType | undefined;
+            return checker.getType(expression.getVariableName()) as AtomicType | ArrayType | ObjectType | ObjectArrayType | undefined;
         } else return undefined;
 
-    } else if (expression instanceof FunctionExpression) {
-        return expression.returnsType();
-        // if (expression instanceof StringFunctionExpression) {
-        //     return 'string';
-        // } else if (expression instanceof NumericFunctionExpression) {
-        //     return 'number';
-        // } else if (expression instanceof BooleanFunctionExpression) {
-        //     return 'boolean';
-        // } else if (expression instanceof DateFunctionExpression) {
-        //     return 'date';
-        // }
+    } else if (expression instanceof FunctionExpression || expression instanceof CustomFunctionExpression) {
+        return expression.returnsType(checker);
+    } else if (expression instanceof LambdaExpression) {
+        return (expression as LambdaExpression).returnsType(checker) as AtomicType | ObjectType | undefined;
+    } else if (expression instanceof TernaryExpression) {
+        return (expression as TernaryExpression).returnsType(checker) as AtomicType | ObjectType | undefined;
 
     } else if (expression instanceof StringExpression) {
         return 'string';
@@ -149,7 +144,7 @@ export function getReturnType(expression: Expression, checker?: TypeChecker): At
 export function hasDefinedType(type: RootType | PropertyType | any, key?: string): boolean {
     // return type of the root if no key is provided
     if (!key) {
-        return type.type || 'object';
+        return type.type || {} as ObjectType;
     }
 
     // for simple keys, check if the type defines the required key in its properties
@@ -197,9 +192,9 @@ export function hasDefinedType(type: RootType | PropertyType | any, key?: string
  * @param array_path a flag indicating if the current path is within an array.
  * @returns the type associated with the key, or undefined if the key is not found.
  */
-export function getDefinedType(type: RootType | PropertyType | any, key?: string, array_path?: boolean): AtomicType | ArrayType | undefined {
+export function getDefinedType(type: RootType | PropertyType | any, key?: string, array_path?: boolean): AtomicType | ArrayType | ObjectArrayType | ComplexType | undefined {
     if (!key) {
-        return type.type || 'object';
+        return type.type || {} as ObjectType;
     }
     // array_path = array_path || type.type === 'array' || !!type.items;
     // console.debug('Traversing type', type, 'key', key, 'array_path', array_path);
@@ -211,7 +206,9 @@ export function getDefinedType(type: RootType | PropertyType | any, key?: string
                 if (array_path) {
                     const explicitType = property.type || property as AtomicType | ArrayType;
                     // console.debug(`Handling array in path for property ${key}: original type ${explicitType}, array_path=${array_path}`);
-                    if (isArrayType(explicitType)) {
+                    if (explicitType === 'array' && (property as ObjectArrayType).items) {
+                        return property as ObjectArrayType;
+                    } else if (isArrayType(explicitType)) {
                         return explicitType;
                     } else if (isAtomicType(explicitType)) {
                         // console.debug(`Converting atomic type to array type for property ${key}: original type ${explicitType}, ${explicitType + '[]' as ArrayType}`);
@@ -220,7 +217,11 @@ export function getDefinedType(type: RootType | PropertyType | any, key?: string
                         return 'array';
                     }
                 } else {
-                    return property.type || property as AtomicType | ArrayType;
+                    if (property.type === 'array' && (property as ObjectArrayType).items) {
+                        return property as ObjectArrayType;
+                    } else {
+                        return property.type || property as AtomicType | ArrayType;
+                    }
                 }
             }
         }
@@ -228,9 +229,11 @@ export function getDefinedType(type: RootType | PropertyType | any, key?: string
             array_path = true;
             const itemType = type.items[key];
             if (itemType) {
-                const explicitType = itemType.type || itemType as AtomicType | ArrayType;
+                const explicitType = itemType.type || itemType as AtomicType | ArrayType | ObjectArrayType;
                 // console.debug(`Handling array in last step for item ${key}: original type ${explicitType}, array_path=${array_path}`);
-                if (isArrayType(explicitType)) {
+                if (explicitType === 'array' && (itemType as ObjectArrayType).items) {
+                    return itemType as ObjectArrayType;
+                } else if (isArrayType(explicitType)) {
                     return explicitType;
                 } else if (isAtomicType(explicitType)) {
                     // console.debug(`Converting atomic type to array type for property ${key}: original type ${explicitType}, ${explicitType + '[]' as ArrayType}`);
@@ -290,7 +293,7 @@ export function mergeValidationResults(...results: ValidationResult[]): Validati
  * @param type the type to check.
  * @returns true if the type is an atomic type, false otherwise.
  */
-export function isAtomicType(type: PropertyType): type is AtomicType {
+export function isAtomicType(type: PropertyType | unknown): type is AtomicType {
     return type === 'string' || type === 'number' || type === 'boolean' || type === 'date';
 }
 
@@ -300,8 +303,53 @@ export function isAtomicType(type: PropertyType): type is AtomicType {
  * @param type the type to check.
  * @returns true if the type is an array type, false otherwise.
  */
-export function isArrayType(type: PropertyType): type is ArrayType {
+export function isArrayType(type: PropertyType | unknown): type is ArrayType {
+    if ((type as ObjectArrayType)?.items !== undefined) {
+        return true;
+    }
     return type === 'array' || type === 'string[]' || type === 'number[]' || type === 'boolean[]' || type === 'date[]';
+}
+
+export function makeArrayType(type: AtomicType | ObjectType | unknown): ArrayType | ObjectArrayType {
+    if (isAtomicType(type)) {
+        return type + '[]' as ArrayType;
+    } else if ((type as ObjectType).items) {
+        return { type: 'array', items: type } as ObjectArrayType;
+    } else {
+        return 'array';
+    }
+}
+
+export function makeItemType(type: ArrayType | ObjectArrayType | unknown): AtomicType | ObjectType {
+    if ((type as ObjectArrayType).items) {
+        return (type as ObjectArrayType).items;
+    } else if (isArrayType(type)) {
+        const itemType = type.replace('[]', '') as AtomicType;
+        if (isAtomicType(itemType)) {
+            return itemType;
+        }
+    }
+    throw new Error(`Unable to determine item type for array type: ${type}`);
+}
+
+export function getLiteralType(value: any): AtomicType | ArrayType {
+    const type = typeof value;
+    if (type === 'string' || type === 'number' || type === 'boolean') {
+        return type as AtomicType;
+    } else if (value instanceof Date) {
+        return 'date';
+    } else if (Array.isArray(value)) {
+        if (value.length === 0) {
+            return 'array';
+        }
+        const itemType = getLiteralType(value[0]);
+        if (isAtomicType(itemType)) {
+            return itemType + '[]' as ArrayType;
+        } else {
+            return 'array';
+        }
+    }
+    throw new Error(`Unsupported literal type: ${type}`);
 }
 
 // export function isComplexType(type: PropertyType | ComplexType): type is ComplexType {

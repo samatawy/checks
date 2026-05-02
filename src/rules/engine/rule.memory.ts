@@ -23,6 +23,7 @@ export class RuleMemory {
         this.options = {
             debugging: false,
             strict_conflicts: false,
+            strict_syntax: true,      // Ignored here
             strict_inputs: false,    // Ignored here
             strict_outputs: false,   // Ignored here
             max_iterations: 100,    // Ignored here
@@ -80,14 +81,14 @@ export class RuleMemory {
         const distinctRules: AbstractRule[] = [];
 
         for (const rule of rules) {
-            const changes = rule.changes();
-            for (const change of changes) {
-                if (!effects[change]) {
-                    effects[change] = {};
+            const changes = rule.typedChanges();
+            for (const [key, type] of Object.entries(changes)) {
+                if (!effects[key]) {
+                    effects[key] = {};
                 }
                 const salience = rule.getSalience();
-                effects[change]['' + salience] = effects[change]['' + salience] || [];
-                effects[change]['' + salience].push(rule);
+                effects[key]['' + salience] = effects[key]['' + salience] || [];
+                effects[key]['' + salience].push(rule);
             }
         }
         this.debug('Effects grouped by changed output key and salience:', effects);

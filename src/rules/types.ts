@@ -98,11 +98,11 @@ export interface Evaluator {
 
 export interface Executor {
 
-    // /**
-    //  * Get the data keys that this executor will change when executed.
-    //  * @returns a set of data keys that will be changed when this executor is executed.
-    //  */
-    changes(): Set<string>;
+    /**
+     * Get the data keys that this executor will change when executed, along with their expected types.
+     * @returns a record mapping data keys to their expected types.
+     */
+    typedChanges(): Record<string, AtomicType | ArrayType>;
 
     /**
      * Execute the required action in the given context and return the effects of the execution.
@@ -145,6 +145,13 @@ export interface TypeChecker {
     checkTypes(target: HasValidity): ValidationResult;
 
     /**
+     * Indicates whether the type checker should enforce strict syntax validation.
+     * When true, the type checker will validate that all rules and expressions conform to expected syntax, 
+     * potentially throwing errors if syntax is invalid. This can be used to catch issues early in development.
+     */
+    strictSyntax(): boolean;
+
+    /**
      * Indicates whether the type checker should enforce strict input validation. 
      * When true, the type checker will validate that all required input data for rules and expressions 
      * are defined and conform to expected types, potentially throwing errors if inputs are missing or incorrectly typed. 
@@ -165,9 +172,9 @@ export interface HasValidity {
 
 export type AtomicType = 'string' | 'number' | 'boolean' | 'date';
 
-export type ComplexType = 'object' | 'array';
-
 export type ArrayType = 'array' | 'string[]' | 'number[]' | 'boolean[]' | 'date[]';
+
+export type ComplexType = 'object' | ObjectType;
 
 export type PropertyType = AtomicType | ArrayType | ObjectArrayType | ComplexType | Record<string, ObjectType>;
 
@@ -195,7 +202,7 @@ export interface RootType {
     /**
      * The properties of the root type, if it is an object. This allows for nested structures and detailed type definitions.
      */
-    properties?: Record<string, PropertyType>;
+    properties?: ObjectType;
 }
 
 export interface TypedParameter {

@@ -13,7 +13,6 @@ export abstract class AbstractNode {
     constructor() {
         this.parents = [];
         this.children = [];
-        // this.rules = [];
     }
 
     public addChild(node: AbstractNode): void {

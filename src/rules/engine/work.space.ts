@@ -1,6 +1,6 @@
 import { AbstractRule } from "../rules/abstract.rule";
-import { pathExists } from "../utils";
-import type { Executor, RootType, WorkingContext } from "../types";
+import { mergeValidationResults, pathExists } from "../utils";
+import type { Executor, ValidationResult, WorkingContext } from "../types";
 import { WorkingMemory } from "./working.memory";
 import { RuleGraph } from "./graph/rule.graph";
 import { CombinationNode, RuleNode, type AbstractNode } from "./graph/nodes";
@@ -8,7 +8,6 @@ import { RuleParser } from "../parser/rule.parser";
 import { RuleMemory } from "./rule.memory";
 import { TypeMemory } from "./type.memory";
 import { FunctionMemory } from "./function.memory";
-import type { A } from "vitest/dist/chunks/environment.d.cL3nLXbE.js";
 
 /**
  * Options for configuring the behavior of the WorkSpace, including debugging, conflict resolution, and iteration limits.
@@ -25,6 +24,13 @@ export interface WorkSpaceOptions {
      * When true, the workspace will enforce strict rules for resolving conflicts between competing rules, potentially throwing errors if conflicts are detected.
      */
     strict_conflicts: boolean;
+
+    /**
+     * Enable or disable strict syntax validation.
+     * When true, the workspace will validate that all rules and expressions conform to expected syntax,
+     * potentially throwing errors if syntax is invalid. This can be used to catch issues early in development.
+     */
+    strict_syntax: boolean;
 
     /**
      * Enable or disable strict input validation. 
@@ -81,6 +87,7 @@ export class WorkSpace {
         this.options = {
             debugging: false,
             strict_conflicts: false,
+            strict_syntax: true,
             strict_inputs: false,
             strict_outputs: false,
             max_iterations: 100,
@@ -199,6 +206,25 @@ export class WorkSpace {
         return this.functions;
     }
 
+    public checkTypes(): ValidationResult {
+        const checks: ValidationResult[] = [];
+
+        checks.push(...this.functions.checkTypes(this.types));
+
+        for (const rule of this.rules.getRules()) {
+            const check = rule.checkTypes(this.types);
+            if (!check.valid) {
+                // TODO: Should add each error separately to get more detailed error messages 
+                // or merge them into one message per rule?
+                // checks.push({ valid: false, errors: [`Type check failed for rule ${rule.toString()}: ${check.errors?.join('; ')}`] });
+                for (const error of check.errors || []) {
+                    checks.push({ valid: false, errors: [`Type check failed for rule ${rule.toString()}: ${error}`] });
+                }
+            }
+        }
+        return mergeValidationResults(...checks);
+    }
+
     /**
      * Create a working memory to wrap input data and hold outputs and exceptions during rule evaluation. 
      * The working memory serves as the context in which rules are evaluated and executed.
@@ -218,7 +244,7 @@ export class WorkSpace {
      */
     public applicableRules(context: WorkingContext): AbstractRule[] {
 
-        let applicable = new Set<AbstractRule>();
+        const applicable = new Set<AbstractRule>();
 
         for (const key of context.rootKeys()) {
             const root = this.graph.findRoot(key);
@@ -240,7 +266,7 @@ export class WorkSpace {
     }
 
     private readRulesFromNode(currentNode: AbstractNode, currentContext: any): Set<AbstractRule> {
-        let found: Set<AbstractRule> = new Set();
+        const found: Set<AbstractRule> = new Set();
         if (currentNode instanceof RuleNode) {
             found.add(currentNode.rule);
             return found;

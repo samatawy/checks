@@ -1,5 +1,5 @@
 import type { Expression } from "./syntax/expression";
-import type { Executor, WorkingContext, RuleEffect, HasValidity, TypeChecker, ValidationResult } from "./types";
+import type { Executor, WorkingContext, RuleEffect, HasValidity, TypeChecker, ValidationResult, AtomicType, ArrayType } from "./types";
 import { getReturnType, isAtomicType, mergeValidationResults } from "./utils";
 
 /**
@@ -21,10 +21,10 @@ export abstract class ExecutableAction implements Executor, HasValidity {
     public abstract required(): Set<string>;
 
     /**
-     * What data keys will be changed when this action is executed? 
-     * @returns a set of data keys that will be changed when this action is executed.
+     * What data keys will be changed when this action is executed, along with their expected types?
+     * @returns a record mapping data keys to their expected types.
      */
-    public abstract changes(): Set<string>;
+    public abstract typedChanges(): Record<string, AtomicType | ArrayType>;
 
     public prepareEffect(partial: Partial<RuleEffect>): this {
         this.preparedEffect = { ...this.preparedEffect, ...partial };
@@ -59,8 +59,8 @@ export class OutputAction extends ExecutableAction {
         return this.value.required();
     }
 
-    public changes(): Set<string> {
-        return new Set(this.key);
+    public typedChanges(): Record<string, AtomicType | ArrayType> {
+        return { [this.key]: getReturnType(this.value) as AtomicType | ArrayType };
     }
 
     public toString(): string {
@@ -73,7 +73,7 @@ export class OutputAction extends ExecutableAction {
         }
 
         const checks: ValidationResult[] = [];
-        if (checker.strictInputs()) {
+        if (checker.strictSyntax() || checker.strictInputs()) {
             checks.push(this.value.checkTypes(checker));
         }
         if (checker.strictOutputs()) {
@@ -133,12 +133,10 @@ export class CompositeAction extends ExecutableAction {
         return requirements;
     }
 
-    public changes(): Set<string> {
-        const changes = new Set<string>();
+    public typedChanges(): Record<string, AtomicType | ArrayType> {
+        let changes: Record<string, AtomicType | ArrayType> = {};
         for (const action of this.actions) {
-            for (const change of action.changes()) {
-                changes.add(change);
-            }
+            changes = { ...changes, ...action.typedChanges() };
         }
         return changes;
     }
@@ -197,8 +195,8 @@ export class ExceptionThrower extends ExecutableAction {
         return new Set();
     }
 
-    public changes(): Set<string> {
-        return new Set();
+    public typedChanges(): Record<string, AtomicType | ArrayType> {
+        return {}
     }
 
     public toString(): string {

@@ -4,7 +4,7 @@ import { ExpressionParser } from "./expression.parser";
 import { ExecutableParser } from "./executable.parser";
 import type { ParserOptions } from "./rule.parser";
 import { ArrayInspectionFunction } from "../syntax/functions/array.inspection.functions";
-import { LambdaFunctionExpression } from "../syntax/functions/lambda.functions";
+import { ArrayLambdaFunction } from "../syntax/functions/array.lambda.functions";
 import { ConstantDates, ConstantNumbers } from "../syntax/functions/constant.functions";
 import { StringManipulationFunction } from "../syntax/functions/string.manipulation.functions";
 import { StringComparisonFunction } from "../syntax/functions/string.comparison.functions";
@@ -40,7 +40,7 @@ export class FunctionParser {
             ...ConstantNumbers.names,
             ...ConstantDates.names,
             ...ArrayInspectionFunction.names,
-            ...LambdaFunctionExpression.names,
+            ...ArrayLambdaFunction.names,
             ...StringManipulationFunction.names,
             ...StringComparisonFunction.names,
             ...StringInspectionFunction.names,
@@ -137,7 +137,7 @@ export class FunctionParser {
             }
             // Parse lines if they exist into executables 
             // that will be executed in order before the return expression is evaluated
-            let parsed_lines = [];
+            const parsed_lines = [];
             const other_lines = all_lines.slice(0, all_lines.length - 1);
             if (other_lines.length > 0) {
                 for (const line of other_lines) {

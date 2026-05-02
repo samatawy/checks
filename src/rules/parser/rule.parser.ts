@@ -203,7 +203,7 @@ export class RuleParser {
                 throw new Error(`Failed to parse value expression for StateRule: ${valueSyntax}`);
             }
 
-            return OutputRule.parsed(syntax, variableName, valueExpr); // You would need to implement this class
+            return OutputRule.parsed(syntax, variableName, valueExpr);
         }
         return null;
     }

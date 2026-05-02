@@ -24,22 +24,28 @@ export class ComparisonExpression extends BooleanExpression {
     }
 
     public checkTypes(checker?: TypeChecker): ValidationResult {
-        if (!checker || !checker.strictInputs()) {
-            return { valid: true };
+        const checks: ValidationResult[] = [];
+
+        if (!checker || checker.strictSyntax()) {
+            const leftType = getReturnType(this.left, checker);
+            const rightType = getReturnType(this.right, checker);
+
+            const ok = (checker?.strictInputs()) ?
+                (leftType && rightType && leftType === rightType) :
+                (!leftType || !rightType || leftType === rightType);
+
+            if (!ok) {
+                checks.push({
+                    valid: false,
+                    errors: [`Comparison operator ${this.operator} requires operands of the same type, but got ${leftType} and ${rightType}`],
+                });
+            }
         }
 
-        const leftType = getReturnType(this.left, checker);
-        const rightType = getReturnType(this.right, checker);
-        const check = (leftType === rightType) ? {
-            valid: true,
-        } : {
-            valid: false,
-            errors: [`Comparison operator ${this.operator} requires operands of the same type, but got ${leftType} and ${rightType}`],
-        };
         return mergeValidationResults(
             this.left.checkTypes(checker),
             this.right.checkTypes(checker),
-            check
+            ...checks,
         );
     }
 

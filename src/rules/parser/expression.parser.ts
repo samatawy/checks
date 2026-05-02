@@ -253,8 +253,6 @@ export class ExpressionParser {
     }
 
     protected readLambdaExpression(tokens: string[]): LambdaExpression | null {
-        let colonIndex = -1;
-        let parenthesesCount = 0;
 
         const match = tokens.join(' ').match(/^(\w+)\s*:\s*(.*)$/);
         if (match) {
@@ -262,28 +260,9 @@ export class ExpressionParser {
             const expressionSyntax = match[2]!;
             const expression = this.parse(expressionSyntax);
             return new LambdaExpression(variableSyntax, expression);
+        } else {
+            return null;
         }
-
-        // for (let i = 0; i < tokens.length; i++) {
-        //     if (tokens[i] === '(') {
-        //         parenthesesCount++;
-        //     } else if (tokens[i] === ')') {
-        //         parenthesesCount--;
-        //     } else if (parenthesesCount === 0) {
-        //         if (tokens[i] === ':') {
-        //             colonIndex = i;
-        //             break;
-        //         }
-        //     }
-        // }
-
-        // if (colonIndex !== -1) {
-        //     const variableSyntax = tokens.slice(0, colonIndex).join(' ');
-        //     const expressionSyntax = tokens.slice(colonIndex + 1).join(' ');
-        //     const expression = this.parse(expressionSyntax);
-        //     return new LambdaExpression(variableSyntax, expression);
-        // }
-        return null;
     }
 
     protected readComparisonExpression(tokens: string[]): ComparisonExpression | null {

@@ -224,7 +224,6 @@ export class ArrayCheck implements Check {
             const check = isPromise(field_check) ? await field_check : field_check;
             const found = check.result();
 
-            // if (found.hint || found.warn || found.err) {
             if (found.hint || found.warn || found.err || (found as ResultSet).results?.length) {
                 per_item.push(found);
             }

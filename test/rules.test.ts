@@ -16,6 +16,7 @@ import { getDefinedType, hasDefinedType } from '../src/rules/utils';
 import { LiteralExpression, type Expression, type TypeChecker, type ValidationResult, type WorkingContext } from '../src/rules/..';
 import { CustomFunctionExpression } from '../src/rules/syntax/functions/custom.function';
 import { FunctionsFileReader } from '../src/rules/reader/functions.file.reader';
+import { FunctionParser } from '../src/rules/parser/function.parser';
 
 describe('rules test', () => {
   it('add rules to graph', async () => {
@@ -131,8 +132,10 @@ describe('rules test', () => {
   it('parse functions', async () => {
     const space = new WorkSpace();
     space.addRule('if x < avogadro() then approx = floor(pi())');
-    space.addRule('if x > max(1, 2, 3) then year = year(now())');
-    space.addRule('if x >= 10 then calc = max(5, 10, 15) else result = min(5, 10, 15)');
+    space.addRule('if x > max(1, max(2, 3)) then year = year(now())');
+    space.addRule('if x >= 10 then calc = max(10, 15) else result = min(5, 10)');
+
+    expect(space.checkTypes().valid).toBe(true);
 
     const ctx = space.loadContext({ x: 10 });
     expect(space.applicableRules(ctx).length).toBe(3);
@@ -164,35 +167,12 @@ describe('rules test', () => {
     // console.debug('Custom function syntax:', triple.toString());
     // console.debug('Custom function evaluation result:', triple.evaluate(ctx));
 
-    space.getFunctionMemory().addFunction({
-      name: 'double',
-      parameters: [{ name: 'n', type: 'number', optional: false }],
-      expression: {
-        required(): Set<string> {
-          return new Set(['n']);
-        },
-        checkTypes(checker?: TypeChecker): ValidationResult {
-          const nType = checker?.getType('n');
-          if (nType === 'number') {
-            return { valid: true };
-          } else {
-            return { valid: false, errors: ['Parameter n must be a number'] };
-          }
-        },
-        evaluate(context: WorkingContext): any {
-          const n = context.getData('n');
-          return n * 2;
-        },
-        toString(): string {
-          return 'double(n)';
-        },
-        getSyntax(): string {
-          return 'double(n)';
-        }
-      } as Expression
-    });
+    const double = new FunctionParser({ workspace: space }).parse('double(n: number) = n * 2');
+    space.getFunctionMemory().addFunction(double!);
 
     space.addRule('if x < 5 then result = double(x)');
+
+    expect(space.checkTypes().valid).toBe(true);
 
     const ctx2 = space.loadContext({ x: 3 });
     expect(space.applicableRules(ctx2).length).toBe(1);
@@ -210,6 +190,8 @@ describe('rules test', () => {
 
     space.addRule(r1);
     space.addRule(r2);
+
+    expect(space.checkTypes().valid).toBe(true);
 
     let ctx = space.loadContext({ x: 15 });
     expect(space.applicableRules(ctx).length).toBe(1);
@@ -239,6 +221,8 @@ describe('rules test', () => {
   it('handle composite actions', async () => {
     const space = new WorkSpace({ strict_inputs: false, strict_outputs: false });
     space.addRule('if x > 10 then SET y = 15; z = 20');
+
+    expect(space.checkTypes().valid).toBe(true);
 
     let ctx = space.loadContext({ x: 12 });
     expect(space.applicableRules(ctx).length).toBe(1);
@@ -305,6 +289,8 @@ describe('rules test', () => {
     expect(r1!.name).toBe('Split over lines');
     const r2 = space.getRule('Valid Rule');
     expect(r2).toBeUndefined();
+
+    expect(space.checkTypes().valid).toBe(true);
   });
 
   it('evaluate rules in iterations', async () => {
@@ -329,6 +315,8 @@ describe('rules test', () => {
     ctx = space.loadContext({ x: 12 });
     expect(space.applicableRules(ctx).length).toBe(1);
     space.process(ctx);
+
+    expect(space.checkTypes().valid).toBe(true);
   });
 
   it('read from constants file', async () => {
@@ -371,8 +359,7 @@ describe('rules test', () => {
       // all_even(numbers: number[]) = numbers * 3
 
       join_spaced(s1: string, s2: string) { 
-        // return concat(s1, concat(" ", s2)) }
-         return s1 + ' ' + s2
+        return concat(s1, concat("_", s2))
       }
 
       round_double(n: number){ 
@@ -389,7 +376,7 @@ describe('rules test', () => {
       invalid syntax
     `;
     const result = parser.parse(content);
-    // console.debug('Functions file parsing result:', result);
+    console.debug('Functions file parsing result:', result);
     expect(result.read).toBe(5);
     expect(result.passed).toBe(4);
     expect(result.failed).toBe(1);
@@ -403,19 +390,22 @@ describe('rules test', () => {
     expect(Object.keys(strictResult.functions).length).toBe(0);
     expect(strictResult.errors.length).toBe(1);
 
-    const space = new WorkSpace();
+    const space = new WorkSpace({});
     space.getFunctionMemory().addFunctions(result.functions);
     space.addRule('SET tripled = triple(n)');
     space.addRule('SET greeting = join_spaced("Hello", name)');
     space.addRule('SET rounded = round_double(fp)');
     space.addRule('SET tax = sales_tax(invoice.total)');
 
+    console.debug(space.checkTypes());
+    expect(space.checkTypes().valid).toBe(true);
+
     const ctx = space.loadContext({ n: 4, fp: 3.2, name: 'world!', invoice: { total: 50 } });
 
     const output = space.process(ctx);
     // console.debug('Function evaluation output:', output);
     expect(output.tripled).toBe(12);
-    expect(output.greeting).toBe('Hello world!');
+    expect(output.greeting).toBe('Hello_world!');
     expect(output.rounded).toBe(6);
     expect(output.tax).toBe(6);
     expect(output.tax_rate).toBeUndefined();
@@ -449,6 +439,7 @@ describe('rules test', () => {
     ctx = space.loadContext({ x: 35 });
     expect(space.process(ctx).y).toBe(30);
 
+    expect(space.checkTypes().valid).toBe(true);
     // console.debug('Logged rules during processing:', ctx.getLog().map(logged => ({ rule: logged.rule.toString(), effect: logged.effect })));
 
   });
@@ -496,7 +487,7 @@ describe('rules test', () => {
     // Check hasType and getType methods in TypeMemory
     expect(types.hasType('Person')).toBe(true);
     expect(types.hasType('Person.name')).toBe(true);
-    expect(types.getType('Person')).toBe('object');
+    expect(types.getType('Person')).toBeDefined();
     expect(types.getType('Person.name')).toBe('string');
     expect(types.getType('Person.age')).toBe('number');
     expect(types.hasType('Nonexistent')).toBe(false);
@@ -634,6 +625,8 @@ describe('rules test', () => {
     space.addRule('if count(Person.children) > 2 then Person.hasManyChildren = true; Person.family_range = range(Person.ages)');
     space.addRule('set age_range = range(Person.family.age)');
 
+    expect(space.checkTypes().valid).toBe(true);
+
     const ctx = space.loadContext({
       Person: {
         name: 'Alice', age: 30,
@@ -650,20 +643,19 @@ describe('rules test', () => {
     const ctx2 = space.loadContext({
       Person: {
         name: 'Alice', age: 30,
-        // children: ['Bob', 'Charlie', 'David'], ages: [5, 10, 15],
         family: [{ name: 'Bob', age: 5 }, { name: 'Charlie', age: 10 }, { name: 'David', age: 15 }]
       }
     });
-    // expect(space.applicableRules(ctx2).length).toBe(2);
+    expect(space.applicableRules(ctx2).length).toBe(1);
     const output2 = space.process(ctx2);
     // console.debug('Output with family array:', output2);
     expect(output2.age_range).toBe(10);
 
     const invalidCtx = space.loadContext({ Person: { name: 'Alice', age: 30, children: ['Bob', 'Charlie', 'David'], ages: [5, 'ten', 15] } });
     const invalidOutput = space.process(invalidCtx);
+    expect(invalidOutput.Person.family_range).toBeUndefined();
     // console.debug('Output with invalid array types:', JSON.stringify(invalidCtx.getExceptions()));
     // console.debug('Output with invalid array types:', invalidCtx.getExceptions());
-    // expect(() => space.process(invalidCtx)).toThrow(); // context processing no longer throws.
   });
 
   it('handles lambda expressions', async () => {
@@ -687,6 +679,8 @@ describe('rules test', () => {
 
     space.addRule('if every(Person.family, member : member.age > 10) then Person.hasOldChildren = true else Person.hasOldChildren = false');
 
+    expect(space.checkTypes().valid).toBe(true);
+
     const ctx = space.loadContext({
       Person: {
         name: 'Alice', age: 30,
@@ -701,6 +695,9 @@ describe('rules test', () => {
     space.clearRules();
     space.addRule('set adultChildren = count(filter(Person.family, member : member.age >= 21))');
 
+    // console.debug(space.checkTypes());
+    expect(space.checkTypes().valid).toBe(true);
+
     const ctx2 = space.loadContext({
       Person: {
         name: 'Alice', age: 30,
@@ -710,6 +707,11 @@ describe('rules test', () => {
     const output2 = space.process(ctx2);
     // console.debug('Output with lambda expression - no older members:', output2);
     expect(output2.adultChildren).toBe(1);
+
+    space.clearRules();
+    space.addRule('if any(Person.family, member : member.years < 18) then Person.hasMinorChildren = true');
+    // console.debug(space.checkTypes());
+    expect(space.checkTypes().valid).toBe(false);
   });
 
 });

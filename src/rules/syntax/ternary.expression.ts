@@ -1,4 +1,4 @@
-import type { TypeChecker, ValidationResult, WorkingContext } from "../types";
+import type { ArrayType, AtomicType, TypeChecker, ValidationResult, WorkingContext } from "../types";
 import { getReturnType, mergeValidationResults } from "../utils";
 import { Expression } from "./expression";
 
@@ -24,34 +24,47 @@ export class TernaryExpression extends Expression {
         return new Set([...conditionRequirements, ...trueRequirements, ...falseRequirements]);
     }
 
-    public checkTypes(checker?: TypeChecker): ValidationResult {
-        if (!checker || !checker.strictInputs()) {
-            return { valid: true };
+    public returnsType(checker?: TypeChecker): AtomicType | ArrayType {
+        const trueType = getReturnType(this.trueExpression, checker);
+        const falseType = getReturnType(this.falseExpression, checker);
+        if (trueType && falseType && trueType === falseType) {
+            return trueType as AtomicType | ArrayType;
         }
+        throw new Error(`Unable to determine return type of ternary expression: true branch returns ${trueType}, false branch returns ${falseType}`);
+    }
 
-        const conditionType = getReturnType(this.condition, checker);
-        const check = (conditionType === 'boolean') ? {
-            valid: true,
-        } : {
-            valid: false,
-            errors: [`Ternary condition must be of type boolean, but got ${conditionType}`],
-        };
+    public checkTypes(checker?: TypeChecker): ValidationResult {
+        const checks: ValidationResult[] = [];
 
-        const leftType = getReturnType(this.trueExpression, checker);
-        const rightType = getReturnType(this.falseExpression, checker);
-        const expressionCheck = (leftType === rightType) ? {
-            valid: true,
-        } : {
-            valid: false,
-            errors: [`Ternary expressions must return the same type, but got ${leftType} and ${rightType}`],
-        };
+        if (!checker || checker.strictSyntax()) {
+            const conditionType = getReturnType(this.condition, checker);
+            if (conditionType !== 'boolean') {
+                checks.push({
+                    valid: false,
+                    errors: [`Ternary condition must be of type boolean, but got ${conditionType}`],
+                });
+            }
+
+            const leftType = getReturnType(this.trueExpression, checker);
+            const rightType = getReturnType(this.falseExpression, checker);
+
+            const ok = (checker?.strictInputs()) ?
+                (leftType && rightType && leftType === rightType) :
+                (!leftType || !rightType || leftType === rightType);
+
+            if (!ok) {
+                checks.push({
+                    valid: false,
+                    errors: [`Ternary expressions must return the same type, but got ${leftType} and ${rightType}`],
+                });
+            }
+        }
 
         return mergeValidationResults(
             this.condition.checkTypes(checker),
             this.trueExpression.checkTypes(checker),
             this.falseExpression.checkTypes(checker),
-            check,
-            expressionCheck
+            ...checks
         );
     }
 

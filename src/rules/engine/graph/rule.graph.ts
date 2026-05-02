@@ -65,7 +65,7 @@ export class RuleGraph {
             return;
         }
 
-        let parents: AbstractNode[] = [];
+        const parents: AbstractNode[] = [];
 
         for (const requirement of required) {
             const path = requirement.split(".");

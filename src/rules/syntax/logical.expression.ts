@@ -24,23 +24,28 @@ export class LogicalExpression extends BooleanExpression {
     }
 
     public checkTypes(checker?: TypeChecker): ValidationResult {
-        if (!checker || !checker.strictInputs()) {
-            return { valid: true };
-        }
+        const checks: ValidationResult[] = [];
 
-        const leftType = getReturnType(this.left, checker);
-        const rightType = getReturnType(this.right, checker);
-        const check = (leftType === 'boolean' && rightType === 'boolean') ? {
-            valid: true,
-        } : {
-            valid: false,
-            errors: [`Logical operator ${this.operator} requires boolean operands, but got ${leftType} and ${rightType}`],
-        };
+        if (!checker || checker.strictSyntax()) {
+            const leftType = getReturnType(this.left, checker);
+            const rightType = getReturnType(this.right, checker);
+
+            const ok = (checker?.strictInputs()) ?
+                (leftType && rightType && leftType === rightType) :
+                (!leftType || !rightType || leftType === rightType);
+
+            if (!ok) {
+                checks.push({
+                    valid: false,
+                    errors: [`Logical operator ${this.operator} requires operands of the same type, but got ${leftType} and ${rightType}`],
+                });
+            }
+        }
 
         return mergeValidationResults(
             this.left.checkTypes(checker),
             this.right.checkTypes(checker),
-            check
+            ...checks,
         );
     }
 

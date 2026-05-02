@@ -1,8 +1,7 @@
-import type { AtomicType, PropertyType, RootType, ValidationResult, TypeChecker, ComplexType, ArrayType } from "../types";
+import type { AtomicType, PropertyType, RootType, ValidationResult, TypeChecker, ComplexType, ArrayType, ObjectArrayType, ObjectType } from "../types";
 import type { WorkSpaceOptions } from "./work.space";
-import { getDefinedType, hasDefinedType, isArrayType, isAtomicType } from "../utils";
+import { getDefinedType, hasDefinedType, isArrayType, isAtomicType, makeItemType } from "../utils";
 import type { AbstractRule } from "../rules/abstract.rule";
-import { isArray } from "util";
 
 export class TypeMemory implements TypeChecker {
 
@@ -16,11 +15,16 @@ export class TypeMemory implements TypeChecker {
         this.options = {
             debugging: false,
             strict_conflicts: false,    // Ignored here
+            strict_syntax: true,       // Ignored here
             strict_inputs: false,
             strict_outputs: false,   // Ignored here
             max_iterations: 100,      // Ignored here
             ...options
         };
+    }
+
+    public strictSyntax(): boolean {
+        return this.options.strict_syntax;
     }
 
     public strictInputs(): boolean {
@@ -79,25 +83,22 @@ export class TypeMemory implements TypeChecker {
         }
     }
 
-    // public getType(key: string): AtomicType | ArrayType | ComplexType | undefined {
-    //     const root = this.getRootType(key);
-    //     if (key.includes('.')) {
-    //         const remainingKey = key.split('.').slice(1).join('.');
-    //         return root ? getDefinedType(root, remainingKey) : undefined;
-    //     } else {
-    //         return root ? root.type || 'object' : undefined;
-    //     }
-    // }
-
-    public getType(key: string): AtomicType | ArrayType | ComplexType | undefined {
+    public getType(key: string): AtomicType | ArrayType | ComplexType | ObjectArrayType | undefined {
         // console.debug(`Getting type for key: ${key}`);
         const root = this.getRootType(key);
         if (key.includes('.')) {
             const remainingKey = key.split('.').slice(1).join('.');
             const array_path = root?.type === 'array';
             return root ? getDefinedType(root, remainingKey, array_path) : undefined;
+
+        } else if (root && root.type === 'array') {
+            return 'array';
+        } else if (root && root.type) {
+            return root.type as AtomicType | ArrayType | ComplexType;
+        } else if (root) {
+            return root.properties as ObjectType || undefined;
         } else {
-            return root ? root.type || 'object' : undefined;
+            return undefined;
         }
     }
 
@@ -110,12 +111,12 @@ export class TypeMemory implements TypeChecker {
     }
 
     public validateData(input: any): ValidationResult {
-        if (!this.options.strict_inputs) {
-            return { valid: true };
-        }
+        // if (!this.options.strict_inputs) {
+        //     return { valid: true };
+        // }
 
         this.debug(`Validating input: ${JSON.stringify(input)} against type definitions.`, this.types);
-        let errors: string[] = [];
+        const errors: string[] = [];
 
         for (const [rootKey, data] of Object.entries(input)) {
             if (this.types.has(rootKey)) {
@@ -160,9 +161,8 @@ export class TypeMemory implements TypeChecker {
 
         this.debug(`Validating value: ${value} against expected type: ${JSON.stringify(expectedType)}.`);
         const expected: any = expectedType as any;
-        let errors: string[] = [];
+        const errors: string[] = [];
 
-        // if (expectedType === 'string' || expectedType === 'number' || expectedType === 'boolean') {
         if (isAtomicType(expectedType)) {
             // A leaf node with an atomic type
             const actualType = typeof value;
@@ -176,16 +176,6 @@ export class TypeMemory implements TypeChecker {
         else if (isArrayType(expectedType)) {
             // An array type
             return this.validateArray(key, value, expectedType);
-        }
-        else if (expectedType === 'object') {
-            // An object type with no defined properties, we can only check that the value is an object
-            const actualType = typeof value;
-            this.debug(`Actual type: ${actualType}, Expected type: object.`);
-            if (actualType === 'object' && value !== null && !Array.isArray(value)) {
-                return { valid: true };
-            } else {
-                return { valid: false, errors: [`${key} has value ${value} of type ${actualType}, expected object.`] };
-            }
         }
         else if (expected.hasOwnProperty('type') && isAtomicType(expected.type)) {
             // A leaf node with an atomic type defined in a RootType
@@ -201,17 +191,10 @@ export class TypeMemory implements TypeChecker {
             // A leaf node with an array type defined in a RootType
             return this.validateArray(key, value, expected.type);
         }
-
-        // else if (expected.hasOwnProperty('type') && expected.type !== 'object' && expected.type !== 'array') {
-        //     // A leaf node with an atomic type defined in a RootType
-        //     const actualType = typeof value;
-        //     this.debug(`Actual type: ${actualType}, Expected Property type: ${expected.type}.`);
-        //     if (actualType === expected.type) {
-        //         return { valid: true };
-        //     } else {
-        //         return { valid: false, errors: [`${key} has value ${value} of type ${actualType}, expected ${expected.type}.`] };
-        //     }
+        // else if (expectedType === 'object') {
+        //     // An object type with no defined properties, we can only check that the value is an object
         // }
+
         else if (expected.hasOwnProperty('properties')) {
             // An object type with nested properties
             for (const [key, propertyType] of Object.entries(expected.properties!)) {
@@ -222,7 +205,23 @@ export class TypeMemory implements TypeChecker {
                     errors.push(...(result.errors || []));
                 }
             }
-            // All properties matched the expected types
+            return {
+                valid: errors.length === 0,
+                errors: errors.length > 0 ? errors : undefined
+            };
+
+        }
+
+        else if (typeof expected === 'object' && Object.keys(expected).length > 0) {
+            // A record type with dynamic keys
+            for (const [key, propertyType] of Object.entries(expected)) {
+                this.debug(`Validating property: ${key} with value: ${value[key]} against property type definition.`);
+                const result = this.validateType(key, value[key], propertyType);
+                if (!result.valid) {
+                    // One of the properties did not match the expected type
+                    errors.push(...(result.errors || []));
+                }
+            }
             return {
                 valid: errors.length === 0,
                 errors: errors.length > 0 ? errors : undefined
@@ -242,8 +241,9 @@ export class TypeMemory implements TypeChecker {
             return { valid: false, errors: [`${key} has value ${value} of type ${actualType}, expected ${expectedType}.`] };
         }
 
-        let errors: string[] = [];
-        const elementType = expectedType === 'array' ? 'object' : expectedType.replace('[]', '') as AtomicType;
+        const errors: string[] = [];
+        const elementType = makeItemType(expectedType);
+        // const elementType = expectedType === 'array' ? 'object' : expectedType.replace('[]', '') as AtomicType;
         for (let i = 0; i < value.length; i++) {
             const element = value[i];
             this.debug(`Validating array element at index ${i}: ${element} against expected array type: ${expectedType}.`);

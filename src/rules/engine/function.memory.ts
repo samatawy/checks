@@ -1,5 +1,7 @@
+import { isAtomicType, mergeValidationResults } from "../..";
 import { FunctionParser } from "../parser/function.parser";
-import type { FunctionDefinition } from "../types";
+import type { ArrayType, AtomicType, FunctionDefinition, TypeChecker, ValidationResult } from "../types";
+import { ScopeTypeChecker } from "./scope.memory";
 import type { WorkSpaceOptions } from "./work.space";
 
 /**
@@ -28,6 +30,7 @@ export class FunctionMemory {
         this.options = {
             debugging: false,
             strict_conflicts: false,    // Ignored here
+            strict_syntax: true,      // Ignored here
             strict_inputs: false,   // Ignored here
             strict_outputs: false,   // Ignored here
             max_iterations: 100,      // Ignored here
@@ -103,6 +106,35 @@ export class FunctionMemory {
                 this.addFunction(func);
             }
         }
+    }
+
+    public checkTypes(checker: TypeChecker): ValidationResult[] {
+        return Array.from(this.functions.values()).map(func => this.checkDefinitionTypes(func, checker));
+    }
+
+    protected checkDefinitionTypes(definition: FunctionDefinition, checker: TypeChecker): ValidationResult {
+        const checks: ValidationResult[] = [];
+
+        const scopeChecker = new ScopeTypeChecker(checker);
+
+        for (const param of definition.parameters) {
+            scopeChecker.setType(param.name, param.type as AtomicType | ArrayType);
+        }
+
+        for (const line of definition.lines || []) {
+            checks.push(line.checkTypes(scopeChecker));
+            const changes = line.typedChanges();
+            for (const change of Object.keys(changes)) {
+                const newType = changes[change];
+                if (newType) {
+                    scopeChecker.setType(change, newType);
+                }
+            }
+        }
+
+        checks.push(definition.expression.checkTypes(scopeChecker));
+
+        return mergeValidationResults(...checks);
     }
 
     /**

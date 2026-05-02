@@ -40,7 +40,7 @@ export class IfThenRule extends AbstractRule {
         }
         this.consequence = this.consequence || new ExceptionThrower(`Condition met: ${syntax} but no consequence provided`);
         this.require(...this.condition.required(), ...this.consequence.required());
-        this.willChange(...this.consequence.changes());
+        this.willChange(this.consequence.typedChanges());
     }
 
     public toString(): string {
@@ -103,7 +103,7 @@ export class IfThenElseRule extends AbstractRule {
         this.consequence = this.consequence || new ExceptionThrower(`Condition met: ${syntax} but no consequence provided`);
         this.alternative = this.alternative || new ExceptionThrower(`Condition failed: ${syntax} but no alternative provided`);
         this.require(...this.condition.required(), ...this.consequence.required(), ...this.alternative.required());
-        this.willChange(...this.consequence.changes(), ...this.alternative.changes());
+        this.willChange({ ...this.consequence.typedChanges(), ...this.alternative.typedChanges() });
     }
 
     public toString(): string {

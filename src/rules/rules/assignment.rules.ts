@@ -1,6 +1,6 @@
 import { AbstractRule } from "./abstract.rule";
 import type { Expression } from "../syntax/expression";
-import type { Executor, WorkingContext, RuleEffect, TypeChecker, ValidationResult } from "../types";
+import type { Executor, WorkingContext, RuleEffect, TypeChecker, ValidationResult, ArrayType, AtomicType } from "../types";
 import { RuleParser } from "../parser/rule.parser";
 import { getReturnType, isAtomicType, mergeValidationResults } from "../utils";
 import type { WorkSpace } from "../engine/work.space";
@@ -41,7 +41,7 @@ export class OutputRule extends AbstractRule {
             }
         }
         this.require(...this.expression.required());
-        this.willChange(this.outputKey);
+        this.willChange({ [this.outputKey]: getReturnType(this.expression) as AtomicType | ArrayType });
     }
 
     public toString(): string {
@@ -50,9 +50,10 @@ export class OutputRule extends AbstractRule {
 
     public checkTypes(checker?: TypeChecker): ValidationResult {
         const checks: ValidationResult[] = [];
-        if (checker?.strictInputs()) {
+        if (checker?.strictSyntax() || checker?.strictInputs()) {
             checks.push(this.expression.checkTypes(checker));
         }
+
         if (checker?.strictOutputs()) {
             if (!checker.hasType(this.outputKey)) {
                 checks.push({ valid: false, errors: [`Undefined output variable: ${this.outputKey}`] });
@@ -81,14 +82,6 @@ export class OutputRule extends AbstractRule {
             return null;
         } else {
             return new OutputAction(this.outputKey, this.expression);
-            // {
-            //     changes: () => new Set(this.outputKey),
-
-            //     execute: (ctx: WorkingContext): RuleEffect => {
-            //         ctx.setOutput(this.outputKey, newValue);
-            //         return { changed: this.outputKey };
-            //     }
-            // }
         }
     }
 

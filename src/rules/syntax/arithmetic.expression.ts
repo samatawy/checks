@@ -24,23 +24,28 @@ export class ArithmeticExpression extends NumericExpression {
     }
 
     public checkTypes(checker?: TypeChecker): ValidationResult {
-        if (!checker || !checker.strictInputs()) {
-            return { valid: true };
-        }
+        const checks: ValidationResult[] = [];
 
-        const leftType = getReturnType(this.left, checker);
-        const rightType = getReturnType(this.right, checker);
-        const check = (leftType === 'number' && rightType === 'number') ? {
-            valid: true,
-        } : {
-            valid: false,
-            errors: [`Arithmetic operator ${this.operator} requires numeric operands, but got ${leftType} and ${rightType}`],
-        };
+        if (!checker || checker.strictSyntax()) {
+            const leftType = getReturnType(this.left, checker);
+            const rightType = getReturnType(this.right, checker);
+
+            const ok = (checker?.strictInputs()) ?
+                (leftType && rightType && leftType === rightType) :
+                (!leftType || !rightType || leftType === rightType);
+
+            if (!ok) {
+                checks.push({
+                    valid: false,
+                    errors: [`Arithmetic operator ${this.operator} requires operands of the same type, but got ${leftType} and ${rightType}`],
+                });
+            }
+        }
 
         return mergeValidationResults(
             this.left.checkTypes(checker),
             this.right.checkTypes(checker),
-            check
+            ...checks,
         );
     }
 

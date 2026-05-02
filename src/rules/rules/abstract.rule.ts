@@ -1,5 +1,5 @@
 import { TypeMemory } from "../engine/type.memory";
-import type { WorkingContext, Evaluator, RuleEffect, Executor, HasValidity, ValidationResult, TypeChecker } from "../types";
+import type { WorkingContext, Evaluator, RuleEffect, Executor, HasValidity, ValidationResult, TypeChecker, ArrayType, AtomicType } from "../types";
 
 /**
  * Abstract base class for all rules in the system, providing common properties and methods for evaluating and executing rules. 
@@ -24,12 +24,12 @@ export abstract class AbstractRule implements Evaluator, Executor, HasValidity {
 
     private requirements: Set<string>;
 
-    private changeTargets: Set<string>;
+    private changeTargets: Record<string, AtomicType | ArrayType>;
 
     constructor(syntax: string, salience?: number) {
         this.syntax = syntax;
         this.requirements = new Set<string>();
-        this.changeTargets = new Set<string>();
+        this.changeTargets = {};
         this.salience = salience;
     }
 
@@ -80,14 +80,26 @@ export abstract class AbstractRule implements Evaluator, Executor, HasValidity {
      * especially when strict conflict resolution is enabled.
      * @param targets the data keys that this rule will change when executed.
      */
-    public willChange(...targets: string[]): void {
-        for (const target of targets) {
-            this.changeTargets.add(target);
+    // public willChange(...targets: string[]): void {
+    //     for (const target of targets) {
+    //         this.changeTargets.add(target);
+    //     }
+    // }
+
+    public willChange(changes: Record<string, AtomicType | ArrayType>): void {
+        for (const target of Object.keys(changes)) {
+            if (changes[target]) {
+                this.changeTargets[target] = changes[target];
+            }
         }
     }
 
-    public changes(): Set<string> {
-        return new Set(this.changeTargets);
+    public typedChanges(): Record<string, AtomicType | ArrayType> {
+        const typedChanges: Record<string, AtomicType | ArrayType> = {};
+        for (const [key, type] of Object.entries(this.changeTargets)) {
+            typedChanges[key] = type;
+        }
+        return typedChanges;
     }
 
     /**
