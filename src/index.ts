@@ -5,5 +5,4 @@ export * from './factory';
 export * from './i18n';
 export * from './schema';
 export * from './state';
-export * from './rules';
 export type * from './types';
