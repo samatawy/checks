@@ -2,14 +2,10 @@
     "$schema": "https://typedoc.org/schema.json",
     "entryPoints": [
         "src/index.ts",
-        "src/rules/index.ts",
     ],
     "projectDocuments": [
         "help/how-to/index.md",
-        "help/examples/index.md",
-        "help/reference/index.md",
-        "help/maintenance/index.md",
-        "src/rules/help/index.md"
+        "help/reference/index.md"
     ],
     "tsconfig": "tsconfig.json",
     "out": "docs",

@@ -1,7 +1,7 @@
 {
     "name": "@samatawy/checks",
-    "version": "0.2.5",
-    "description": "TypeScript validation and object-management library with fluent checks, object factories, coded results, and lightweight typed cache/store helpers.",
+    "version": "0.3.0",
+    "description": "TypeScript validation and object-management library with fluent checks, object factories, and coded results",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/index.js",
@@ -42,9 +42,6 @@
     },
     "keywords": [
         "typescript",
-        "npm",
-        "library",
-        "json",
         "validation",
         "json",
         "schema",

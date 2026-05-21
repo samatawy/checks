@@ -9,8 +9,6 @@ children:
   - ./object-factory.md
   - ./coded-results.md
   - ./schema-check.md
-  - ./object-caching.md
-  - ./state-store.md
 ---
 
 # How-To
@@ -27,8 +25,6 @@ Pages in this section:
 - [Object Factory](object-factory.md) for validated construction and hydration
 - [Coded Message Catalog](coded-results.md) for stable codes, i18n catalogs, and translated output workflows
 - [SchemaCheck](schema-check.md) for validating input against the supported JSON Schema subset
-- [Object Caching](object-caching.md) for typed in-memory caches, store registries, and cache-backed CRUD flows
-- [State Store](state-store.md) for keyed state, derived values, and subscriptions
 
 
 If you are new to the package, a good reading order is:
@@ -44,6 +40,4 @@ Optionally you may also:
 2. Use [Object Factory](object-factory.md) when validation and object construction or update should happen together. This applies to data classes that know how to validate input and use it.
 3. Read [Coded Message Catalog](coded-results.md) when you need stable result codes with localized messages. In addition, you can separate messages from your code and organize them into catalogs.
 4. Use [SchemaCheck](schema-check.md) when you want to validate data from a supported JSON Schema document instead of writing fluent rules directly.
-5. Read [Object Caching](object-caching.md) when you want a small in-memory cache or a typed store registry next to validation and object hydration.
-6. Read [State Store](state-store.md) when you want keyed state with dependencies and subscriptions but do not want a larger framework.
-7. Read [Platform Compatibility](../reference/platform-compatibility.md) when your code must run in both browser and Node or uses binary and schema-file features.
+5. Read [Platform Compatibility](../reference/platform-compatibility.md) when your code must run in both browser and Node or uses binary and schema-file features.

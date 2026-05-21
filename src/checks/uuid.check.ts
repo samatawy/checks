@@ -1,7 +1,7 @@
 import type { CheckOptions, UUIDCheckOptions, UUIDVersion } from '../types';
 import { StringBaseCheck } from './string.base.check';
 
-type UUIDCheckMode = 'uuid' | 'ulid';
+export type UUIDCheckMode = 'uuid' | 'ulid';
 
 export class UUIDCheck extends StringBaseCheck {
 

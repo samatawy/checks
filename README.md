@@ -1,12 +1,12 @@
 # @samatawy/checks
 
-TypeScript validation and object-management utilities for fluent checks, validated object construction, coded results, and lightweight typed store and cache workflows.
+TypeScript validation and object-management utilities for fluent checks, validated object construction, and coded results.
 
 This package is still evolving and should not yet be treated as production-tested infrastructure. Breaking changes are still relatively frequent while the API surface is being refined.
 
 The main focus is on developer convenience and maintainability. The code is optimized for readability, IDE and AI friendliness, declarative class decoration, and composing validation with object lifecycle concerns.
 
-The other focus is on business applications. Features such as coded-result management, i18n, validated object hydration, and lightweight in-process store and cache helpers are designed for application code that wants a small typed runtime layer without pulling in a larger framework.
+The other focus is on business applications. Features such as coded-result management, i18n, and validated object hydration are designed for application code that wants a small typed runtime layer without pulling in a larger framework.
 
 The package builds to both ESM and CommonJS, ships declaration files, and supports both synchronous and asynchronous validation flows.
 
@@ -20,9 +20,21 @@ Typical examples are:
 - admin workflows that need warnings as well as errors
 - coded-result and i18n workflows in larger business applications
 - file intake flows that need MIME, size, or image-dimension checks
-- lightweight typed store, cache, and test-double patterns around validated objects
+- validated object construction and patch-style update flows around DTO-like classes
 
 This package is probably not the best fit when you only need a minimal schema validator, a form-only client-side helper, or a full persistence framework.
+
+## Breaking Change
+
+This version removes the previously bundled cache/state runtime helpers from `@samatawy/checks`.
+
+The following functionality is no longer part of this package:
+
+- typed cache helpers such as `TypeCache` and `ObjectCache`
+- typed store helpers such as `ObjectStore`, `CachedObjectStore`, and `InMemoryTypeStore`
+- keyed state management through `StateStore`
+
+If you were using those APIs, migrate to `@samatawy/objects`. `@samatawy/checks` now focuses on validation, object factory flows, and coded-result/i18n features.
 
 ## Documentation
 
@@ -35,9 +47,6 @@ For the local guides in this repo, the most useful entry points are:
 - [Composite Checks](help/how-to/composite-checks.md) for `allOf(...)`, `anyOf(...)`, `oneOf(...)`, and `not(...)`
 - [SchemaCheck](help/how-to/schema-check.md) for validating input from the supported JSON Schema subset
 - [Reading Results](help/how-to/reading-results.md) for `flattened`, `nested`, and `validated` output
-- [Object Caching](help/how-to/object-caching.md) for typed cache and store workflows
-- [Cache API](help/reference/cache-api.md) for the cache/store runtime layer
-- [Examples](help/examples/index.md) for shared models, HTTP and MongoDB stores, and `InMemoryTypeStore` testing patterns
 - [Checks API](help/reference/checks.md) for the full API reference
 
 Run `npm run docs` to generate the local docs site in `docs/`.
@@ -195,21 +204,6 @@ That update flow is useful for patch-style JSON input where validation depends o
 Stable result codes and translated output are supported, but optional. If you need catalogs, codes, or localized messages, see [Coded Message Catalog](help/how-to/coded-results.md).
 
 In Node runtimes, translations can also be loaded from external JSON files through `@samatawy/checks/node` so translators can work on one language file at a time.
-
-## Typed Stores And Caching
-
-The package also includes a small typed runtime layer for applications that want validated objects to move through simple store and cache abstractions.
-
-That layer includes:
-
-- `TypeCache` and `ObjectCache` for in-memory caching
-- `TypeStore` and `ObjectStore` for per-type CRUD orchestration
-- `CachedObjectStore` for read-through and write-through caching
-- `InMemoryTypeStore` for tests, demos, and other local in-process implementations
-
-These helpers are intentionally lightweight. They are meant to sit next to your DTOs, validation rules, and object factories, not replace a full ORM or distributed cache.
-
-See [Object Caching](help/how-to/object-caching.md), [Cache API](help/reference/cache-api.md), and the [Examples](help/examples/index.md) section for the current patterns.
 
 ## File And Image Validation
 
