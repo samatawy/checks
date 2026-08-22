@@ -1,6 +1,6 @@
 {
     "name": "@samatawy/checks",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "description": "TypeScript validation and object-management library with fluent checks, object factories, and coded results",
     "type": "module",
     "main": "./dist/index.cjs",

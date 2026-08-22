@@ -76,6 +76,16 @@ export class ArrayCheck implements Check {
         return this;
     }
 
+    public of(type: 'string' | 'number' | 'boolean' | 'object' | 'array', options?: CheckOptions): this {
+        if (!this.is_array) return this;
+
+        if (this.data.some((item: any) => typeof item !== type)) {
+            const prefix = defined(this.key) ? `Field ${this.key}` : 'Input';
+            this.errorMessage(prefix + ` must be an array of ${type}s.`, options);
+        }
+        return this;
+    }
+
     public minLength(length: number, options?: CheckOptions): this {
         if (!this.is_array) return this;
 

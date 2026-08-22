@@ -5,6 +5,7 @@ import { ArrayCheck } from './array.check';
 import { FieldCheck } from './field.check';
 import { deepEqual, defined, buildErrorMessage, appendError, isPromise } from './helper.functions';
 import { collectResults } from './helper.functions';
+import type { ValueCheck } from './value.check';
 
 /**
  * Validates object-shaped input and coordinates checks for its fields.
@@ -300,6 +301,43 @@ export class ObjectCheck implements Check {
         return this.composeAlternatives('oneOf', branches);
     }
 
+    public async values(func: (checker: FieldCheck) => (Check | Promise<Check>)[]): Promise<this> {
+        if (!this.is_object) return this;
+
+        for (const key of Object.keys(this.data)) {
+            const field = new FieldCheck(key, this.data).updating(this.oldData);
+            const field_checks = func(field);
+            await this.rulesEach(key, field_checks);
+        }
+        return this;
+    }
+
+    protected async rulesEach(key: any, field_checks: (Check | Promise<Check>)[]): Promise<this> {
+        const per_item: IResult[] = [];
+
+        for (const field_check of field_checks) {
+            const check = isPromise(field_check) ? await field_check : field_check;
+            const found = check.result();
+
+            if (found.hint || found.warn || found.err || (found as ResultSet).results?.length) {
+                per_item.push(found);
+            }
+            if (found.err || (found as ResultSet).results?.some(r => !r.valid)) {
+                this.out.valid = false;
+            }
+        }
+        if (per_item.length) {
+            const prefix = String(key);
+            this.out.results = this.out.results || [];
+            this.out.results.push({
+                field: prefix,
+                valid: per_item.every(r => r.valid),
+                results: per_item
+            });
+        }
+        return this;
+    }
+
     /**
      * Inverts a composed object branch and fails when that branch is valid.
      *
@@ -576,7 +614,7 @@ export class ObjectCheck implements Check {
      *   .then(c => c.result({ nested: true }));
      * ```
      */
-    public result(options?: ResultOptions): IResult {
+    public result(options?: ResultOptions): ResultSet {
         // ensure overall validity is false if any part is invalid
         for (const part of this.out.results || []) {
             if (!part.valid) {

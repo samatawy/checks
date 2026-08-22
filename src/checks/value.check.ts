@@ -63,7 +63,8 @@ export abstract class ValueCheck implements Check {
     public async isTrue(func: (data: any) => boolean | Promise<boolean>, options?: CheckOptions): Promise<this> {
         if (!this.has_value) return this;
 
-        const result = func(this.data);
+        const value = defined(this.key) && defined(this.data) ? this.data[this.key] : this.data;
+        const result = func(value);
         const valid = isPromise(result) ? await result : result;
         if (!valid) {
             this.errorMessage('Custom check failed', options);

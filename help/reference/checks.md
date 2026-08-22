@@ -75,6 +75,7 @@ Common methods:
 - `oneOf(branches)` applies alternative object branches where exactly one branch must pass
 - `not(fn, options?)` applies a negated object branch that must fail
 - `isTrue(fn, options?)` applies a custom object-level predicate and supports async predicates
+- `values(fn, options?)` applies a nested groupd of field rules for every value in the object
 - `canUpdate(fn, options?)` applies a custom old-value/new-value predicate against the current object value when that value is present in the current input
 - `immutable(options?)` rejects changes when `updating(...)` supplied a previously defined object value and the current input also supplies that value
 - `result(options?)` returns the current result or a formatted final result depending on the options you pass
@@ -226,6 +227,7 @@ Common methods:
 
 - `ArrayCheck.for(data)` starts a root array validation
 - `array(options?)` ensures the value is an array
+- `of(type, options?)` ensures that each item is of the required (native) type
 - `notEmpty(options?)` rejects empty arrays
 - `minLength(length, options?)`
 - `maxLength(length, options?)`
